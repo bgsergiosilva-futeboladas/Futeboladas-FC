@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Futeboladas FC</title>
+<meta name="theme-color" content="#a3161c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a club app for a group of friends, quick to read on a phone after the game
+   IDEA: the club crest and the dressing-room noticeboard: league table, call-up sheet, kit money
+   PICTURE: the crest in a deep red band, then the working view (table, call-up, teams) as the picture
+   COLOUR and TYPE: crest red, cream, burnished gold; Barlow Condensed for numbers and titles, Barlow for text
+   LAYOUT: app shell, red header with crest, tabs on top (bottom bar on phones), one view at a time */
+:root{color-scheme:light dark;
+--bg:light-dark(#f7f3ec,#140b0b);--card:light-dark(#fff,#1f1414);--ink:light-dark(#1d1212,#f3ebe4);
+--mute:light-dark(#6f5f5a,#b3a199);--line:light-dark(#e8ddd2,#3a2828);
+--red:#a3161c;--red2:#7d0f14;--gold:#c9a04a;--cream:#f6efe2;
+--win:light-dark(#1f7a45,#4cc47f);--draw:light-dark(#8a7a1f,#d8c55a);--loss:light-dark(#b0302a,#f0766c)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3,.num{font-family:"Barlow Condensed",Barlow,sans-serif}
+.top{background:radial-gradient(120% 140% at 0% 0%,#c21d24 0%,var(--red) 40%,var(--red2) 100%);color:var(--cream);padding:16px max(4vw,16px) 0;border-bottom:3px solid var(--gold)}
+.brand{display:flex;gap:14px;align-items:center;max-width:1240px;margin:0 auto}
+.brand img{width:68px;height:68px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35));flex:none}
+.brand h1{margin:0;font-size:clamp(28px,5vw,40px);line-height:1;letter-spacing:.01em}
+.brand p{margin:2px 0 0;color:#f2d9c4;font-size:15px}
+.who{margin-left:auto;text-align:right;font-size:14px;color:#f2d9c4}
+.who b{display:block;color:var(--cream);font-size:15px}
+nav{display:flex;gap:2px;flex-wrap:wrap;max-width:1240px;margin:12px auto 0}
+nav a{color:#f4dccb;text-decoration:none;padding:10px 14px;border-radius:10px 10px 0 0;font-weight:600;min-height:44px;display:flex;align-items:center;gap:6px}
+nav a.on{background:var(--bg);color:var(--ink)}
+nav svg{width:18px;height:18px;flex:none}
+main{padding:20px max(4vw,16px) 90px;max-width:1240px;margin:0 auto}
+.note{padding:10px 14px;border-radius:10px;background:light-dark(#fff4dc,#2b2110);border:1px solid light-dark(#f0d79b,#5a4620);margin-bottom:16px}
+.note:empty{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:13px;color:var(--mute);font-weight:600}
+th.l,td.l{text-align:left}
+tbody tr:last-child td{border-bottom:0}
+td.pts{font:700 22px/1 "Barlow Condensed"}
+td.pos{font:600 18px "Barlow Condensed";width:2.4em}
+tr.top3 td.pos{color:var(--gold)}
+.mv{font-size:12px;font-weight:700;margin-left:4px}.up{color:var(--win)}.dn{color:var(--loss)}.eq{color:var(--mute)}
+.form{display:inline-flex;gap:3px}.form i{width:18px;height:18px;border-radius:50%;font:700 11px/18px Barlow;color:#fff;text-align:center;font-style:normal}
+.fV{background:var(--win)}.fE{background:var(--draw)}.fD{background:var(--loss)}
+.tag{font-size:13px;color:var(--mute);margin-left:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.stat b{display:block;font:700 30px/1.1 "Barlow Condensed"}.stat span{color:var(--mute);font-size:14px}
+.prize{border-left:4px solid var(--gold)}
+h2{font-size:28px;margin:26px 0 10px;line-height:1.1}
+h2:first-child{margin-top:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chips button,.btn{font:600 15px Barlow;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:0 16px;min-height:44px;cursor:pointer}
+.chips button.on,.btn.pri{background:var(--red);color:var(--cream);border-color:var(--red)}
+.btn.ok{background:var(--win);color:#fff;border-color:var(--win)}
+.btn.no{color:var(--loss)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,select:focus-visible,input:focus-visible,nav a:focus-visible,.pl:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.game{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-bottom:12px}
+.game h3{grid-column:1/-1;margin:0;font-size:22px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.team h4{margin:0 0 4px;font:600 15px Barlow;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.team ol{margin:0;padding-left:20px}.team li.g{color:var(--mute)}
+.res{font:700 13px Barlow;color:#fff;border-radius:6px;padding:2px 8px}
+.cap{font:700 11px Barlow;background:var(--gold);color:#2a1a00;border-radius:4px;padding:0 5px;margin-left:5px}
+.late{color:var(--loss);font-size:13px;margin-left:5px}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+select,input[type=text],input[type=date],input[type=number]{font:16px Barlow;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.slot{display:grid;grid-template-columns:5.2em 1fr;gap:8px;align-items:center;margin-bottom:6px}
+.slot span{font-size:13px;color:var(--mute)}.slot input{grid-column:2}
+.seg{display:flex;gap:6px;flex-wrap:wrap}.seg label{margin:0}
+.seg input{position:absolute;opacity:0}.seg span{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:600}
+.seg input:checked+span{background:var(--red);color:var(--cream);border-color:var(--red)}
+.seg input:focus-visible+span{outline:3px solid var(--gold)}
+.checks{display:flex;flex-wrap:wrap;gap:6px}.checks label{margin:0;font-weight:500;display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:0 12px;min-height:40px}
+.err{color:var(--loss);font-weight:600;min-height:1.5em;margin:6px 0}
+.hide{display:none!important}
+/* convocatória */
+.ticket{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:linear-gradient(135deg,var(--red),var(--red2));color:var(--cream);border-radius:16px;padding:20px;border:2px solid var(--gold)}
+.ticket .day{text-align:center;background:var(--cream);color:var(--red2);border-radius:12px;padding:8px 14px;min-width:92px}
+.ticket .day b{display:block;font:700 44px/1 "Barlow Condensed"}.ticket .day span{font:600 14px Barlow;text-transform:lowercase}
+.ticket h2{margin:0 0 4px;color:var(--cream);font-size:30px}
+.ticket a{color:#ffe7b0}.ticket p{margin:2px 0}
+.count{font:700 40px/1 "Barlow Condensed"}
+.plist{list-style:none;margin:0;padding:0}
+.plist li{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.plist li:last-child{border-bottom:0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:var(--mute)}
+.dot.y{background:var(--win)}.dot.n{background:var(--loss)}.dot.w{background:var(--gold)}
+.mini{display:flex;gap:4px}.mini .btn{min-height:36px;padding:0 10px;font-size:14px}
+/* equipas */
+.pitch{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.side{border-radius:14px;padding:14px;border:2px solid var(--line);background:var(--card)}
+.side h3{margin:0 0 8px;font-size:24px;display:flex;justify-content:space-between}
+.pl{display:flex;justify-content:space-between;width:100%;text-align:left;font:500 16px Barlow;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--bg);color:var(--ink);cursor:pointer;min-height:44px}
+.pl.sel{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.pl small{color:var(--mute)}
+.bib{font:700 14px Barlow;padding:2px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mute);align-self:center}.bib.on{background:#d9f24a;color:#1b2400;border-color:#b9d02a}
+/* pagamentos */
+.paid{color:var(--win);font-weight:700}
+.pgrid td{padding:3px 2px}.pgrid th{text-align:center}.pc{font:600 13px Barlow;min-height:34px;min-width:68px;border-radius:8px;border:1px solid transparent;background:none;color:var(--mute);cursor:pointer}
+.pc.pago{background:light-dark(#e3f3e8,#173323);color:var(--win)}.pc.falta{background:light-dark(#fff3a8,#4a4210);color:light-dark(#6b5a00,#f1e27a);border-color:light-dark(#e7d24a,#6b5f18)}.pc.isento{border-color:var(--line)}.pc:disabled{cursor:default}
+.pgrid td:first-child,.pgrid th:first-child{position:sticky;left:0;background:var(--card);z-index:1}.owe{color:var(--loss);font-weight:700}
+.big{font:700 34px/1.05 "Barlow Condensed"}
+@media(max-width:700px){
+ nav{position:fixed;left:0;right:0;bottom:0;margin:0;background:var(--card);border-top:1px solid var(--line);flex-wrap:nowrap;justify-content:space-around;z-index:5;padding:2px 2px calc(2px + env(safe-area-inset-bottom))}
+ nav a{flex:1 1 0;flex-direction:column;border-radius:10px;padding:6px 2px;font-size:11px;color:var(--mute);gap:2px;justify-content:center}
+ nav a.on{background:light-dark(#f5e3dc,#3a1a1a);color:var(--red)}
+ .who{display:none}.top{padding-bottom:14px}
+ .game,.pitch{grid-template-columns:1fr}td,th{padding:8px 5px}.hm{display:none}
+ .ticket{grid-template-columns:1fr}
+}
+#login{min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:radial-gradient(120% 120% at 20% 0%,#c21d24,var(--red) 45%,var(--red2))}
+.lcard{width:min(100%,400px);background:var(--card);border-radius:18px;padding:24px;text-align:center;border:2px solid var(--gold);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.lcard img{margin-top:-70px;filter:drop-shadow(0 6px 12px rgba(0,0,0,.4))}.lcard h1{margin:6px 0 0;font-size:34px}.lcard form{text-align:left}.lcard h2{margin:14px 0 0;font-size:22px}
+input[type=email],input[type=password]{font:16px Barlow;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.linkbtn{background:none;border:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer;padding:4px 0;min-height:32px}
+.lcard .linkbtn{color:var(--red);font-weight:600}
+</style>
+</head>
+<body>
+<section id="login" class="hide">
+<div class="lcard">
+<img src="assets/logo.webp" alt="Emblema Futeboladas" width="120" height="120">
+<h1>Futeboladas FC</h1>
+<form id="lform" novalidate><span id="lmode" data-m="entrar"></span>
+<h2 id="ltitle">Entrar</h2>
+<div id="lemailW"><label for="lemail">Email</label><input type="email" id="lemail" autocomplete="email" required></div>
+<div id="lpassW"><label for="lpass">Password</label><input type="password" id="lpass" autocomplete="current-password"></div>
+<p class="err" id="lmsg"></p>
+<button class="btn pri" id="lgo" type="submit" style="width:100%">Entrar</button>
+</form>
+<p id="llinks" class="row" style="justify-content:space-between;margin:14px 0 0"><button class="linkbtn" data-m="criar" type="button">Criar conta</button><button class="linkbtn" data-m="entrar" type="button">Já tenho conta</button><button class="linkbtn" data-m="recuperar" type="button">Esqueci-me da password</button></p>
+</div>
+</section>
+<div id="app" class="hide">
+<header class="top">
+<div class="brand"><img src="assets/logo.webp" alt="Emblema Futeboladas"><div><h1>Futeboladas FC</h1><p id="sub">Época 2026/27</p></div><div class="who" id="who"></div></div>
+<nav id="nav"></nav>
+</header>
+<main>
+<div class="note" id="note">A carregar dados…</div>
+<div class="card hide" id="askAccess" style="margin-bottom:16px"></div>
+
+<section id="v-classificacao">
+<div class="card scroll"><table id="tab"></table></div>
+<h2>Prémios</h2><div class="grid" id="prizes"></div>
+<h2>Destaques</h2><div class="grid" id="stats"></div>
+<p class="tag" style="margin:16px 0 0">Pontos: vitória 3, empate 1, derrota 0, +1 por vitória como capitão, −1 por atraso. Desempate pela % de vitórias. Convidados e substitutos não entram na classificação.</p>
+</section>
+
+<section id="v-jogos" class="hide">
+<div class="row" style="justify-content:space-between;margin-bottom:12px"><div class="chips" id="months" style="margin:0"></div><button class="btn pri adm" id="newGame" type="button">+ Novo jogo</button></div>
+<div class="card scroll" id="mtab"></div>
+<h2 id="mtitle">Jogos</h2>
+<div id="glist"></div>
+</section>
+
+<section id="v-novo" class="hide">
+<form id="f" class="card" novalidate>
+<h2 id="ftitle">Novo jogo</h2>
+<div class="two">
+<div><label for="fdate">Data</label><input type="date" id="fdate" required></div>
+<div><label>Houve jogo?</label><div class="seg"><label><input type="radio" name="hj" value="1" checked><span>Sim</span></label><label><input type="radio" name="hj" value="0"><span>Não houve jogo</span></label></div></div>
+</div>
+<div id="fplay">
+<label>Resultado da Equipa 1</label>
+<div class="seg" id="fres"><label><input type="radio" name="r" value="V"><span>Vitória</span></label><label><input type="radio" name="r" value="E"><span>Empate</span></label><label><input type="radio" name="r" value="D"><span>Derrota</span></label></div>
+<div class="two" id="fteams" style="margin-top:6px"></div>
+<label>Chegaram atrasados (−1 ponto cada)</label>
+<div class="checks" id="flate"><span class="tag">Escolhe primeiro os jogadores.</span></div>
+</div>
+<div id="fnoplay" class="hide"><label for="fmot">Motivo (opcional)</label><input type="text" id="fmot" placeholder="Ex.: campo fechado, feriado"></div>
+<p class="err" id="ferr"></p>
+<div class="row"><button class="btn pri" type="submit">Guardar</button><button class="btn" type="button" id="fcancel">Cancelar</button></div>
+</form>
+</section>
+
+<section id="v-convocatoria" class="hide">
+<div class="row" style="margin-bottom:12px"><button class="btn" id="cprev" type="button" aria-label="Semana anterior">‹</button><button class="btn" id="cnext" type="button" aria-label="Semana seguinte">›</button><span class="tag" id="cweek"></span></div>
+<div class="ticket" id="ticket"></div>
+<div class="card" id="mine" style="margin-top:14px"></div>
+<div class="two" style="margin-top:14px">
+<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Vão jogar</h2><span class="count" id="ccount"></span></div><ul class="plist" id="cyes"></ul><h3 id="cwaitH" class="hide" style="margin:14px 0 4px">Suplentes</h3><ul class="plist" id="cwait"></ul></div>
+<div class="card"><h2 style="margin:0 0 4px">Não vão / sem resposta</h2><ul class="plist" id="cno"></ul></div>
+</div>
+<div class="card hide" id="cteams" style="margin-top:14px"></div>
+<details class="card adm" style="margin-top:14px"><summary style="cursor:pointer;font-weight:600;min-height:32px">Dados do campo</summary>
+<div class="two"><div><label for="kn">Nome</label><input type="text" id="kn"></div><div><label for="km">Morada</label><input type="text" id="km"></div><div><label for="kla">Latitude</label><input type="text" id="kla" inputmode="decimal" placeholder="41.xxxx"></div><div><label for="klo">Longitude</label><input type="text" id="klo" inputmode="decimal" placeholder="-8.xxxx"></div></div>
+<div class="row" style="margin-top:10px"><button class="btn pri" id="ksave" type="button">Guardar campo</button><span class="tag" id="kmsg"></span></div></details>
+</section>
+
+<section id="v-equipas" class="hide">
+<div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><div><h2 style="margin:0" id="etitle">Fazer equipas</h2><span class="tag" style="margin:0" id="einfo"></span></div>
+<div class="row"><button class="btn" id="eother" type="button">Outra combinação</button><button class="btn" id="esave" type="button">Publicar na convocatória</button><button class="btn pri" id="egame" type="button">Criar jogo com estas equipas</button></div></div>
+<p class="tag" style="margin:8px 0 0">Toca num jogador de cada equipa para os trocar. O capitão (C) é quem foi capitão menos vezes.</p><p class="err" id="eerr"></p></div>
+<div class="pitch" id="epitch"></div>
+</section>
+
+<section id="v-pagamentos" class="hide">
+<div class="grid" id="psum" style="margin-bottom:14px"></div>
+<div id="pmine" class="card hide" style="margin-bottom:14px"></div>
+<div class="pay">
+<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Quotas por mês</h2><span class="tag" style="margin:0">Toca numa célula: Em falta → Pago → Não cobra</span></div>
+<div class="scroll" id="pgridW" style="margin-top:10px"><table id="pgrid" class="pgrid"></table></div>
+<div class="row" style="margin-top:12px"><label for="pvm" style="margin:0">Quota de</label><select id="pvm" style="width:11em"></select><input type="number" id="pval" min="0" step="0.5" style="width:6em" aria-label="Valor da quota"><button class="btn" id="pvalsave" type="button">Guardar valor</button><span class="tag" id="pvmsg"></span></div></div>
+<div class="two" style="margin-top:14px">
+<div class="card"><h2>Caixa</h2><div class="scroll"><table id="pcash"></table></div><div class="row" style="margin-top:10px"><label for="psi" style="margin:0">Saldo inicial (€)</label><input type="number" id="psi" step="0.01" style="width:8em"><button class="btn" id="psisave" type="button">Guardar</button></div></div>
+<div class="card"><h2>Quem deve</h2><ul class="plist" id="pdebt"></ul></div>
+</div>
+<div class="two" style="margin-top:14px">
+<div class="card"><h2>Registar movimento</h2>
+<div class="two" style="gap:0 12px"><div><label for="xt">Tipo</label><select id="xt"><option value="campo">Pagamento do campo</option><option value="jantar">Jantar</option><option value="bola">Bola / material</option><option value="outra">Outra despesa</option><option value="entrada">Outra entrada de dinheiro</option></select></div>
+<div><label for="xd">Data</label><input type="date" id="xd"></div><div><label for="xv">Valor (€)</label><input type="number" id="xv" min="0" step="0.01" inputmode="decimal"></div><div><label for="xn">Descrição (opcional)</label><input type="text" id="xn"></div></div>
+<div class="row" style="margin-top:10px"><button class="btn pri" id="xadd" type="button">Registar</button><span class="tag" id="xmsg"></span></div></div>
+<div class="card"><h2>Movimentos registados</h2><ul class="plist" id="xlist"></ul></div>
+</div>
+</div>
+</section>
+
+<section id="v-jogadores" class="hide">
+<div class="two">
+<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Jogadores</h2><button class="btn" data-out type="button">Terminar sessão</button></div><div class="scroll"><table id="rtab"></table></div>
+<div class="adm"><h3 style="margin:18px 0 0">Acrescentar jogador</h3>
+<div class="row" style="align-items:end"><div style="flex:2 1 12em"><label for="rnew">Nome</label><input type="text" id="rnew" autocomplete="off"></div><div style="flex:1 1 6em"><label for="rsk">Skill (0–5)</label><select id="rsk"></select></div><button class="btn pri" id="radd" type="button">Adicionar</button></div><p class="err" id="rerr"></p></div></div>
+<div class="adm">
+<div class="card"><h2>Acessos</h2><p class="tag" style="margin:0 0 8px">Cada pessoa cria conta com o seu email e escolhe quem é. Aqui aprovas e defines o perfil: Administrador, Tesoureiro ou Jogador.</p>
+<h3 style="margin:8px 0 4px">Pedidos</h3><ul class="plist" id="aped"></ul>
+<h3 style="margin:14px 0 4px">Contas com acesso</h3><ul class="plist" id="alist"></ul></div>
+<div class="card" style="margin-top:16px"><h2>Cópia de segurança</h2>
+<p class="tag" style="margin:0 0 8px">Todos os dados em texto. Para restaurar, cola e carrega em Restaurar.</p>
+<textarea id="bk" spellcheck="false" style="width:100%;min-height:110px;font:13px ui-monospace,monospace;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);padding:8px"></textarea>
+<div class="row" style="margin-top:8px"><button class="btn" id="bcopy" type="button">Copiar</button><button class="btn no" id="brest" type="button">Restaurar</button></div><p class="err" id="berr"></p></div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
