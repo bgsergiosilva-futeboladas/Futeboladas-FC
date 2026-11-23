@@ -183,7 +183,7 @@ details summary{list-style:none}details summary::-webkit-details-marker{display:
  table{font-size:14px}td,th{padding:8px 4px}td.pts{font-size:17px}.hm{display:none}.form i{width:15px;height:15px;font-size:9px;line-height:15px}
  .ticket{grid-template-columns:auto 1fr;gap:12px;padding:16px;border-radius:22px}.ticket .day{min-width:74px;padding:8px 10px}.ticket .day b{font-size:34px}.ticket h2{font-size:20px}.ticket p{font-size:14px}
  .count{font-size:26px}.big{font-size:24px}
- .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chips button{flex:none}
+ .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}#emode{flex-wrap:wrap;overflow:visible;padding:0}.chips::-webkit-scrollbar{display:none}.chips button{flex:none}
  .btn,.chips button{min-height:40px;padding:0 14px;font-size:14px}
  .seg span{padding:0 12px;font-size:14px}
  .slot{grid-template-columns:4.6em minmax(0,1fr)}
@@ -507,7 +507,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
-const BUILD='20261123205327';
+const BUILD='20261123205625';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
