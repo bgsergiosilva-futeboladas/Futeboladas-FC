@@ -1,6 +1,6 @@
 // Futeboladas FC — ligação ao Supabase: contas (entrar, convite, recuperar password)
 // e uma camada de dados com o mesmo formato que a app usa (doc/collection/onSnapshot).
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 const $ = id => document.getElementById(id);
