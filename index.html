@@ -90,7 +90,7 @@ h2:first-child{margin-top:0}
 .btn:disabled{opacity:.45;cursor:default}
 .btn:focus-visible,select:focus-visible,input:focus-visible,nav a:focus-visible,.pl:focus-visible,.chips button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 label{display:block;font-weight:600;font-size:13px;margin:14px 0 6px;color:var(--mute)}
-select,input[type=text],input[type=date],input[type=number]{font:16px var(--f);width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--glass2);color:var(--ink)}
+select,input[type=text],input[type=date],input[type=number],input[type=tel]{font:16px var(--f);width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--glass2);color:var(--ink)}
 .slot{display:grid;grid-template-columns:5.4em 1fr;gap:8px;align-items:center;margin-bottom:6px}
 .slot span{font-size:13px;color:var(--mute)}.slot input{grid-column:2}
 .seg{display:inline-flex;gap:2px;flex-wrap:wrap;padding:3px;border-radius:14px;background:light-dark(rgba(120,90,90,.10),rgba(255,255,255,.06))}.seg label{margin:0}
@@ -929,8 +929,9 @@ $('pavisos').addEventListener('click',async e=>{const b=e.target.closest('button
     if(ok)try{await db.doc('propostas/'+id).delete()}catch(x){}}
   if(b.dataset.mbr){const id=b.dataset.mbr,nota=(document.querySelector(`[data-mbnota="${id}"]`)||{}).value||'';await save('propostas/'+id,{...propostas[id],estado:'rejeitada',nota:nota.trim()})}});
 $('mbsave').addEventListener('click',async()=>{const n=$('mbn').value.trim(),t=$('mbt').value.trim();
-  if(n&&!/^\+?[\d\s]{9,15}$/.test(n))return $('mbmsg').textContent='Número inválido.';
-  if(await save('config/caixa',{...caixa,mbway:n,mbwayNome:t}))$('mbmsg').textContent=n?'Guardado.':'MB WAY desativado.'});
+  if(!n&&t)return $('mbmsg').textContent='Escreve o número de telemóvel do MB WAY.';
+  if(n&&!/^\+?[\d\s]{9,15}$/.test(n))return $('mbmsg').textContent='Número inválido: escreve os 9 algarismos, por exemplo 912 345 678.';
+  if(await save('config/caixa',{...caixa,mbway:n,mbwayNome:t}))$('mbmsg').textContent=n?'Guardado: os jogadores já podem pagar por MB WAY para '+n+'.':'MB WAY desligado (sem número).'});
 $('pvm').addEventListener('change',()=>{$('pval').value=feeOf($('pvm').value)});
 $('pvalsave').addEventListener('click',async()=>{const k=$('pvm').value,v=+$('pval').value;if(!(v>=0))return;const c=pags[k]||{};
   const p={...(c.pagos||{})};for(const n of Object.keys(p))if(p[n].valor===feeOf(k))p[n]={...p[n],valor:v};
