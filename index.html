@@ -234,20 +234,20 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 
 /* ---------- bilhete do próximo jogo: relvado animado ---------- */
 .ticket{position:relative;overflow:hidden}
-.ticket>.day,.ticket>div:not(.pitch){position:relative;z-index:1}
-.pitch{grid-column:1/-1;margin:4px -22px -22px;height:150px;position:relative;border-top:1px solid rgba(255,255,255,.18);background:repeating-linear-gradient(90deg,#2a7d43 0 50px,#2f8a4a 50px 100px)}
-.pitch svg{display:block;width:100%;height:100%;position:absolute;inset:0}
-.pitch .fig{transform-box:fill-box}
-.pitch .run{animation:pRun 7s linear infinite}
-.pitch .def{animation:pDef 7s linear infinite}
-.pitch .ball{animation:pBall 7s linear infinite}
-.pitch .ball circle{animation:pSpin .35s linear infinite;transform-box:fill-box;transform-origin:center}
-.pitch .keep{animation:pKeep 7s ease-in-out infinite}
-.pitch .net{animation:pNet 7s ease-out infinite;transform-box:fill-box;transform-origin:left center}
-.pitch .golo{animation:pGolo 7s ease-out infinite;transform-box:fill-box;transform-origin:center}
-.pitch .legA{animation:pLegA .32s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:top center}
-.pitch .legB{animation:pLegA .32s ease-in-out infinite alternate-reverse;transform-box:fill-box;transform-origin:top center}
-.pitch .kick{animation:pKick 7s ease-in infinite;transform-box:fill-box;transform-origin:top center}
+.ticket>.day,.ticket>div:not(.apitch){position:relative;z-index:1}
+.apitch{grid-column:1/-1;margin:4px -22px -22px;height:150px;position:relative;border-top:1px solid rgba(255,255,255,.18);background:repeating-linear-gradient(90deg,#2a7d43 0 50px,#2f8a4a 50px 100px)}
+.apitch svg{display:block;width:100%;height:100%;position:absolute;inset:0}
+.apitch .fig{transform-box:fill-box}
+.apitch .run{animation:pRun 7s linear infinite}
+.apitch .def{animation:pDef 7s linear infinite}
+.apitch .ball{animation:pBall 7s linear infinite}
+.apitch .ball circle{animation:pSpin .35s linear infinite;transform-box:fill-box;transform-origin:center}
+.apitch .keep{animation:pKeep 7s ease-in-out infinite}
+.apitch .net{animation:pNet 7s ease-out infinite;transform-box:fill-box;transform-origin:left center}
+.apitch .golo{animation:pGolo 7s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.apitch .legA{animation:pLegA .32s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:top center}
+.apitch .legB{animation:pLegA .32s ease-in-out infinite alternate-reverse;transform-box:fill-box;transform-origin:top center}
+.apitch .kick{animation:pKick 7s ease-in infinite;transform-box:fill-box;transform-origin:top center}
 @keyframes pLegA{from{transform:rotate(28deg)}to{transform:rotate(-28deg)}}
 @keyframes pRun{0%{transform:translate(190px,0);opacity:0}5%{opacity:1}42%{transform:translate(400px,0)}88%{transform:translate(410px,0);opacity:1}96%,100%{transform:translate(410px,0);opacity:0}}
 @keyframes pDef{0%{transform:translate(140px,0);opacity:0}6%{opacity:1}42%{transform:translate(352px,0)}60%{transform:translate(372px,0)}88%{opacity:1}96%,100%{transform:translate(372px,0);opacity:0}}
@@ -257,9 +257,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 @keyframes pNet{0%,50%{transform:scaleX(1)}54%{transform:scaleX(1.45)}60%{transform:scaleX(.92)}66%,100%{transform:scaleX(1)}}
 @keyframes pGolo{0%,51%{transform:scale(0);opacity:0}56%{transform:scale(1.25);opacity:1}60%{transform:scale(1)}84%{transform:scale(1);opacity:1}92%,100%{transform:scale(.6);opacity:0}}
 @keyframes pSpin{to{transform:rotate(360deg)}}
-@media (min-width:760px){.ticket{grid-template-columns:auto 1fr minmax(320px,44%)}.pitch{grid-column:3;grid-row:1;align-self:stretch;margin:-22px -22px -22px 0;height:auto;min-height:150px;border-top:0;border-left:1px solid rgba(255,255,255,.18)}}
-@media (max-width:700px){.pitch{margin:2px -16px -16px;height:112px}}
-@media (prefers-reduced-motion:reduce){.pitch *{animation:none!important}.pitch .golo{opacity:0}}
+@media (min-width:760px){.ticket{grid-template-columns:auto 1fr minmax(320px,44%)}.apitch{grid-column:3;grid-row:1;align-self:stretch;margin:-22px -22px -22px 0;height:auto;min-height:150px;border-top:0;border-left:1px solid rgba(255,255,255,.18)}}
+@media (max-width:700px){.apitch{margin:2px -16px -16px;height:112px}}
+@media (prefers-reduced-motion:reduce){.apitch *{animation:none!important}.apitch .golo{opacity:0}}
 .crwrap{position:relative;width:min(280px,calc(100vw - 80px));aspect-ratio:1;margin:0 auto;border-radius:16px;overflow:hidden;touch-action:none}.crwrap canvas{width:100%;height:100%;display:block;cursor:grab;touch-action:none}.crwrap canvas:active{cursor:grabbing}.crmask{position:absolute;inset:0;pointer-events:none;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);outline:2px solid rgba(255,255,255,.85);outline-offset:-2px}
 .pc.fut{background:transparent;border:1px dashed var(--line);color:var(--mute)}
 .qlist{list-style:none;margin:6px 0 0;padding:0}
@@ -507,7 +507,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
-const BUILD='20261123205104';
+const BUILD='20261123205327';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -784,7 +784,7 @@ const pitchHTML=()=>{
     <line x1="7" y1="-33" x2="11" y2="-24" stroke="${skin}" stroke-width="2.6" stroke-linecap="round"/>
     <circle cx="0" cy="-42" r="6" fill="${skin}"/><path d="M-6 -44a6 6 0 0 1 12 0z" fill="${hair}"/></g></g>`;
   const stripes=[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>`<rect x="${i*50}" y="0" width="50" height="130" fill="${i%2?'#2f8a4a':'#2a7d43'}"/>`).join('');
-  return `<div class="pitch" aria-hidden="true"><svg viewBox="0 0 600 130" preserveAspectRatio="${innerWidth>=760?'xMaxYMax meet':'xMaxYMax slice'}">
+  return `<div class="apitch" aria-hidden="true"><svg viewBox="0 0 600 130" preserveAspectRatio="${innerWidth>=760?'xMaxYMax meet':'xMaxYMax slice'}">
   ${stripes}
   <g fill="none" stroke="rgba(255,255,255,.65)" stroke-width="2"><line x1="8" y1="118" x2="592" y2="118"/><line x1="230" y1="8" x2="230" y2="118"/><path d="M230 40a38 38 0 0 1 0 78"/><rect x="470" y="30" width="122" height="88"/></g>
   <g transform="translate(578,118)">
