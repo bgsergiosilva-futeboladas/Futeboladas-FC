@@ -295,7 +295,8 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="card" id="mine" style="margin-top:14px"></div>
 <div class="two" style="margin-top:14px">
 <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Vão jogar</h2><span class="count" id="ccount"></span></div><ul class="plist" id="cyes"></ul><div id="csub" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="csubinfo" style="margin:0 0 8px"></p><div class="row"><input type="text" id="csubn" placeholder="Nome do substituto" autocomplete="off" style="flex:1 1 12em;width:auto"><select id="csubsk" class="adm" aria-label="Skill do substituto" style="width:6em"></select><button class="btn pri" id="csubb" type="button">Adicionar substituto</button></div></div><h3 id="cwaitH" class="hide" style="margin:14px 0 4px">Suplentes</h3><ul class="plist" id="cwait"></ul></div>
-<div class="card"><h2 style="margin:0 0 4px">Não vão / sem resposta</h2><ul class="plist" id="cno"></ul></div>
+<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Não vão</h2><span class="count" id="cnon"></span></div><ul class="plist" id="cno"></ul>
+<div class="row" style="justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><h2 style="margin:0">Ainda não responderam</h2><span class="count" id="cnonen"></span></div><ul class="plist" id="cnone"></ul></div>
 </div>
 <div class="card hide" id="cteams" style="margin-top:14px"></div>
 <details class="card adm" style="margin-top:14px"><summary style="cursor:pointer;font-weight:600;min-height:32px">Dados do campo</summary>
@@ -738,7 +739,9 @@ function renderConv(){
   $('csubinfo').textContent=canSub?(P.none.length===0?'Já todos responderam e faltam '+free+' jogador'+(free>1?'es':'')+'.':'Mesmo que todos os que faltam respondam, não se chega a 14: faltam pelo menos '+(MAXJ-P.go.length-P.subs.length-P.none.length)+'.')+' Podes propor um substituto; o administrador tem de aprovar.':'';
   $('cwaitH').classList.toggle('hide',!P.wait.length);
   $('cwait').innerHTML=P.wait.map(n=>`<li><span><span class="dot w"></span>${esc(n)}</span>${ctl(n)}</li>`).join('');
-  $('cno').innerHTML=[...P.no.map(n=>`<li><span><span class="dot n"></span>${esc(n)}</span>${ctl(n)}</li>`),...P.none.map(n=>`<li><span><span class="dot"></span>${esc(n)} <span class="tag">sem resposta</span></span>${ctl(n)}</li>`)].join('');
+  $('cno').innerHTML=P.no.map(n=>`<li><span><span class="dot n"></span>${esc(n)}</span>${ctl(n)}</li>`).join('')||'<li class="tag">Ninguém disse que não vai.</li>';
+  $('cnone').innerHTML=P.none.map(n=>`<li><span><span class="dot"></span>${esc(n)}</span>${ctl(n)}</li>`).join('')||'<li class="tag">Já todos responderam.</li>';
+  $('cnon').textContent=P.no.length;$('cnonen').textContent=P.none.length;
   const t=(conv[cdate]||{}).equipas;
   $('cteams').classList.toggle('hide',!t);
   if(t&&t.modo==='capitaes'){$('cteams').innerHTML=`<h2 style="margin-top:0">Capitães sorteados</h2><p class="tag" style="margin:0 0 8px">Os dois capitães escolhem as equipas. O capitão da equipa vencedora ganha 1 ponto extra.</p><div class="pitch">${[['Equipa 1',t.capA,'a'],['Equipa 2',t.capB,'b']].map(([l,c,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes===k?'De coletes':'Sem coletes'}</span></h3><p class="big" style="margin:0">${esc(c)}<span class="cap">C</span></p></div>`).join('')}</div>`}
@@ -894,7 +897,9 @@ function renderPay(){
       <div class="kv"><span class="tag" style="margin:0">Valor</span><b>${euro(tot)}</b><button class="btn" data-cp="${tot.toFixed(2).replace('.',',')}">Copiar</button></div>
       <div class="kv"><span class="tag" style="margin:0">Para</span><b>${esc(caixa.mbway)}</b>${caixa.mbwayNome?`<span class="tag" style="margin:0">${esc(caixa.mbwayNome)}</span>`:''}<button class="btn" data-cp="${esc(caixa.mbway.replace(/\s/g,''))}">Copiar número</button></div>
       <div class="kv"><span class="tag" style="margin:0">Descrição</span><span>${esc(desc)}</span><button class="btn" data-cp="${esc(desc)}">Copiar</button></div>
-      <ol><li>Abre a app MB WAY (ou a do teu banco) e escolhe <b>Enviar dinheiro</b>.</li><li>Cola o número, o valor e a descrição.</li><li>Depois de enviares, carrega em <b>Já paguei</b>.</li></ol>
+      <button class="btn pri" data-mbopen="${esc(caixa.mbway.replace(/\s/g,''))}" style="width:100%;margin:8px 0 4px;background:#d6002a">Abrir a app MB WAY</button>
+      <p class="tag" style="margin:0 0 6px">O número é copiado ao abrir: na app MB WAY escolhe <b>Enviar dinheiro</b>, cola o número e escreve o valor.</p>
+      <ol><li>Abre a app MB WAY (ou a do teu banco) e escolhe <b>Enviar dinheiro</b>.</li><li>Cola o número, o valor e a descrição.</li><li>Depois de enviares, volta aqui e carrega em <b>Já paguei</b>.</li></ol>
       <button class="btn pri" data-mbp="1">Já paguei ${euro(tot)}</button></div>`}
     $('pmine').innerHTML=`<h2 style="margin:0 0 4px">As minhas quotas</h2>${d.length?`<p class="owe" style="margin:0">Deves ${euro(tot)}: ${d.map(mname).join(', ')}</p>`:'<p class="paid" style="margin:0">Tens tudo pago.</p>'}${pay}`}
   const tes=isTes();
@@ -934,7 +939,11 @@ function renderPay(){
 }
 $('psisave').addEventListener('click',async()=>{const v=Math.round(+$('psi').value*100)/100;if(isNaN(v))return;await save('config/caixa',{...caixa,saldoInicial:v})});
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);note('Copiado: '+t)}catch(x){prompt('Copia:',t)}}
+const MBW_AND='intent://#Intent;package=pt.sibs.android.mbway;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=pt.sibs.android.mbway')+';end';
+const MBW_IOS='https://apps.apple.com/pt/app/mb-way/id918126133';
 $('pmine').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.mbopen!==undefined){try{await navigator.clipboard.writeText(b.dataset.mbopen)}catch(x){}
+    const ua=navigator.userAgent;location.href=/android/i.test(ua)?MBW_AND:MBW_IOS;return}
   if(b.dataset.cp!==undefined)return copyTxt(b.dataset.cp);
   if(b.dataset.mbc){const p=propostas[b.dataset.mbc];if(p&&p.por===me.id)try{await db.doc('propostas/'+b.dataset.mbc).delete()}catch(x){note('Não foi possível cancelar.')}return}
   if(b.dataset.mbp){const mp=myPlayer(),d=ledger().deb[mp]||[];if(!d.length)return;
