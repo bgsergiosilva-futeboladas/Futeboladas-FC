@@ -695,13 +695,17 @@ $('f').addEventListener('submit',async e=>{
 });
 
 /* ---------- convocatória ---------- */
+/* inscrições abrem na segunda-feira da semana do jogo às 08:30 */
+function convOpenAt(date){const[y,m,d]=date.split('-').map(Number);return new Date(y,m-1,d-3,8,30,0).getTime()}
+const convNotOpen=date=>Date.now()<convOpenAt(date);
 function convCloseAt(date){const[y,m,d]=date.split('-').map(Number);return new Date(y,m-1,d-1,23,59,59).getTime()}
 const convClosed=date=>Date.now()>convCloseAt(date)||games.some(g=>g.data===date);
 function presence(date){
   const lim=convCloseAt(date);
   const c=conv[date]||{},man=c.manual||{};
   const map={};
-  for(const v of Object.values(votos)){const x=v.v&&v.v[date];if(x&&v.jogador&&!(x.t>lim)&&(!map[v.jogador]||x.t>map[v.jogador].t))map[v.jogador]=x}
+  const opn=convOpenAt(date);
+  for(const v of Object.values(votos)){const x=v.v&&v.v[date];if(x&&v.jogador&&!(x.t>lim)&&!(x.t<opn)&&(!map[v.jogador]||x.t>map[v.jogador].t))map[v.jogador]=x}
   for(const [n,x] of Object.entries(man))if(!map[n]||x.t>map[n].t)map[n]=x;
   const act=roster.filter(r=>r.ativo!==false).map(r=>r.nome);
   const yes=Object.entries(map).filter(([n,x])=>x.vai&&act.includes(n)).sort((a,b)=>a[1].t-b[1].t).map(e=>e[0]);
@@ -722,16 +726,16 @@ function renderConv(){
    <p>${coords?'Coordenadas: '+esc(coords)+' · ':''}<a href="${esc(maps)}" target="_blank" rel="noopener">Abrir no mapa</a></p>
    <p>Tempo previsto: <a href="${esc(wx)}" target="_blank" rel="noopener">ver previsão para quinta às 21h</a></p></div>`;
   const P=presence(cdate),mp=myPlayer(),mine=mp&&P.map[mp];
-  const closed=convClosed(cdate);
-  const closeTxt=closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
+  const closed=convClosed(cdate),notOpen=convNotOpen(cdate),lock=(closed||notOpen)&&!isAdm();
+  const closeTxt=notOpen?(isAdm()?'Inscrições abrem '+fdt(iso(new Date(convOpenAt(cdate))))+' (segunda) às 08:30. Como administrador já podes marcar presenças.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
   $('mine').innerHTML=!me.id?'<p style="margin:0">Inicia sessão para responder à convocatória.</p>':!mp?'<p style="margin:0">A tua conta ainda não está associada a um jogador. Pede acesso no topo da Tabela.</p>':
    `<div class="row" style="justify-content:space-between"><div><b>${esc(mp)}</b>, vais jogar?<br><span class="tag" style="margin:0">${mine?mine.vai?(P.go.includes(mp)?'Estás confirmado.':'Estás em lista de espera (suplente).'):'Disseste que não vais.':'Ainda não respondeste.'}<br>${closeTxt}</span></div>
-   <div class="row"><button class="btn ${mine&&mine.vai?'ok':''}" data-v="1" ${closed&&!isAdm()?'disabled':''}>Vou</button><button class="btn ${mine&&!mine.vai?'pri':''}" data-v="0" ${closed&&!isAdm()?'disabled':''}>Não vou</button></div></div>`;
+   <div class="row"><button class="btn ${mine&&mine.vai?'ok':''}" data-v="1" ${lock?'disabled':''}>Vou</button><button class="btn ${mine&&!mine.vai?'pri':''}" data-v="0" ${lock?'disabled':''}>Não vou</button></div></div>`;
   $('ccount').textContent=(P.go.length+P.subs.length)+'/'+MAXJ;
   const ctl=n=>isAdm()?`<span class="mini"><button class="btn" data-m="${esc(n)}" data-x="1" aria-label="${esc(n)} vai">✓</button><button class="btn" data-m="${esc(n)}" data-x="0" aria-label="${esc(n)} não vai">✕</button></span>`:'';
   const pendS=Object.entries(propostas).filter(([,p])=>p.tipo==='substituto'&&p.alvo===cdate&&p.estado==='pendente');
   const g0=games.some(x=>x.data===cdate),free=MAXJ-P.go.length-P.subs.length-pendS.length;
-  const canSub=!g0&&!!myPlayer()&&free>0&&(P.none.length===0||P.go.length+P.subs.length+P.none.length<MAXJ);
+  const canSub=!g0&&!!myPlayer()&&free>0&&!(notOpen&&!isAdm())&&(P.none.length===0||P.go.length+P.subs.length+P.none.length<MAXJ);
   keepSel($('cyes'),()=>$('cyes').innerHTML=(P.go.map((n,i)=>`<li><span><span class="dot y"></span>${i+1}. ${esc(n)}</span>${ctl(n)}</li>`).join('')
     +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. Substituto · <b>${esc(s.nome)}</b> <span class="tag">trazido por ${esc(s.por||'?')}</span></span>${isAdm()?`<span class="mini"><select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(subSk(cdate,s))}</select><button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
     +pendS.map(([id,p])=>`<li><span><span class="dot"></span>Substituto · ${esc(p.doc.nome)} <span class="tag">pendente · proposto por ${esc(p.autor||'?')}</span></span>${isAdm()?`<span class="mini"><select data-sk2="${id}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(null)}</select><button class="btn ok" data-sa="${id}">Aprovar</button><button class="btn no" data-sr="${id}">Rejeitar</button></span>`:''}</li>`).join(''))||'<li class="tag">Ainda ninguém confirmou.</li>');
@@ -760,7 +764,8 @@ $('cprev').addEventListener('click',()=>{cdate=addD(cdate||nextThu(today()),-7);
 $('cnext').addEventListener('click',()=>{cdate=addD(cdate||nextThu(today()),7);renderConv()});
 $('mine').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b||!me.id)return;
-  if(convClosed(cdate)){if(!isAdm()){renderConv();return note('A convocatória já fechou (quarta às 23:59).')}
+  if(convNotOpen(cdate)&&!isAdm()){renderConv();return note('As inscrições para este jogo abrem na segunda-feira às 08:30.')}
+  if(convClosed(cdate)||convNotOpen(cdate)){if(!isAdm()){renderConv();return note('A convocatória já fechou (quarta às 23:59).')}
     const c=conv[cdate]||{},man={...(c.manual||{})};man[myPlayer()]={vai:b.dataset.v==='1',t:Date.now(),adm:true};return save('conv/'+cdate,{...c,manual:man})}
   const cur=votos[me.id]||{},v={...(cur.v||{})};v[cdate]={vai:b.dataset.v==='1',t:Date.now()};
   b.disabled=true;await save('votos/'+me.id,{jogador:myPlayer(),v});b.disabled=false;

@@ -1,7 +1,7 @@
 // Futeboladas FC — envio de notificações no telemóvel (Supabase Edge Function "notificar")
 //
-// É chamada de hora a hora pelo agendamento (pg_cron) e só envia às 18h e às 21h de Lisboa:
-//   Domingo 21h  · todos              · convocatória aberta para quinta
+// É chamada a cada 30 minutos pelo agendamento (pg_cron) e só envia nestas horas de Lisboa:
+//   Segunda 08:30· todos              · inscrições abertas para quinta
 //   Terça 21h    · quem não respondeu · lembrete
 //   Quarta 21h   · quem não respondeu · último aviso (fecha às 23:59)
 //   Quinta 18h   · convocados         · equipas publicadas / capitães sorteados
@@ -22,7 +22,7 @@ export function lisboa(now: Date) {
     timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short", hour12: false,
   }).formatToParts(now).map((x) => [x.type, x.value]));
   const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(p.weekday);
-  return { data: `${p.year}-${p.month}-${p.day}`, hora: +p.hour % 24, dia: +p.day, dow: wd };
+  return { data: `${p.year}-${p.month}-${p.day}`, hora: +p.hour % 24, min: +p.minute, dia: +p.day, dow: wd };
 }
 // instante (ms) de uma hora local de Lisboa
 export function lisEpoch(data: string, h: number, mi: number, s: number) {
@@ -53,10 +53,10 @@ function charged(r: Any, k: string) { if (r.desde && k < r.desde) return false; 
 
 // deno-lint-ignore no-explicit-any
 export function presenca(D: Any, data: string) {
-  const lim = lisEpoch(addDias(data, -1), 23, 59, 59);
+  const lim = lisEpoch(addDias(data, -1), 23, 59, 59), opn = lisEpoch(addDias(data, -3), 8, 30, 0);
   const man = ((D.conv[data] || {}).manual) || {};
   const map: Record<string, Any> = {};
-  for (const v of Object.values(D.votos) as Any[]) { const x = v.v && v.v[data]; if (x && v.jogador && !(x.t > lim) && (!map[v.jogador] || x.t > map[v.jogador].t)) map[v.jogador] = x; }
+  for (const v of Object.values(D.votos) as Any[]) { const x = v.v && v.v[data]; if (x && v.jogador && !(x.t > lim) && !(x.t < opn) && (!map[v.jogador] || x.t > map[v.jogador].t)) map[v.jogador] = x; }
   for (const [n, x] of Object.entries(man) as Any) if (!map[n] || x.t > map[n].t) map[n] = x;
   const act = D.roster.filter((r: Any) => r.ativo !== false).map((r: Any) => r.nome);
   const yes = Object.entries(map).filter(([n, x]: Any) => x.vai && act.includes(n)).sort((a: Any, b: Any) => a[1].t - b[1].t).map((e) => e[0]);
@@ -67,7 +67,8 @@ export function presenca(D: Any, data: string) {
 // deno-lint-ignore no-explicit-any
 export function planear(now: Date, D: Any) {
   const L = lisboa(now), out: Any[] = [];
-  if (L.hora !== 21 && L.hora !== 18) return out;
+  const abre = L.dow === 1 && L.hora === 8 && L.min >= 30;
+  if (!abre && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
   // contas → jogador e perfis
   const contas = Object.entries(D.acessos as Record<string, Any>).map(([uid, a]) => ({
     uid, jogador: a.jogador || "", papeis: Array.isArray(a.papeis) ? a.papeis : a.papel ? [a.papel] : [],
@@ -80,9 +81,9 @@ export function planear(now: Date, D: Any) {
   const quinta = addDias(L.data, (4 - L.dow + 7) % 7);
   const houveJogo = (data: string) => D.jogos[`g${data.replace(/-/g, "")}`];
 
+  // segunda 08:30: abrem as inscrições
+  if (abre && !houveJogo(quinta)) add("conv-abre", todos, "Inscrições abertas ⚽", `Vais jogar na quinta, ${fdt(quinta)} às 21h? Responde até quarta às 23:59.`, "/#convocatoria");
   if (L.hora === 21) {
-    // convocatória
-    if (L.dow === 0 && !houveJogo(quinta)) add("conv-abre", todos, "Convocatória aberta ⚽", `Vais jogar na quinta, ${fdt(quinta)} às 21h? Responde até quarta às 23:59.`, "/#convocatoria");
     if ((L.dow === 2 || L.dow === 3) && !houveJogo(quinta)) {
       const P = presenca(D, quinta);
       add(L.dow === 2 ? "conv-lembrete" : "conv-ultimo", deJog(P.none),
