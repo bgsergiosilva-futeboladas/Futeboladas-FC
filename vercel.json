@@ -1,6 +1,7 @@
 {
   "cleanUrls": true,
   "headers": [
-    { "source": "/(app|engine|config).js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/(index.html|supa.js|config.js|manifest.webmanifest)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
   ]
 }
