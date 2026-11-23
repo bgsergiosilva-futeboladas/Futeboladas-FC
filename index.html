@@ -267,6 +267,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .qlist details{flex:1;min-width:0}.qlist summary{list-style:none;cursor:pointer}.qlist summary::-webkit-details-marker{display:none}
 .qlist .qn{display:flex;align-items:center;gap:10px;min-height:40px}.qlist .q.isento .qn{opacity:.55}
 .qlist .qx{padding:6px 0 2px 36px}
+.qconf{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px;max-width:60%;margin-top:4px}
 .tg{flex:none;margin-top:6px;width:52px;height:30px;border-radius:999px;border:0;background:light-dark(#ddd3cc,#4a3a3a);position:relative;cursor:pointer;transition:background .2s}
 .tg i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
 .tg.on{background:#18864a}.tg.on i{transform:translateX(22px)}
@@ -503,7 +504,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
-const BUILD='20261123163314';
+const BUILD='20261123165513';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -1017,7 +1018,7 @@ function renderPay(){
   keepOpen($('pgrid'),()=>$('pgrid').innerHTML=rq.map(r=>{const st=cellState(r,K),p=((pags[K]||{}).pagos||{})[r.nome];
     return `<li class="q ${st}"><details data-acc="${esc(r.nome)}"><summary><span class="qn">${avatar(r.nome)}<span><b>${esc(r.nome)}</b><br><span class="tag" style="margin:0">${st==='pago'?'Pago'+(p&&p.data?' a '+fdt(p.data):''):st==='isento'?'Dispensado este mês':K>cur?'Por pagar':'Em falta'}</span></span></span></summary>
       <div class="qx">${st==='isento'?`<button type="button" class="btn" data-qi="${esc(r.nome)}">Voltar a cobrar</button>`:st==='falta'?`<button type="button" class="btn" data-qi="${esc(r.nome)}">Dispensar em ${MES[+K.slice(5)-1].toLowerCase()}</button>`:'<span class="tag">Para anular, desliga o interruptor.</span>'}</div></details>
-      ${st==='isento'?'<span class="tag" style="margin:0">—</span>':`<button type="button" class="tg${st==='pago'?' on':''}" role="switch" aria-checked="${st==='pago'}" aria-label="${esc(r.nome)} pagou" data-q="${esc(r.nome)}"><i></i></button>`}</li>`}).join('')||'<li class="tag">Ninguém a pagar neste mês.</li>');
+      ${st==='pago'&&pgUndo===r.nome?`<span class="qconf"><span class="tag" style="margin:0">Anular este pagamento?</span><button type="button" class="btn no" data-qa="${esc(r.nome)}">Anular</button><button type="button" class="btn" data-qk="1">Manter</button></span>`:st==='isento'?'<span class="tag" style="margin:0">—</span>':`<button type="button" class="tg${st==='pago'?' on':''}" role="switch" aria-checked="${st==='pago'}" aria-label="${esc(r.nome)} pagou" data-q="${esc(r.nome)}"><i></i></button>`}</li>`}).join('')||'<li class="tag">Ninguém a pagar neste mês.</li>');
   /* caixa */
   $('pcash').innerHTML=`<thead><tr><th class="l">Mês</th><th>Quotas</th><th>Outras entradas</th><th>Campo</th><th>Despesas</th><th>Diferença</th></tr></thead><tbody>`+
     [...L.cash].reverse().map(c=>`<tr><td class="l">${mshort(c.k)}</td><td>${euro(c.rec)}</td><td>${c.ent?euro(c.ent):'–'}</td><td>${c.campo?'−'+euro(c.campo):'–'}</td><td>${c.out?'−'+euro(c.out):'–'}</td><td class="${c.dif<0?'owe':'paid'}">${euro(c.dif)}</td></tr>`).join('')+
@@ -1053,13 +1054,16 @@ $('mbsave').addEventListener('click',async()=>{const n=$('mbn').value.trim(),t=$
   if(!n&&t)return $('mbmsg').textContent='Escreve o número de telemóvel do MB WAY.';
   if(n&&!/^\+?[\d\s]{9,15}$/.test(n))return $('mbmsg').textContent='Número inválido: escreve os 9 algarismos, por exemplo 912 345 678.';
   if(await save('config/caixa',{...caixa,mbway:n,mbwayNome:t}))$('mbmsg').textContent=n?'Guardado: os jogadores já podem pagar por MB WAY para '+n+'.':'MB WAY desligado (sem número).'});
-var pgFrom=null;
-$('pgm').addEventListener('change',e=>{pgFrom=e.target.value;renderPay()});
+var pgFrom=null,pgUndo=null;
+$('pgm').addEventListener('change',e=>{pgFrom=e.target.value;pgUndo=null;renderPay()});
 $('pgrid').addEventListener('click',async e=>{
-  const b=e.target.closest('button[data-q],button[data-qi]');if(!b||!isTes())return;
-  const n=b.dataset.q||b.dataset.qi,k=pgFrom,c=pags[k]||{},p={...(c.pagos||{})};let isen=[...(c.isentos||[])];
+  const b=e.target.closest('button[data-q],button[data-qi],button[data-qa],button[data-qk]');if(!b||!isTes())return;
+  if(b.dataset.qk){pgUndo=null;return renderPay()}
+  const n=b.dataset.q||b.dataset.qi||b.dataset.qa,k=pgFrom,c=pags[k]||{},p={...(c.pagos||{})};let isen=[...(c.isentos||[])];
   const r=roster.find(x=>x.nome===n),st=cellState(r,k);
-  if(b.dataset.q){if(st==='pago')delete p[n];else p[n]={valor:feeOf(k),data:today()};b.classList.toggle('on')}
+  if(b.dataset.q&&st==='pago'){pgUndo=n;return renderPay()}   /* pede confirmação antes de anular */
+  if(b.dataset.qa){pgUndo=null;delete p[n]}
+  else if(b.dataset.q){p[n]={valor:feeOf(k),data:today()};b.classList.add('on')}
   else{if(st==='isento')isen=isen.filter(x=>x!==n);else{isen.push(n);delete p[n]}}
   b.disabled=true;await save('pagamentos/'+k,{...c,pagos:p,isentos:isen});b.disabled=false;
 });
