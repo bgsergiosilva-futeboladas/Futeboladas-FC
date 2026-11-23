@@ -369,8 +369,11 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 </div>
 <div class="two" style="margin-top:14px">
 <div class="card"><h2>Registar movimento</h2>
-<div class="two" style="gap:0 12px"><div><label for="xt">Tipo</label><select id="xt"><option value="campo">Pagamento do campo</option><option value="jantar">Jantar</option><option value="bola">Bola / material</option><option value="outra">Outra despesa</option><option value="entrada">Outra entrada de dinheiro</option></select></div>
+<div class="two" style="gap:0 12px"><div><label for="xt">Categoria</label><select id="xt"></select></div>
 <div><label for="xd">Data</label><input type="date" id="xd"></div><div><label for="xv">Valor (€)</label><input type="number" id="xv" min="0" step="0.01" inputmode="decimal"></div><div><label for="xn">Descrição (opcional)</label><input type="text" id="xn"></div></div>
+<div class="hide" id="xnew" style="margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:10px"><label for="xcn">Nome da nova categoria</label><input type="text" id="xcn" maxlength="40" placeholder="Ex.: Prémio do torneio">
+<div class="row" style="margin-top:8px;gap:14px"><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="radio" name="xcd" value="s" checked> Saída (despesa)</label><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="radio" name="xcd" value="e"> Entrada de dinheiro</label></div>
+<div class="row" style="margin-top:8px"><button class="btn pri" id="xcok" type="button">Criar categoria</button><button class="btn" id="xcno" type="button">Cancelar</button></div></div>
 <div class="row" style="margin-top:10px"><button class="btn pri" id="xadd" type="button">Registar</button><span class="tag" id="xmsg"></span></div></div>
 <div class="card"><h2>Movimentos registados</h2><ul class="plist" id="xlist"></ul></div>
 </div>
@@ -504,7 +507,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
-const BUILD='20261123165513';
+const BUILD='20261123205104';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -966,6 +969,14 @@ const PSTART='2025-12';
 function monthsList(){const out=[];let k=PSTART;const now=mkey(today());while(k<=now){out.push(k);k=mkAdd(k,1)}return out}
 const feeOf=k=>pags[k]&&pags[k].valor!=null?pags[k].valor:feeDefault(k);
 const XT={campo:'Pagamento do campo',jantar:'Jantar',bola:'Bola / material',outra:'Outra despesa',entrada:'Outra entrada'};
+const xcats=()=>caixa.cats||[],xLabel=t=>XT[t]||(xcats().find(c=>c.id===t)||{}).nome||'Despesa';
+const isEnt=t=>t==='entrada'||!!(xcats().find(c=>c.id===t)||{}).ent;
+function renderXt(){const sel=$('xt');if(document.activeElement===sel)return;const v=sel.value||'campo';
+  const fixS=['campo','jantar','bola','outra'],cs=xcats();
+  sel.innerHTML='<optgroup label="Saídas">'+fixS.map(k=>`<option value="${k}">${XT[k]}</option>`).join('')+cs.filter(c=>!c.ent).map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('')+'</optgroup>'+
+    '<optgroup label="Entradas"><option value="entrada">Outra entrada de dinheiro</option>'+cs.filter(c=>c.ent).map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('')+'</optgroup>'+
+    '<option value="__nova">＋ Nova categoria…</option>';
+  sel.value=[...sel.options].some(o=>o.value===v)&&v!=='__nova'?v:'campo'}
 function cellState(r,k){const d=pags[k]||{};if(!charged(r,k))return'fora';if((d.isentos||[]).includes(r.nome))return'isento';return d.pagos&&d.pagos[r.nome]?'pago':'falta'}
 function ledger(){
   const ms=monthsList(),deb={},cash=[];let owe=0,saldo=+(caixa.saldoInicial||0);
@@ -974,7 +985,7 @@ function ledger(){
       if(s==='pago')rec+=d.pagos[r.nome].valor??feeOf(k);
       else if(s==='falta'){owe+=feeOf(k);(deb[r.nome]=deb[r.nome]||[]).push(k)}}
     const xs=d.mov||[],sum=f=>xs.filter(f).reduce((s,x)=>s+x.valor,0);
-    const ent=sum(x=>x.tipo==='entrada'),campoV=sum(x=>x.tipo==='campo'),outV=sum(x=>x.tipo!=='campo'&&x.tipo!=='entrada');
+    const ent=sum(x=>isEnt(x.tipo)),campoV=sum(x=>x.tipo==='campo'),outV=sum(x=>x.tipo!=='campo'&&!isEnt(x.tipo));
     const dif=rec+ent-campoV-outV;saldo+=dif;cash.push({k,rec,ent,campo:campoV,out:outV,dif});}
   return {ms,deb,owe,cash,saldo:Math.round(saldo*100)/100};
 }
@@ -1029,8 +1040,8 @@ function renderPay(){
   $('pdebt').innerHTML=dl.map(([n,ks])=>`<li><span>${esc(n)}<br><span class="tag" style="margin:0">${ks.map(mshort).join(', ')}</span></span><span class="owe">${euro(ks.reduce((s,k)=>s+feeOf(k),0))}</span></li>`).join('')||'<li class="paid">Ninguém deve nada.</li>';
   /* saídas */
   const xs=L.ms.flatMap(k=>((pags[k]||{}).mov||[]).map((x,i)=>({...x,k,i}))).sort((a,b)=>a.data<b.data?1:-1);
-  $('xlist').innerHTML=xs.map(x=>`<li><span>${esc(XT[x.tipo]||'Despesa')}${x.desc?' · '+esc(x.desc):''}<br><span class="tag" style="margin:0">${fdt(x.data)}</span></span><span class="mini"><span class="${x.tipo==='entrada'?'paid':'owe'}">${x.tipo==='entrada'?'+':'−'}${euro(x.valor)}</span><button class="btn no" data-xk="${x.k}" data-xi="${x.i}" aria-label="Apagar">✕</button></span></li>`).join('')||'<li class="tag">Sem saídas registadas.</li>';
-  if(!$('xd').value)$('xd').value=today();
+  $('xlist').innerHTML=xs.map(x=>`<li><span>${esc(xLabel(x.tipo))}${x.desc?' · '+esc(x.desc):''}<br><span class="tag" style="margin:0">${fdt(x.data)}</span></span><span class="mini"><span class="${isEnt(x.tipo)?'paid':'owe'}">${isEnt(x.tipo)?'+':'−'}${euro(x.valor)}</span><button class="btn no" data-xk="${x.k}" data-xi="${x.i}" aria-label="Apagar">✕</button></span></li>`).join('')||'<li class="tag">Sem movimentos registados.</li>';
+  renderXt();if(!$('xd').value)$('xd').value=today();
 }
 $('psisave').addEventListener('click',async()=>{const v=Math.round(+$('psi').value*100)/100;if(isNaN(v))return;await save('config/caixa',{...caixa,saldoInicial:v})});
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);note('Copiado: '+t)}catch(x){prompt('Copia:',t)}}
@@ -1067,8 +1078,21 @@ $('pgrid').addEventListener('click',async e=>{
   else{if(st==='isento')isen=isen.filter(x=>x!==n);else{isen.push(n);delete p[n]}}
   b.disabled=true;await save('pagamentos/'+k,{...c,pagos:p,isentos:isen});b.disabled=false;
 });
+$('xt').addEventListener('change',e=>{const n=e.target.value==='__nova';$('xnew').classList.toggle('hide',!n);if(n){$('xcn').value='';$('xmsg').textContent='';$('xcn').focus()}});
+$('xcno').addEventListener('click',()=>{$('xnew').classList.add('hide');$('xt').value='campo'});
+$('xcok').addEventListener('click',async()=>{
+  const nome=$('xcn').value.trim().replace(/\s+/g,' '),ent=document.querySelector('input[name="xcd"]:checked').value==='e';
+  if(!nome)return $('xcn').focus();
+  const all=[...Object.values(XT),'Outra entrada de dinheiro',...xcats().map(c=>c.nome)];
+  const ex=xcats().find(c=>c.nome.toLowerCase()===nome.toLowerCase());
+  if(ex||all.some(n=>n.toLowerCase()===nome.toLowerCase())){$('xnew').classList.add('hide');$('xt').blur();renderXt();if(ex)$('xt').value=ex.id;return $('xmsg').textContent='Essa categoria já existe.'}
+  const id='c'+Date.now().toString(36);$('xcok').disabled=true;
+  const ok=await save('config/caixa',{...caixa,cats:[...xcats(),{id,nome,ent}]});$('xcok').disabled=false;
+  if(ok){caixa={...caixa,cats:[...xcats(),{id,nome,ent}]};$('xnew').classList.add('hide');$('xt').blur();renderXt();$('xt').value=id;$('xmsg').textContent='Categoria "'+nome+'" criada.'}
+});
 $('xadd').addEventListener('click',async()=>{
   const data=$('xd').value,valor=Math.round(+$('xv').value*100)/100,tipo=$('xt').value;
+  if(tipo==='__nova')return $('xmsg').textContent='Cria primeiro a categoria.';
   if(!data||!(valor>0))return $('xmsg').textContent='Indica a data e o valor.';
   const k=mkey(data),c=pags[k]||{};
   if(await save('pagamentos/'+k,{...c,mov:[...(c.mov||[]),{tipo,desc:$('xn').value.trim(),data,valor}]})){$('xv').value='';$('xn').value='';$('xmsg').textContent='Registado em '+mname(k)+'.'}
