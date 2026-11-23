@@ -2,6 +2,6 @@
   "cleanUrls": true,
   "headers": [
     { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
-    { "source": "/(index.html|supa.js|config.js|sw.js|manifest.webmanifest)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    { "source": "/(index.html|supa.js|config.js|sw.js|version.json|manifest.webmanifest)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
   ]
 }

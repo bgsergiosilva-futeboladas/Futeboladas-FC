@@ -493,6 +493,12 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
+const BUILD='20261123161355';
+/* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
+async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
+  if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
+setInterval(checkVersion,5*60*1000);setTimeout(checkVersion,3000);
 const SUB='Substituto',OUT='__outro__',MAXJ=14;
 const ICONS={classificacao:'M4 20h16M6 16V10M12 16V4M18 16v-8',jogos:'M4 5h16v14H4zM4 10h16M9 5v14',convocatoria:'M8 4h8v3H8zM6 6h12v14H6zM9 12l2 2 4-4',equipas:'M8 8a2.5 2.5 0 1 0 0-.1M16 8a2.5 2.5 0 1 0 0-.1M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5',pagamentos:'M3 7h18v10H3zM3 11h18M7 15h3',jogadores:'M12 8a3 3 0 1 0 0-.1M5 20c0-4 3-6 7-6s7 2 7 6'};
 const TABS=[['classificacao','Tabela','all'],['jogos','Jogos','all'],['convocatoria','Convocatória','all'],['equipas','Equipas','apo'],['pagamentos','Quotas','all'],['jogadores','Jogadores','all']];
