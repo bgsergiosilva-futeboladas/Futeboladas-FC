@@ -1172,19 +1172,24 @@ $('bcopy').addEventListener('click',async()=>{$('bk').value=backupJSON();try{awa
 $('brest').addEventListener('click',async e=>{
   const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Substituir tudo?';return}
   delete b.dataset.sure;b.textContent='Restaurar';
-  try{const o=JSON.parse($('bk').value);if(!Array.isArray(o.plantel)||!Array.isArray(o.jogos))throw 0;
-    const sk={jog:{...((o.skills||{}).jog||{})},subs:{...((o.skills||{}).subs||{})}};
-    for(const r of o.plantel)if(okSk(r.skill)&&!okSk(sk.jog[r.nome]))sk.jog[r.nome]=r.skill;
-    for(const [d,c] of Object.entries(o.conv||{}))for(const x of c.subs||[])if(okSk(x.skill)&&!okSk(sk.subs[d+'|'+x.nome]))sk.subs[d+'|'+x.nome]=x.skill;
-    o.conv=Object.fromEntries(Object.entries(o.conv||{}).map(([d,c])=>[d,c.subs?{...c,subs:c.subs.map(({skill,...x})=>x)}:c]));
-    await db.doc('config/skills').set(sk);
-    await db.doc('config/plantel').set({roster:o.plantel.map(({skill,...r})=>r)});
-    for(const g of o.jogos)await db.doc('jogos/g'+g.data.replace(/-/g,'')).set(g);
-    for(const [k,v] of Object.entries(o.pagamentos||{}))await db.doc('pagamentos/'+k).set(v);
+  try{const o=JSON.parse($('bk').value);if(!o||typeof o!=='object')throw 0;
+    /* importação parcial: só grava as partes que vêm no texto */
+    const feito=[];
+    if(Array.isArray(o.plantel)){
+      const sk={jog:{...(skills.jog||{}),...((o.skills||{}).jog||{})},subs:{...(skills.subs||{}),...((o.skills||{}).subs||{})}};
+      for(const r of o.plantel)if(okSk(r.skill))sk.jog[r.nome]=r.skill;
+      await db.doc('config/skills').set(sk);
+      await db.doc('config/plantel').set({roster:o.plantel.map(({skill,...r})=>r)});feito.push(o.plantel.length+' jogadores')}
+    if(o.conv){const sk={...skills,subs:{...(skills.subs||{})}};let ch=false;
+      for(const [d,c] of Object.entries(o.conv))for(const x of c.subs||[])if(okSk(x.skill)){sk.subs[d+'|'+x.nome]=x.skill;ch=true}
+      if(ch)await db.doc('config/skills').set(sk);
+      o.conv=Object.fromEntries(Object.entries(o.conv).map(([d,c])=>[d,c.subs?{...c,subs:c.subs.map(({skill,...x})=>x)}:c]))}
+    if(Array.isArray(o.jogos)){for(const g of o.jogos)await db.doc('jogos/g'+g.data.replace(/-/g,'')).set(g);if(o.jogos.length)feito.push(o.jogos.length+' jogos')}
+    if(o.pagamentos){const ks=Object.keys(o.pagamentos);for(const k of ks)await db.doc('pagamentos/'+k).set(o.pagamentos[k]);feito.push(ks.length+' meses de quotas')}
     if(o.campo)await db.doc('config/campo').set(o.campo);
-    if(o.caixa)await db.doc('config/caixa').set(o.caixa);
+    if(o.caixa){await db.doc('config/caixa').set({...caixa,...o.caixa});feito.push('caixa')}
     for(const c of ['conv','votos','mvpvotos','fotos'])for(const [k,v] of Object.entries(o[c]||{}))await db.doc(c+'/'+k).set(v);
-    $('berr').textContent='Restaurado: '+o.jogos.length+' jogos.';
+    $('berr').textContent='Restaurado: '+(feito.join(', ')||'nada para gravar')+'.';
   }catch(x){$('berr').textContent='Texto inválido ou falha ao gravar.'}
 });
 
