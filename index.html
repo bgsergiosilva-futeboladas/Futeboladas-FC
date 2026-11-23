@@ -220,6 +220,11 @@ body.au-on{overflow:hidden}
 @keyframes au-roll{0%{transform:translateX(-60px) rotate(0)}100%{transform:translateX(110vw) rotate(720deg)}}
 @keyframes au-fade{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#auth .ln{animation:none;stroke-dashoffset:0}#auth *{animation:none!important}}
+.acc{display:block!important;padding:0!important}.acc details{width:100%}.acc summary{display:flex;align-items:center;gap:10px;padding:10px 2px;cursor:pointer;list-style:none;min-height:44px}.acc summary::-webkit-details-marker{display:none}
+.acc summary::after{content:'›';margin-left:6px;color:var(--mute);font-size:20px;transition:transform .2s}.acc details[open] summary::after{transform:rotate(90deg)}
+.acc-n{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}.acc-n .tag{white-space:nowrap}
+.acc-r{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:46%}.acc-r i{font-style:normal;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.acc-b{display:flex;flex-direction:column;gap:6px;padding:4px 2px 14px}.acc-b label{font-size:12px;color:var(--mute);margin:4px 0 0}.acc-b select{max-width:16em}
 a.btn{text-decoration:none;display:inline-flex;align-items:center}
 </style>
 </head>
@@ -467,7 +472,14 @@ const note=t=>$('note').textContent=t||'';
 const inRoster=n=>roster.some(r=>r.nome===n);
 const isAdm=()=>roles.includes('admin'),isTes=()=>isAdm()||roles.includes('tesoureiro'),isApo=()=>isAdm()||roles.includes('apontador');
 const roleLabel=()=>roles.length?roles.map(r=>PAPEL[r]).join(' + '):'Sem acesso aprovado';
-const SKDEF=3;const skillOf=n=>{const s=(roster.find(r=>r.nome===n)||{}).skill;return s>=0&&s<=5?s:SKDEF};
+const SKDEF=3;
+/* skills: documento à parte (config/skills) que só o administrador e o apontador conseguem ler */
+let skills={jog:{},subs:{}};
+const okSk=v=>typeof v==='number'&&v>=0&&v<=5;
+const skillOf=n=>{const s=(skills.jog||{})[n];if(okSk(s))return s;const r=(roster.find(r=>r.nome===n)||{}).skill;return okSk(r)?r:SKDEF};
+const subSk=(d,x)=>{const v=(skills.subs||{})[d+'|'+x.nome];return okSk(v)?v:okSk(x.skill)?x.skill:null};
+const saveJogSk=(n,v)=>save('config/skills',{...skills,jog:{...(skills.jog||{}),[n]:v}});
+const saveSubSk=(d,n,v)=>save('config/skills',{...skills,subs:{...(skills.subs||{}),[d+'|'+n]:v}});
 const myPlayer=()=>me.id&&acessos[me.id]?acessos[me.id].jogador:null;
 function nextThu(from){const o=dobj(from);const d=(4-o.getDay()+7)%7;o.setDate(o.getDate()+d);return iso(o)}
 const euro=v=>(Math.round(v*100)/100).toLocaleString('pt-PT')+' €';
@@ -700,7 +712,7 @@ function renderConv(){
   const g0=games.some(x=>x.data===cdate),free=MAXJ-P.go.length-P.subs.length-pendS.length;
   const canSub=!g0&&!!myPlayer()&&free>0&&(P.none.length===0||P.go.length+P.subs.length+P.none.length<MAXJ);
   keepSel($('cyes'),()=>$('cyes').innerHTML=(P.go.map((n,i)=>`<li><span><span class="dot y"></span>${i+1}. ${esc(n)}</span>${ctl(n)}</li>`).join('')
-    +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. Substituto · <b>${esc(s.nome)}</b> <span class="tag">trazido por ${esc(s.por||'?')}</span></span>${isAdm()?`<span class="mini"><select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(s.skill)}</select><button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
+    +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. Substituto · <b>${esc(s.nome)}</b> <span class="tag">trazido por ${esc(s.por||'?')}</span></span>${isAdm()?`<span class="mini"><select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(subSk(cdate,s))}</select><button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
     +pendS.map(([id,p])=>`<li><span><span class="dot"></span>Substituto · ${esc(p.doc.nome)} <span class="tag">pendente · proposto por ${esc(p.autor||'?')}</span></span>${isAdm()?`<span class="mini"><select data-sk2="${id}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(null)}</select><button class="btn ok" data-sa="${id}">Aprovar</button><button class="btn no" data-sr="${id}">Rejeitar</button></span>`:''}</li>`).join(''))||'<li class="tag">Ainda ninguém confirmou.</li>');
   $('csub').classList.toggle('hide',!canSub);
   if(isAdm()&&!$('csubsk').options.length)$('csubsk').innerHTML=subSkOpts(null);
@@ -714,9 +726,9 @@ function renderConv(){
   else if(t)$('cteams').innerHTML=`<h2 style="margin-top:0">Equipas</h2><div class="pitch">${[['Equipa 1',t.a,'a'],['Equipa 2',t.b,'b']].map(([l,x,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes?t.coletes===k?'De coletes':'Sem coletes':''}</span></h3><ol style="margin:0;padding-left:20px">${x.map((n,i)=>`<li>${esc(n)}${i===0?'<span class="cap">C</span>':''}</li>`).join('')}</ol></div>`).join('')}</div>`;
 }
 $('csubb').addEventListener('click',async()=>{const n=$('csubn').value.trim().replace(/\s+/g,' ');if(!n)return note('Escreve o nome do substituto.');
-  if(isAdm()){const sk=$('csubsk').value;if(sk==='')return note('Atribui a skill (0 a 5) ao substituto.');const c=conv[cdate]||{};if(await save('conv/'+cdate,{...c,subs:[...(c.subs||[]),{nome:n,por:myPlayer()||'Administrador',skill:+sk}]})){$('csubn').value='';$('csubsk').value=''}return}
+  if(isAdm()){const sk=$('csubsk').value;if(sk==='')return note('Atribui a skill (0 a 5) ao substituto.');const c=conv[cdate]||{};if(await save('conv/'+cdate,{...c,subs:[...(c.subs||[]),{nome:n,por:myPlayer()||'Administrador'}]})&&await saveSubSk(cdate,n,+sk)){$('csubn').value='';$('csubsk').value=''}return}
   if(await propor({tipo:'substituto',alvo:cdate,doc:{nome:n}})){$('csubn').value='';note('Substituto enviado para aprovação do administrador.')}});
-$('cyes').addEventListener('change',async e=>{const s=e.target;if(!s.dataset.ss||!isAdm()||s.value==='')return;const c=conv[cdate]||{},subs=[...(c.subs||[])];subs[+s.dataset.ss]={...subs[+s.dataset.ss],skill:+s.value};await save('conv/'+cdate,{...c,subs})});
+$('cyes').addEventListener('change',async e=>{const s=e.target;if(!s.dataset.ss||!isAdm()||s.value==='')return;const x=((conv[cdate]||{}).subs||[])[+s.dataset.ss];if(x)await saveSubSk(cdate,x.nome,+s.value)});
 $('cyes').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!isAdm())return;
   if(b.dataset.rs){const c=conv[cdate]||{},s=[...(c.subs||[])];s.splice(+b.dataset.rs,1);await save('conv/'+cdate,{...c,subs:s})}
   if(b.dataset.sa)await aprovarProp(b.dataset.sa,(document.querySelector(`[data-sk2="${b.dataset.sa}"]`)||{}).value);
@@ -751,13 +763,13 @@ function withCaptain(t){
 }
 const keepSel=(root,fn)=>{const v={};root.querySelectorAll('select[data-sk2]').forEach(s=>v[s.dataset.sk2]=s.value);fn();root.querySelectorAll('select[data-sk2]').forEach(s=>{if(v[s.dataset.sk2])s.value=v[s.dataset.sk2]})};
 const subSkOpts=sel=>'<option value="">skill</option>'+[0,1,2,3,4,5].map(v=>`<option${v===sel?' selected':''}>${v}</option>`).join('');
-const pkey=P=>P.go.join('|')+'#'+P.subs.map(s=>s.nome+':'+s.skill).join('|');
+const pkey=P=>P.go.join('|')+'#'+P.subs.map(s=>s.nome+':'+subSk(cdate,s)).join('|');
 function buildTeams(prev){
   if(!cdate)cdate=nextThu(today());tDate=cdate;
   const P=presence(cdate);
   const pl=P.go.map(n=>({nome:n,skill:skillOf(n)}));
   const avg0=pl.length?Math.round(pl.reduce((s,p)=>s+p.skill,0)/pl.length):SKDEF;
-  for(const s of P.subs)pl.push({nome:SUB,label:'Substituto · '+s.nome,skill:s.skill>=0&&s.skill<=5?s.skill:avg0});
+  for(const s of P.subs)pl.push({nome:SUB,label:'Substituto · '+s.nome,skill:okSk(subSk(cdate,s))?subSk(cdate,s):avg0});
   const avg=pl.length?Math.round(pl.reduce((s,p)=>s+p.skill,0)/pl.length):SKDEF;
   while(pl.length<MAXJ)pl.push({nome:SUB,skill:avg});
   tOpts=balance(pl,pairHistory(games,roster));
@@ -784,7 +796,7 @@ function renderTeams(keep){
     for(const t of [lastG.a,lastG.b])for(let i=0;i<t.length;i++)for(let j=i+1;j<t.length;j++)if(t[i]!==SUB&&t[j]!==SUB&&same(t[i],t[j]))kept++}
   const fill=MAXJ-P.go.length-P.subs.length;$('einfo').textContent=P.go.length+' confirmados'+(P.subs.length?' + '+P.subs.length+' substituto'+(P.subs.length>1?'s':''):'')+(fill>0?' · faltam '+fill+', preenchidos com Substituto':'')+(lastG?' · '+kept+' dupla'+(kept===1?'':'s')+' repetida'+(kept===1?'':'s')+' do último jogo':'');
   const sum=t=>t.reduce((s,p)=>s+p.skill,0);
-  $('epitch').innerHTML=[['a','Equipa 1'],['b','Equipa 2']].map(([k,l])=>`<div class="side"><h3>${l}<span class="num">skill ${sum(teams[k])}</span></h3>${teams[k].map((p,i)=>`<button type="button" class="pl ${sel&&sel.k===k&&sel.i===i?'sel':''}" data-k="${k}" data-i="${i}"><span>${esc(p.label||p.nome)}${i===0&&p.nome!==SUB?'<span class="cap">C</span>':''}</span><small>${p.skill}</small></button>`).join('')}</div>`).join('');
+  $('epitch').innerHTML=[['a','Equipa 1'],['b','Equipa 2']].map(([k,l])=>`<div class="side"><h3>${l}${isAdm()?`<span class="num">skill ${sum(teams[k])}</span>`:''}</h3>${teams[k].map((p,i)=>`<button type="button" class="pl ${sel&&sel.k===k&&sel.i===i?'sel':''}" data-k="${k}" data-i="${i}"><span>${esc(p.label||p.nome)}${i===0&&p.nome!==SUB?'<span class="cap">C</span>':''}</span><small>${p.skill}</small></button>`).join('')}</div>`).join('');
 }
 $('epitch').addEventListener('click',e=>{
   const b=e.target.closest('.pl');if(!b)return;const k=b.dataset.k,i=+b.dataset.i;
@@ -982,6 +994,7 @@ function renderConta(){const em=window.FB&&FB.email&&FB.email();$('conta').inner
 $('conta').addEventListener('click',e=>{if(e.target.id==='sair')window.FB&&FB.sair()});
 let convites={lista:[]};
 const inviteURL=c=>location.origin+location.pathname+'?convite='+c;
+const keepOpen=(root,fn)=>{const o=new Set([...root.querySelectorAll('details[open]')].map(d=>d.dataset.acc));fn();for(const d of root.querySelectorAll('details'))if(o.has(d.dataset.acc))d.open=true};
 function renderInvites(){if(!isAdm())return;const L=convites.lista||[];
   $('ilist').innerHTML=L.length?[...L].reverse().map(x=>`<li style="flex-wrap:wrap"><span style="flex:1 1 14em;word-break:break-all"><span class="${x.ativo?'paid':'tag'}" style="font-weight:600">${x.ativo?'Ativo':'Desativado'}</span> · criado a ${fdt(x.criado)}<br><span class="tag" style="margin:0">${esc(inviteURL(x.code))}</span></span><span class="mini" style="flex-wrap:wrap">${x.ativo?`<button class="btn" data-icp="${x.code}">Copiar</button><a class="btn" href="https://wa.me/?text=${encodeURIComponent('Convite para a app das Futeboladas FC: '+inviteURL(x.code))}" target="_blank" rel="noopener">WhatsApp</a><button class="btn no" data-ioff="${x.code}">Desativar</button>`:`<button class="btn" data-ion="${x.code}">Reativar</button>`}</span></li>`).join(''):'<li class="tag">Ainda não há links de convite.</li>'}
 $('inew').addEventListener('click',async()=>{const a=new Uint8Array(9);crypto.getRandomValues(a);const code=[...a].map(b=>'abcdefghjkmnpqrstuvwxyz23456789'[b%31]).join('');
@@ -1042,7 +1055,7 @@ function renderPending(){
 async function aprovarProp(id,sk){const p=propostas[id];if(!p)return;let ok;
   if(p.tipo==='substituto'&&(sk===undefined||sk===null||sk===''))return note('Atribui a skill (0 a 5) ao substituto antes de aprovar.');
   if(p.tipo==='jogo'){ok=await save('jogos/'+p.alvo,p.doc);if(ok&&p.de&&p.de!==p.alvo)try{await db.doc('jogos/'+p.de).delete()}catch(x){}}
-  else if(p.tipo==='substituto'){const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,subs:[...(c.subs||[]),{nome:p.doc.nome,por:p.autor||'',skill:+sk}]})}
+  else if(p.tipo==='substituto'){const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,subs:[...(c.subs||[]),{nome:p.doc.nome,por:p.autor||''}]})&&await saveSubSk(p.alvo,p.doc.nome,+sk)}
   else{const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,equipas:p.doc})}
   if(ok)try{await db.doc('propostas/'+id).delete()}catch(x){}}
 $('ppanel').addEventListener('click',async e=>{
@@ -1064,7 +1077,7 @@ function renderRoster(){
 }
 function backupJSON(){
   const fb={};for(const [id,f] of Object.entries(fotos)){if(!f.jogador||!f.img||!fotoOk(id,f))continue;const k='j-'+slug(f.jogador);if(!fb[k]||f.t>fb[k].t)fb[k]=f}
-  return JSON.stringify({v:2,criado:new Date().toISOString(),plantel:roster,jogos:[...games].sort((a,b)=>a.data<b.data?-1:1).map(({id,...g})=>g),pagamentos:pags,campo,caixa,conv,votos,mvpvotos,fotos:fb});
+  return JSON.stringify({v:2,criado:new Date().toISOString(),plantel:roster.map(r=>({...r,skill:skillOf(r.nome)})),skills,jogos:[...games].sort((a,b)=>a.data<b.data?-1:1).map(({id,...g})=>g),pagamentos:pags,campo,caixa,conv,votos,mvpvotos,fotos:fb});
 }
 async function renderAccess(){
   const ids=[...new Set([...Object.keys(acessos),...Object.keys(pedidos),me.id].filter(Boolean))];
@@ -1074,9 +1087,14 @@ async function renderAccess(){
   const roleChecks=(id,vals,attr)=>`<span class="checks" style="gap:4px">${Object.entries(PAPEL).map(([k,l])=>`<label style="min-height:36px;padding:0 10px"><input type="checkbox" ${attr}="${id}" value="${k}"${vals.includes(k)?' checked':''}${attr==='data-ar'&&id===me.id&&me.owner&&k==='admin'?' disabled':''}>${l}</label>`).join('')}</span>`;
   $('aped').innerHTML=Object.entries(pedidos).filter(([id])=>!acessos[id]).map(([id,p])=>`<li><span>${esc(nm(id))}<br><span class="tag" style="margin:0">diz ser ${esc(p.jogador||'?')}</span></span><span class="mini" style="flex-wrap:wrap">${roleChecks(id,['jogador'],'data-pr')}<button class="btn ok" data-ap="${id}">Aprovar</button></span></li>`).join('')||'<li class="tag">Sem pedidos.</li>';
   const list=Object.keys(acessos);if(me.id&&!list.includes(me.id))list.unshift(me.id);
-  $('alist').innerHTML=list.map(id=>{const a=acessos[id]||{},own=id===me.id&&me.owner;return `<li style="flex-wrap:wrap"><span>${esc(nm(id))}${id===me.id?' <span class="tag">(tu)</span>':''}</span><span class="mini" style="flex-wrap:wrap"><select data-aj="${id}" style="width:10em" aria-label="Jogador">${plOpts(a.jogador)}</select>${roleChecks(id,own?[...new Set(['admin',...rolesOf(a)])]:rolesOf(a),'data-ar')}${own?'':`<button class="btn no" data-ax="${id}">Remover</button>`}</span></li>`}).join('');
+  const R={admin:['Admin','#b3141b'],tesoureiro:['Tesoureiro','#a07d12'],apontador:['Apontador','#2a6f9e'],jogador:['Jogador','#6e6266']};
+  const nmo=id=>((acessos[id]||{}).jogador||'')||'Sem jogador';
+  list.sort((x,y)=>(y===me.id)-(x===me.id)||nmo(x).localeCompare(nmo(y),'pt'));
+  keepOpen($('alist'),()=>$('alist').innerHTML=list.map(id=>{const a=acessos[id]||{},own=id===me.id&&me.owner,rs=own?[...new Set(['admin',...rolesOf(a)])]:rolesOf(a);
+    return `<li class="acc"><details data-acc="${id}"><summary>${avatar(a.jogador||'?')}<span class="acc-n"><b>${esc(nmo(id))}</b>${id===me.id?' <span class="tag">(tu)</span>':''}<br><span class="tag" style="margin:0">${esc(nm(id))}</span></span><span class="acc-r">${rs.map(r=>`<i style="--c:${(R[r]||R.jogador)[1]}">${(R[r]||[r])[0]}</i>`).join('')}</span></summary>
+    <div class="acc-b"><label>Jogador</label><select data-aj="${id}" aria-label="Jogador">${plOpts(a.jogador)}</select><label>Perfis</label>${roleChecks(id,rs,'data-ar')}${own?'':`<button class="btn no" data-ax="${id}" style="align-self:flex-start">Remover acesso</button>`}</div></details></li>`}).join(''));
 }
-$('rtab').addEventListener('change',async e=>{const s=e.target;if(!s.dataset.sk)return;await save('config/plantel',{roster:roster.map(r=>r.nome===s.dataset.sk?{...r,skill:+s.value}:r)})});
+$('rtab').addEventListener('change',async e=>{const s=e.target;if(!s.dataset.sk)return;await saveJogSk(s.dataset.sk,+s.value)});
 $('rtab').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!b.dataset.n)return;const mk=mkey(today());
   const n=b.dataset.n,r0=roster.find(r=>r.nome===n),sai=r0&&r0.ativo!==false;
   if(sai&&!b.dataset.sure){b.dataset.sure=1;b.textContent='Confirmar saída?';return}
@@ -1088,7 +1106,7 @@ $('rtab').addEventListener('click',async e=>{const b=e.target.closest('button');
 $('radd').addEventListener('click',async()=>{const n=$('rnew').value.trim().replace(/\s+/g,' ');
   if(!n)return $('rerr').textContent='Escreve o nome.';if(roster.some(r=>r.nome.toLowerCase()===n.toLowerCase()))return $('rerr').textContent='Esse nome já existe.';
   if(n.toLowerCase()===SUB.toLowerCase())return $('rerr').textContent='Nome reservado.';
-  if(await save('config/plantel',{roster:[...roster,{nome:n,ativo:true,skill:+$('rsk').value,desde:mkey(today())}]})){$('rnew').value='';$('rerr').textContent=''}});
+  if(await save('config/plantel',{roster:[...roster,{nome:n,ativo:true,desde:mkey(today())}]})&&await saveJogSk(n,+$('rsk').value)){$('rnew').value='';$('rerr').textContent=''}});
 $('v-jogadores').addEventListener('change',async e=>{const s=e.target;
   if(s.dataset.aj||s.dataset.ar){const id=s.dataset.aj||s.dataset.ar;const a={...(acessos[id]||{})};
     if(s.dataset.aj)a.jogador=s.value;
@@ -1106,7 +1124,12 @@ $('brest').addEventListener('click',async e=>{
   const b=e.target;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Substituir tudo?';return}
   delete b.dataset.sure;b.textContent='Restaurar';
   try{const o=JSON.parse($('bk').value);if(!Array.isArray(o.plantel)||!Array.isArray(o.jogos))throw 0;
-    await db.doc('config/plantel').set({roster:o.plantel});
+    const sk={jog:{...((o.skills||{}).jog||{})},subs:{...((o.skills||{}).subs||{})}};
+    for(const r of o.plantel)if(okSk(r.skill)&&!okSk(sk.jog[r.nome]))sk.jog[r.nome]=r.skill;
+    for(const [d,c] of Object.entries(o.conv||{}))for(const x of c.subs||[])if(okSk(x.skill)&&!okSk(sk.subs[d+'|'+x.nome]))sk.subs[d+'|'+x.nome]=x.skill;
+    o.conv=Object.fromEntries(Object.entries(o.conv||{}).map(([d,c])=>[d,c.subs?{...c,subs:c.subs.map(({skill,...x})=>x)}:c]));
+    await db.doc('config/skills').set(sk);
+    await db.doc('config/plantel').set({roster:o.plantel.map(({skill,...r})=>r)});
     for(const g of o.jogos)await db.doc('jogos/g'+g.data.replace(/-/g,'')).set(g);
     for(const [k,v] of Object.entries(o.pagamentos||{}))await db.doc('pagamentos/'+k).set(v);
     if(o.campo)await db.doc('config/campo').set(o.campo);
@@ -1160,6 +1183,7 @@ function refresh(){
   db.collection('propostas').onSnapshot(s=>{propostas=docs(s);refresh()},fail);
   db.collection('mvpvotos').onSnapshot(s=>{mvpvotos=docs(s);refresh()},fail);
   db.collection('fotos').onSnapshot(s=>{fotos=docs(s);refresh()},fail);
+  db.doc('config/skills').onSnapshot(s=>{skills=(s.exists&&s.data())||{jog:{},subs:{}};refresh()},fail);
   db.doc('config/convites').onSnapshot(s=>{convites=(s.exists&&s.data())||{lista:[]};refresh()},fail);
   setInterval(()=>{if(loaded)refresh()},60000);
 })();

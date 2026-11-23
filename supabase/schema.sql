@@ -133,9 +133,13 @@ drop policy if exists "admin altera perfis" on public.perfis;
 drop policy if exists "admin apaga perfis" on public.perfis;
 
 -- Ler: quem tem acesso aprovado ou está à espera de aprovação
+-- (a skill dos jogadores, em config/skills, fica de fora: só admin e apontador a leem)
 drop policy if exists "ler" on public.docs;
 create policy "ler" on public.docs for select to authenticated
-  using (public.membro() or public.pendente());
+  using ((public.membro() or public.pendente()) and not (col = 'config' and id = 'skills'));
+drop policy if exists "ler skills" on public.docs;
+create policy "ler skills" on public.docs for select to authenticated
+  using (col = 'config' and id = 'skills' and (public.tem_papel('admin') or public.tem_papel('apontador')));
 
 -- Administrador: tudo
 drop policy if exists "admin" on public.docs;
@@ -179,6 +183,25 @@ create policy "ver perfis" on public.perfis for select to authenticated
   using (user_id = auth.uid() or public.tem_papel('admin'));
 drop policy if exists "donos" on public.donos;
 create policy "donos" on public.donos for select to authenticated using (user_id = auth.uid());
+
+-- ---------- Skills fora do plantel (os jogadores não as conseguem ler) ----------
+insert into public.docs (col, id, data)
+select 'config', 'skills', jsonb_build_object(
+  'jog', coalesce((select jsonb_object_agg(r->>'nome', r->'skill')
+                   from public.docs d, jsonb_array_elements(coalesce(d.data->'roster','[]'::jsonb)) r
+                   where d.col = 'config' and d.id = 'plantel' and r ? 'skill'), '{}'::jsonb),
+  'subs', coalesce((select jsonb_object_agg(d.id || '|' || (x->>'nome'), x->'skill')
+                   from public.docs d, jsonb_array_elements(coalesce(d.data->'subs','[]'::jsonb)) x
+                   where d.col = 'conv' and x ? 'skill'), '{}'::jsonb))
+on conflict (col, id) do update set data = jsonb_build_object(
+  'jog',  (excluded.data->'jog')  || coalesce(public.docs.data->'jog',  '{}'::jsonb),
+  'subs', (excluded.data->'subs') || coalesce(public.docs.data->'subs', '{}'::jsonb));
+update public.docs set data = jsonb_set(data, '{roster}',
+  (select coalesce(jsonb_agg(r - 'skill'), '[]'::jsonb) from jsonb_array_elements(data->'roster') r))
+where col = 'config' and id = 'plantel' and jsonb_typeof(data->'roster') = 'array';
+update public.docs set data = jsonb_set(data, '{subs}',
+  (select coalesce(jsonb_agg(x - 'skill'), '[]'::jsonb) from jsonb_array_elements(data->'subs') x))
+where col = 'conv' and jsonb_typeof(data->'subs') = 'array';
 
 -- ---------- Tempo real ----------
 alter table public.docs replica identity full;
