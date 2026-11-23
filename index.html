@@ -231,6 +231,35 @@ body.au-on{overflow:hidden}
 .acc-r{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:46%}.acc-r i{font-style:normal;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
 .acc-b{display:flex;flex-direction:column;gap:6px;padding:4px 2px 14px}.acc-b label{font-size:12px;color:var(--mute);margin:4px 0 0}.acc-b select{max-width:16em}
 a.btn{text-decoration:none;display:inline-flex;align-items:center}
+
+/* ---------- bilhete do próximo jogo: relvado animado ---------- */
+.ticket{position:relative;overflow:hidden}
+.ticket>.day,.ticket>div:not(.pitch){position:relative;z-index:1}
+.pitch{grid-column:1/-1;margin:4px -22px -22px;height:150px;position:relative;border-top:1px solid rgba(255,255,255,.18);background:repeating-linear-gradient(90deg,#2a7d43 0 50px,#2f8a4a 50px 100px)}
+.pitch svg{display:block;width:100%;height:100%;position:absolute;inset:0}
+.pitch .fig{transform-box:fill-box}
+.pitch .run{animation:pRun 7s linear infinite}
+.pitch .def{animation:pDef 7s linear infinite}
+.pitch .ball{animation:pBall 7s linear infinite}
+.pitch .ball circle{animation:pSpin .35s linear infinite;transform-box:fill-box;transform-origin:center}
+.pitch .keep{animation:pKeep 7s ease-in-out infinite}
+.pitch .net{animation:pNet 7s ease-out infinite;transform-box:fill-box;transform-origin:left center}
+.pitch .golo{animation:pGolo 7s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.pitch .legA{animation:pLegA .32s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:top center}
+.pitch .legB{animation:pLegA .32s ease-in-out infinite alternate-reverse;transform-box:fill-box;transform-origin:top center}
+.pitch .kick{animation:pKick 7s ease-in infinite;transform-box:fill-box;transform-origin:top center}
+@keyframes pLegA{from{transform:rotate(28deg)}to{transform:rotate(-28deg)}}
+@keyframes pRun{0%{transform:translate(190px,0);opacity:0}5%{opacity:1}42%{transform:translate(400px,0)}88%{transform:translate(410px,0);opacity:1}96%,100%{transform:translate(410px,0);opacity:0}}
+@keyframes pDef{0%{transform:translate(140px,0);opacity:0}6%{opacity:1}42%{transform:translate(352px,0)}60%{transform:translate(372px,0)}88%{opacity:1}96%,100%{transform:translate(372px,0);opacity:0}}
+@keyframes pKick{0%,40%{transform:rotate(0)}43%{transform:rotate(-70deg)}48%,100%{transform:rotate(0)}}
+@keyframes pBall{0%{transform:translate(212px,-6px);opacity:0}5%{opacity:1}10%{transform:translate(240px,-14px)}15%{transform:translate(272px,-6px)}20%{transform:translate(305px,-14px)}25%{transform:translate(335px,-6px)}30%{transform:translate(362px,-14px)}36%{transform:translate(400px,-6px)}42%{transform:translate(424px,-6px)}47%{transform:translate(510px,-58px)}51%{transform:translate(566px,-52px)}58%{transform:translate(572px,-12px)}62%{transform:translate(569px,-6px)}86%{transform:translate(569px,-6px);opacity:1}94%,100%{transform:translate(569px,-6px);opacity:0}}
+@keyframes pKeep{0%,43%{transform:translate(538px,0) rotate(0)}50%{transform:translate(520px,-26px) rotate(-75deg)}60%,70%{transform:translate(522px,-4px) rotate(-88deg)}82%,100%{transform:translate(538px,0) rotate(0)}}
+@keyframes pNet{0%,50%{transform:scaleX(1)}54%{transform:scaleX(1.45)}60%{transform:scaleX(.92)}66%,100%{transform:scaleX(1)}}
+@keyframes pGolo{0%,51%{transform:scale(0);opacity:0}56%{transform:scale(1.25);opacity:1}60%{transform:scale(1)}84%{transform:scale(1);opacity:1}92%,100%{transform:scale(.6);opacity:0}}
+@keyframes pSpin{to{transform:rotate(360deg)}}
+@media (min-width:760px){.ticket{grid-template-columns:auto 1fr minmax(320px,44%)}.pitch{grid-column:3;grid-row:1;align-self:stretch;margin:-22px -22px -22px 0;height:auto;min-height:150px;border-top:0;border-left:1px solid rgba(255,255,255,.18)}}
+@media (max-width:700px){.pitch{margin:2px -16px -16px;height:112px}}
+@media (prefers-reduced-motion:reduce){.pitch *{animation:none!important}.pitch .golo{opacity:0}}
 </style>
 </head>
 <body>
@@ -718,6 +747,33 @@ function presence(date){
   const subs=((conv[date]||{}).subs||[]).slice(0,Math.max(0,MAXJ-Math.min(yes.length,MAXJ)));
   return {go:yes.slice(0,MAXJ),wait:yes.slice(MAXJ),no,none,map,subs};
 }
+
+const pitchHTML=()=>{
+  const fig=(cls,shirt,shorts,skin='#f1c7a3',hair='#3b2a20',kick='')=>`<g class="fig ${cls}"><g transform="translate(0,0)">
+    <line class="legA ${kick}" x1="-3" y1="-16" x2="-3" y2="0" stroke="${skin}" stroke-width="3.2" stroke-linecap="round"/>
+    <line class="legB" x1="3" y1="-16" x2="3" y2="0" stroke="${skin}" stroke-width="3.2" stroke-linecap="round"/>
+    <rect x="-6" y="-21" width="12" height="7" rx="2" fill="${shorts}"/>
+    <rect x="-7" y="-36" width="14" height="16" rx="4" fill="${shirt}"/>
+    <line x1="-7" y1="-33" x2="-11" y2="-24" stroke="${skin}" stroke-width="2.6" stroke-linecap="round"/>
+    <line x1="7" y1="-33" x2="11" y2="-24" stroke="${skin}" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="0" cy="-42" r="6" fill="${skin}"/><path d="M-6 -44a6 6 0 0 1 12 0z" fill="${hair}"/></g></g>`;
+  const stripes=[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>`<rect x="${i*50}" y="0" width="50" height="130" fill="${i%2?'#2f8a4a':'#2a7d43'}"/>`).join('');
+  return `<div class="pitch" aria-hidden="true"><svg viewBox="0 0 600 130" preserveAspectRatio="${innerWidth>=760?'xMaxYMax meet':'xMaxYMax slice'}">
+  ${stripes}
+  <g fill="none" stroke="rgba(255,255,255,.65)" stroke-width="2"><line x1="8" y1="118" x2="592" y2="118"/><line x1="230" y1="8" x2="230" y2="118"/><path d="M230 40a38 38 0 0 1 0 78"/><rect x="470" y="30" width="122" height="88"/></g>
+  <g transform="translate(578,118)">
+    <g class="net"><rect x="0" y="-70" width="16" height="70" fill="rgba(255,255,255,.18)"/>
+      <g stroke="rgba(255,255,255,.55)" stroke-width="1">${[0,1,2,3,4,5,6].map(i=>`<line x1="0" y1="${-70+i*10}" x2="16" y2="${-70+i*10}"/>`).join('')}<line x1="8" y1="-70" x2="8" y2="0"/><line x1="16" y1="-70" x2="16" y2="0"/></g></g>
+    <rect x="-3" y="-72" width="4" height="72" fill="#fff"/><rect x="-3" y="-72" width="21" height="4" fill="#fff"/></g>
+  <g transform="translate(0,118)">
+    ${fig('keep','#f3c623','#222','#e9b98f','#1d1d1d')}
+    ${fig('def','#1f3b73','#16264a','#d9a07a','#111')}
+    ${fig('run','#c81d24','#fff','#f1c7a3','#3b2a20','kick')}
+    <g class="ball"><circle r="5.2" fill="#fff" stroke="#222" stroke-width="1"/><path d="M-2.5 -1.5l2.5-2 2.5 2-1 3h-3z" fill="#222"/></g>
+  </g>
+  <g transform="translate(470,40)"><g class="golo"><text x="0" y="0" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="30" font-weight="900" fill="#ffe7b0" stroke="#7d0f14" stroke-width="5" paint-order="stroke">GOLO!</text></g></g>
+  </svg></div>`;
+};
 function renderConv(){
   if(!cdate)cdate=nextThu(today());
   const d=dobj(cdate),g=games.find(x=>x.data===cdate);
@@ -729,13 +785,13 @@ function renderConv(){
   $('ticket').innerHTML=`<div class="day"><span>${DIA[d.getDay()]}</span><b>${d.getDate()}</b><span>${MES[d.getMonth()].slice(0,3)} · 21h00</span></div>
    <div><h2>${g?g.cancelado?'Não houve jogo':'Jogo disputado':'Próximo jogo'}</h2><p><b>${esc(k.nome||'Campo FUT7')}</b> · Futebol 7 · Palmeira</p><p>${esc(k.morada||'')}</p>
    <p>${coords?'Coordenadas: '+esc(coords)+' · ':''}<a href="${esc(maps)}" target="_blank" rel="noopener">Abrir no mapa</a></p>
-   <p>Tempo previsto: <a href="${esc(wx)}" target="_blank" rel="noopener">ver previsão para quinta às 21h</a></p></div>`;
+   <p>Tempo previsto: <a href="${esc(wx)}" target="_blank" rel="noopener">ver previsão para quinta às 21h</a></p></div>`+pitchHTML();
   const P=presence(cdate),mp=myPlayer(),mine=mp&&P.map[mp];
-  const closed=convClosed(cdate),notOpen=convNotOpen(cdate),lock=(closed||notOpen)&&!isAdm();
-  const closeTxt=notOpen?(isAdm()?'Inscrições abrem '+fdt(iso(new Date(convOpenAt(cdate))))+' (segunda) às 08:30. Como administrador já podes marcar presenças.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
+  const closed=convClosed(cdate),notOpen=convNotOpen(cdate),lock=notOpen||(closed&&!isAdm());
+  const closeTxt=notOpen?(isAdm()?'Inscrições abrem '+fdt(iso(new Date(convOpenAt(cdate))))+' (segunda) às 08:30. Como administrador já podes marcar os outros com ✓ / ✕.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
   $('mine').innerHTML=!me.id?'<p style="margin:0">Inicia sessão para responder à convocatória.</p>':!mp?'<p style="margin:0">A tua conta ainda não está associada a um jogador. Pede acesso no topo da Tabela.</p>':
    `<div class="row" style="justify-content:space-between"><div><b>${esc(mp)}</b>, vais jogar?<br><span class="tag" style="margin:0">${mine?mine.vai?(P.go.includes(mp)?'Estás confirmado.':'Estás em lista de espera (suplente).'):'Disseste que não vais.':'Ainda não respondeste.'}<br>${closeTxt}</span></div>
-   <div class="row"><button class="btn ${mine&&mine.vai?'ok':''}" data-v="1" ${lock?'disabled':''}>Vou</button><button class="btn ${mine&&!mine.vai?'pri':''}" data-v="0" ${lock?'disabled':''}>Não vou</button></div></div>`;
+   <div class="row"><button class="btn ${mine&&mine.vai?'ok':''}" data-v="1" ${lock?'disabled':''}>Vou</button><button class="btn ${mine&&!mine.vai?'pri':''}" data-v="0" ${lock?'disabled':''}>Não vou</button>${mine&&!lock?'<button class="btn" data-vx="1" title="Tirar a minha resposta">Tirar resposta</button>':''}</div></div>`;
   $('ccount').textContent=(P.go.length+P.subs.length)+'/'+MAXJ;
   const ctl=n=>isAdm()?`<span class="mini"><button class="btn" data-m="${esc(n)}" data-x="1" aria-label="${esc(n)} vai">✓</button><button class="btn" data-m="${esc(n)}" data-x="0" aria-label="${esc(n)} não vai">✕</button></span>`:'';
   const pendS=Object.entries(propostas).filter(([,p])=>p.tipo==='substituto'&&p.alvo===cdate&&p.estado==='pendente');
@@ -769,8 +825,12 @@ $('cprev').addEventListener('click',()=>{cdate=addD(cdate||nextThu(today()),-7);
 $('cnext').addEventListener('click',()=>{cdate=addD(cdate||nextThu(today()),7);renderConv()});
 $('mine').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b||!me.id)return;
-  if(convNotOpen(cdate)&&!isAdm()){renderConv();return note('As inscrições para este jogo abrem na segunda-feira às 08:30.')}
-  if(convClosed(cdate)||convNotOpen(cdate)){if(!isAdm()){renderConv();return note('A convocatória já fechou (quarta às 23:59).')}
+  if(convNotOpen(cdate)&&(b.dataset.v!==undefined||b.dataset.vx!==undefined)){renderConv();return note('As inscrições para este jogo abrem na segunda-feira às 08:30.')}
+  if(b.dataset.vx!==undefined){if(convClosed(cdate)&&!isAdm()){renderConv();return note('A convocatória já fechou (quarta às 23:59).')}
+    b.disabled=true;const cur=votos[me.id]||{},v={...(cur.v||{})};delete v[cdate];await save('votos/'+me.id,{jogador:myPlayer(),v});
+    const c=conv[cdate]||{};if(isAdm()&&c.manual&&c.manual[myPlayer()]){const man={...c.manual};delete man[myPlayer()];await save('conv/'+cdate,{...c,manual:man})}
+    note('Resposta retirada.');return}
+  if(convClosed(cdate)){if(!isAdm()){renderConv();return note('A convocatória já fechou (quarta às 23:59).')}
     const c=conv[cdate]||{},man={...(c.manual||{})};man[myPlayer()]={vai:b.dataset.v==='1',t:Date.now(),adm:true};return save('conv/'+cdate,{...c,manual:man})}
   const cur=votos[me.id]||{},v={...(cur.v||{})};v[cdate]={vai:b.dataset.v==='1',t:Date.now()};
   b.disabled=true;await save('votos/'+me.id,{jogador:myPlayer(),v});b.disabled=false;
