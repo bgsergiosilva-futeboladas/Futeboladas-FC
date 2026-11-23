@@ -1035,14 +1035,17 @@ function renderMVP(){
   for(const g of open){const m=MVP.by[g.id],mine=((mvpvotos[me.id]||{}).v||{})[g.id];
     h+=`<div class="card mvp" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><div><h2 style="margin:0">Vota no MVP</h2><span class="tag" style="margin:0">Jogo de ${fdt(g.data)} · fecha ${fdt(iso(new Date(m.closeAt)))} às 23:59 · ${m.total} voto${m.total===1?'':'s'}</span></div>${mine?`<span class="tag">O teu voto: <b>${esc(mine.nome)}</b></span>`:''}</div>
     ${!me.id?'<p class="tag" style="margin:8px 0 0">Inicia sessão para votar.</p>':!mp?'<p class="tag" style="margin:8px 0 0">A tua conta tem de estar associada a um jogador para votar.</p>':
-    `<div class="chips" style="margin:10px 0 0">${m.cand.filter(n=>n!==mp).sort((a,b)=>a.localeCompare(b,'pt')).map(n=>`<button type="button" data-mv="${g.id}" data-n="${esc(n)}" class="${mine&&mine.nome===n?'on':''}">${esc(n)}</button>`).join('')}</div><p class="tag" style="margin:6px 0 0">Podes mudar o voto até fechar. Os resultados só aparecem no fim. Não podes votar em ti.</p>`}</div>`}
+    (()=>{const sv=mvpSel[g.id]??(mine?mine.nome:'');return `<div class="row" style="margin:10px 0 0;gap:8px;flex-wrap:nowrap"><select data-mvs="${g.id}" aria-label="Escolhe o MVP" style="flex:1 1 auto;min-width:0"><option value="">— escolhe o jogador —</option>${m.cand.filter(n=>n!==mp).sort((a,b)=>a.localeCompare(b,'pt')).map(n=>`<option${n===sv?' selected':''}>${esc(n)}</option>`).join('')}</select><button type="button" class="btn pri" style="white-space:nowrap" data-mv="${g.id}" ${!sv||(mine&&mine.nome===sv)?'disabled':''}>${mine?'Mudar voto':'Confirmar'}</button></div><p class="tag" style="margin:6px 0 0">Podes mudar o voto até fechar. Os resultados só aparecem no fim. Não podes votar em ti.</p>`})()}</div>`}
   if(lastClosed&&MVP.by[lastClosed.id].total){const m=MVP.by[lastClosed.id];h+=`<div class="card mvp" style="margin-bottom:14px"><span class="tag" style="margin:0">MVP do jogo de ${fdt(lastClosed.data)}</span><p class="big" style="margin:2px 0 0">${m.winners.length?esc(m.winners.join(' e '))+' <span class="tag">+1 ponto · '+m.max+' voto'+(m.max>1?'s':'')+'</span>':'Sem votos'}</p></div>`}
   $('mvpA').innerHTML=h;$('mvpB').innerHTML=h;
 }
+var mvpSel={};
+document.addEventListener('change',e=>{const s=e.target;if(!s.dataset||!s.dataset.mvs)return;mvpSel[s.dataset.mvs]=s.value;renderMVP()});
 document.addEventListener('click',async e=>{const b=e.target.closest('button[data-mv]');if(!b||!me.id||!myPlayer())return;
-  const cur=mvpvotos[me.id]||{},v={...(cur.v||{})};v[b.dataset.mv]={nome:b.dataset.n,t:Date.now()};
+  const nome=mvpSel[b.dataset.mv]||(b.parentElement.querySelector('select')||{}).value;if(!nome)return note('Escolhe primeiro o jogador.');
+  const cur=mvpvotos[me.id]||{},v={...(cur.v||{})};v[b.dataset.mv]={nome,t:Date.now()};
   if(Date.now()>mvpCloseAt(games.find(g=>g.id===b.dataset.mv).data))return note('A votação já fechou.');
-  await save('mvpvotos/'+me.id,{jogador:myPlayer(),v})});
+  b.disabled=true;if(await save('mvpvotos/'+me.id,{jogador:myPlayer(),v})){delete mvpSel[b.dataset.mv];note('Voto registado: '+nome+'.')}else b.disabled=false});
 
 /* ---------- propostas do apontador (pendentes de aprovação) ---------- */
 async function propor(p){const id='p'+Date.now()+Math.random().toString(36).slice(2,6);return save('propostas/'+id,{...p,por:me.id,autor:myPlayer()||'',t:Date.now(),estado:'pendente'})}
