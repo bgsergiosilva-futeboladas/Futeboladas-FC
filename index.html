@@ -47,7 +47,11 @@ h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 .brand #vs{margin:1px 0 0;color:var(--mute);font-size:13px}
 .wa{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit}.wa i{flex:none;width:42px;height:42px;border-radius:12px;background:#25D366;display:grid;place-items:center}.wa i svg{width:24px;height:24px;fill:#fff}.wa b{display:block}.wa span{font-size:13px;color:var(--mute)}.wa em{margin-left:auto;font-style:normal;font-weight:600;color:#1a9e4b}
 .mbw{margin-top:12px;padding:12px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,#d6002a 6%,transparent)}.mbw h3{margin:0 0 6px;display:flex;align-items:center;gap:8px}.mbw h3 i{font-style:normal;font-size:11px;font-weight:800;letter-spacing:.02em;color:#fff;background:#d6002a;border-radius:6px;padding:3px 6px}.mbw .kv{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}.mbw .kv b{font-size:18px;font-variant-numeric:tabular-nums}.mbw ol{margin:6px 0 10px;padding-left:20px;font-size:14px}
-.who{margin-left:auto;text-align:right;font-size:13px;color:var(--mute)}.who b{display:block;color:var(--ink);font-size:14px}
+.who{margin-left:auto;position:relative;font-size:13px;color:var(--mute)}
+.whob{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--edge);border-radius:999px;padding:4px 12px 4px 4px;color:inherit;font:inherit;cursor:pointer;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.whob .who-av{width:38px;height:38px;font-size:12px}.whot{text-align:left;line-height:1.25}.whot b{display:block;color:var(--ink);font-size:14px}.whoc{font-size:11px}
+.whom{position:absolute;right:0;top:calc(100% + 8px);min-width:220px;z-index:40;padding:6px;border-radius:16px;background:light-dark(#fffaf6,#241819);border:1px solid var(--edge);box-shadow:var(--shadow);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);display:flex;flex-direction:column}
+.whom button{all:unset;cursor:pointer;padding:11px 12px;border-radius:10px;font-size:15px;color:var(--ink)}.whom button:hover,.whom button:focus-visible{background:light-dark(rgba(179,20,27,.08),rgba(255,255,255,.08))}.whom .out{color:var(--red)}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;gap:2px;padding:6px max(8px,calc((100% - 680px)/2)) calc(6px + env(safe-area-inset-bottom));background:light-dark(#fbf8f6,#1a1112);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.10)}
 nav a{flex:1 1 0;max-width:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:6px 2px;border-radius:16px;color:var(--mute);text-decoration:none;font-weight:600;font-size:11px;white-space:nowrap;position:relative;transition:background .2s,color .2s}
 nav a.on{background:light-dark(rgba(179,20,27,.10),rgba(255,255,255,.10));color:var(--red)}
@@ -167,7 +171,7 @@ details summary{list-style:none}details summary::-webkit-details-marker{display:
 .foot{margin:28px 0 0;padding:14px 0 0;border-top:1px solid var(--line);text-align:center;font-size:12px;color:var(--mute);line-height:1.6}.foot b{color:var(--ink);font-weight:600}.foot span{white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:700px){
- .top{padding:calc(16px + env(safe-area-inset-top)) 14px 2px}.who{display:none}
+ .top{padding:calc(16px + env(safe-area-inset-top)) 14px 2px}.whot,.whoc{display:none}.whob{padding:3px}.whob .who-av{width:40px;height:40px}
  .brand img{width:48px;height:48px}.brand h1{font-size:24px}.brand .club{font-size:11px}
  main{padding:12px 12px calc(104px + env(safe-area-inset-bottom))}
  .card,.side{padding:14px;border-radius:18px}
@@ -472,6 +476,15 @@ const names=n=>n.length?n.length<=2?n.join(' e '):n.slice(0,2).join(', ')+' e ma
 const note=t=>$('note').textContent=t||'';
 const inRoster=n=>roster.some(r=>r.nome===n);
 const isAdm=()=>roles.includes('admin'),isTes=()=>isAdm()||roles.includes('tesoureiro'),isApo=()=>isAdm()||roles.includes('apontador');
+let whoOpen=false;
+function renderWho(){const mp=myPlayer();
+  $('who').innerHTML=me.id?`<button type="button" class="whob" id="whob" aria-haspopup="menu" aria-expanded="${whoOpen}" aria-label="A minha conta">${avatar(mp||'?','av who-av')}<span class="whot"><b>${esc(mp||'Sem jogador associado')}</b>${roleLabel()}</span><span class="whoc">▾</span></button>
+  <div class="whom${whoOpen?'':' hide'}" role="menu">${mp?`<button type="button" role="menuitem" data-card="${esc(mp)}">O meu cartão e foto</button>`:''}<button type="button" role="menuitem" class="out" id="whosair">Terminar sessão</button></div>`:''}
+document.addEventListener('click',e=>{
+  if(e.target.closest('#whob')){whoOpen=!whoOpen;renderWho();return}
+  if(e.target.closest('#whosair')){whoOpen=false;window.FB&&FB.sair();return}
+  if(whoOpen&&!e.target.closest('.whom')||e.target.closest('.whom [data-card]')){whoOpen=false;renderWho()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&whoOpen){whoOpen=false;renderWho()}});
 const roleLabel=()=>roles.length?roles.map(r=>PAPEL[r]).join(' + '):'Sem acesso aprovado';
 const SKDEF=3;
 /* skills: documento à parte (config/skills) que só o administrador e o apontador conseguem ler */
@@ -492,7 +505,7 @@ function buildNav(){
   $('nav').innerHTML=TABS.filter(t=>t[2]==='all'||(t[2]==='apo'&&isApo())).map(([k,l])=>`<a href="#${k}" data-k="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[k]}"/></svg>${l}</a>`).join('');
   for(const e of document.querySelectorAll('.adm'))e.classList.toggle('hide',!isAdm());
   for(const e of document.querySelectorAll('.apo'))e.classList.toggle('hide',!isApo());
-  $('who').innerHTML=me.id?`<b>${esc(myPlayer()||'Sem jogador associado')}</b>${roleLabel()}`:'';
+  renderWho();
   view();
 }
 function view(){
@@ -1036,7 +1049,7 @@ function renderMVP(){
   for(const g of open){const m=MVP.by[g.id],mine=((mvpvotos[me.id]||{}).v||{})[g.id];
     h+=`<div class="card mvp" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><div><h2 style="margin:0">Vota no MVP</h2><span class="tag" style="margin:0">Jogo de ${fdt(g.data)} · fecha ${fdt(iso(new Date(m.closeAt)))} às 23:59 · ${m.total} voto${m.total===1?'':'s'}</span></div>${mine?`<span class="tag">O teu voto: <b>${esc(mine.nome)}</b></span>`:''}</div>
     ${!me.id?'<p class="tag" style="margin:8px 0 0">Inicia sessão para votar.</p>':!mp?'<p class="tag" style="margin:8px 0 0">A tua conta tem de estar associada a um jogador para votar.</p>':
-    (()=>{const sv=mvpSel[g.id]??(mine?mine.nome:'');return `<div class="row" style="margin:10px 0 0;gap:8px;flex-wrap:nowrap"><select data-mvs="${g.id}" aria-label="Escolhe o MVP" style="flex:1 1 auto;min-width:0"><option value="">— escolhe o jogador —</option>${m.cand.filter(n=>n!==mp).sort((a,b)=>a.localeCompare(b,'pt')).map(n=>`<option${n===sv?' selected':''}>${esc(n)}</option>`).join('')}</select><button type="button" class="btn pri" style="white-space:nowrap" data-mv="${g.id}" ${!sv||(mine&&mine.nome===sv)?'disabled':''}>${mine?'Mudar voto':'Confirmar'}</button></div><p class="tag" style="margin:6px 0 0">Podes mudar o voto até fechar. Os resultados só aparecem no fim. Não podes votar em ti.</p>`})()}</div>`}
+    (()=>{const sv=mvpSel[g.id]??(mine?mine.nome:'');return `<div class="row" style="margin:10px 0 0;gap:8px;flex-wrap:nowrap"><select data-mvs="${g.id}" aria-label="Escolhe o MVP" style="flex:1 1 auto;min-width:0"><option value="">— escolhe o jogador —</option>${m.cand.filter(n=>n!==mp).sort((a,b)=>a.localeCompare(b,'pt')).map(n=>`<option${n===sv?' selected':''}>${esc(n)}</option>`).join('')}</select><button type="button" class="btn pri" style="white-space:nowrap;flex:none" data-mv="${g.id}" ${!sv||(mine&&mine.nome===sv)?'disabled':''}>${mine?'Mudar voto':'Confirmar'}</button></div><p class="tag" style="margin:6px 0 0">Podes mudar o voto até fechar. Os resultados só aparecem no fim. Não podes votar em ti.</p>`})()}</div>`}
   if(lastClosed&&MVP.by[lastClosed.id].total){const m=MVP.by[lastClosed.id];h+=`<div class="card mvp" style="margin-bottom:14px"><span class="tag" style="margin:0">MVP do jogo de ${fdt(lastClosed.data)}</span><p class="big" style="margin:2px 0 0">${m.winners.length?esc(m.winners.join(' e '))+' <span class="tag">+1 ponto · '+m.max+' voto'+(m.max>1?'s':'')+'</span>':'Sem votos'}</p></div>`}
   $('mvpA').innerHTML=h;$('mvpB').innerHTML=h;
 }
@@ -1189,7 +1202,7 @@ let lastRole=null;
 function refresh(){
   if(!loaded)return;
   computeRole();if(role!==lastRole){lastRole=role;buildNav()}
-  else $('who').innerHTML=me.id?`<b>${esc(myPlayer()||'Sem jogador associado')}</b>${roleLabel()}`:'';
+  else renderWho();
   MVP=mvpResults(games,roster,mvpvotos,Date.now());
   renderAsk();renderMyCard();renderMVP();renderTable();renderGames();renderPending();renderConv();renderPay();renderRoster();refreshSelects();
 }
