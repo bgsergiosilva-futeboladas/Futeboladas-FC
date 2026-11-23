@@ -316,3 +316,6 @@ create table if not exists public.notif_log (
   n      int
 );
 alter table public.notif_log enable row level security;
+
+-- Avisar a API de que há tabelas novas
+notify pgrst, 'reload schema';
