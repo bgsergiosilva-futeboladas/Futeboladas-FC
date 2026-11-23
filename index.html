@@ -338,8 +338,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="row" style="align-items:end"><div style="flex:2 1 12em"><label for="rnew">Nome</label><input type="text" id="rnew" autocomplete="off"></div><div style="flex:1 1 6em"><label for="rsk">Skill (0–5)</label><select id="rsk"></select></div><button class="btn pri" id="radd" type="button">Adicionar</button></div><p class="err" id="rerr"></p></div></div>
 <div class="adm">
 <div class="card"><h2>Acessos</h2><p class="tag" style="margin:0 0 8px">Cada pessoa entra com a sua conta (criada pelo link de convite). Aqui aprovas os pedidos e defines os perfis: Administrador, Tesoureiro, Apontador ou Jogador.</p>
-<h3 style="margin:8px 0 4px">Pedidos</h3><ul class="plist" id="aped"></ul>
-<h3 style="margin:14px 0 4px">Contas com acesso</h3><ul class="plist" id="alist"></ul>
+<div class="row" id="astat" style="gap:8px;margin:6px 0 4px"></div><p class="tag" id="asem" style="margin:4px 0 0"></p>
+<h3 style="margin:8px 0 4px">Pedidos <span class="tag" id="apedn"></span></h3><ul class="plist" id="aped"></ul>
+<h3 style="margin:14px 0 4px">Contas com acesso <span class="tag" id="alistn"></span></h3><ul class="plist" id="alist"></ul>
 <h3 style="margin:18px 0 4px">Links de convite</h3><p class="tag" style="margin:0 0 8px">Envia o link a quem queres trazer (por exemplo no WhatsApp). Quem se inscrever fica nos Pedidos à espera da tua aprovação. O link funciona até o desativares.</p>
 <ul class="plist" id="ilist"></ul><div class="row" style="margin-top:8px"><button class="btn pri" id="inew" type="button">Criar link de convite</button></div></div>
 <div class="card" style="margin-top:16px"><h2>Cópia de segurança</h2>
@@ -1107,6 +1108,12 @@ async function renderAccess(){
   const roleChecks=(id,vals,attr)=>`<span class="checks" style="gap:4px">${Object.entries(PAPEL).map(([k,l])=>`<label style="min-height:36px;padding:0 10px"><input type="checkbox" ${attr}="${id}" value="${k}"${vals.includes(k)?' checked':''}${attr==='data-ar'&&id===me.id&&me.owner&&k==='admin'?' disabled':''}>${l}</label>`).join('')}</span>`;
   $('aped').innerHTML=Object.entries(pedidos).filter(([id])=>!acessos[id]).map(([id,p])=>`<li><span>${esc(nm(id))}<br><span class="tag" style="margin:0">diz ser ${esc(p.jogador||'?')}</span></span><span class="mini" style="flex-wrap:wrap">${roleChecks(id,['jogador'],'data-pr')}<button class="btn ok" data-ap="${id}">Aprovar</button></span></li>`).join('')||'<li class="tag">Sem pedidos.</li>';
   const list=Object.keys(acessos);if(me.id&&!list.includes(me.id))list.unshift(me.id);
+  { const pend=Object.keys(pedidos).filter(id=>!acessos[id]).length,act=roster.filter(r=>r.ativo!==false),
+      linked=new Set(list.map(id=>(acessos[id]||{}).jogador).filter(Boolean)),semConta=act.filter(r=>!linked.has(r.nome));
+    const st=(n,l,c)=>`<span style="display:inline-flex;align-items:baseline;gap:5px;padding:6px 11px;border-radius:999px;background:var(--glass2);border:1px solid var(--line);font-size:13px;color:var(--mute)"><b class="${c||''}" style="font-size:15px;color:${c?'':'var(--ink)'}">${n}</b>${l}</span>`;
+    $('astat').innerHTML=st(list.length+pend,'registados')+st(list.length,'com acesso','paid')+st(pend,'por aprovar',pend?'owe':'')+st(semConta.length,'sem conta');
+    $('asem').textContent=semConta.length?'Ainda sem conta: '+semConta.map(r=>r.nome).join(', ')+'.':'Todos os jogadores ativos já têm conta.';
+    $('apedn').textContent='('+pend+')';$('alistn').textContent='('+list.length+')'; }
   const R={admin:['Admin','#b3141b'],tesoureiro:['Tesoureiro','#a07d12'],apontador:['Apontador','#2a6f9e'],jogador:['Jogador','#6e6266']};
   const nmo=id=>((acessos[id]||{}).jogador||'')||'Sem jogador';
   list.sort((x,y)=>(y===me.id)-(x===me.id)||nmo(x).localeCompare(nmo(y),'pt'));
