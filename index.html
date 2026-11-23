@@ -385,7 +385,7 @@ function compute(games,roster,mvpW){
   }
   const total=gs.length;
   const list=Object.values(st).filter(s=>s.ativo||s.J>0).map(s=>({...s,pts:s.pj+s.capW+s.mvp-s.atr,pv:s.J?s.V/s.J:0,media:s.J?s.pj/s.J:0,comp:total?s.J/total:0,forma:s.hist.slice(-5).reverse()}));
-  list.sort((a,b)=>b.pts-a.pts||b.pv-a.pv||b.J-a.J||a.nome.localeCompare(b.nome,'pt'));
+  list.sort((a,b)=>b.pts-a.pts||(a.J>0&&b.J>0?a.J-b.J:b.J-a.J)||b.pv-a.pv||a.nome.localeCompare(b.nome,'pt'));
   list.forEach((s,i)=>s.pos=i+1);
   return {list,total,guests};
 }
