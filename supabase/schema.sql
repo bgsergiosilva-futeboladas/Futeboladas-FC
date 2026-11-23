@@ -294,3 +294,25 @@ alter table public.docs replica identity full;
 do $$ begin
   alter publication supabase_realtime add table public.docs;
 exception when duplicate_object then null; end $$;
+
+-- ---------- Notificações no telemóvel ----------
+-- Uma linha por telemóvel/navegador que ativou as notificações
+create table if not exists public.push_subs (
+  endpoint text primary key,
+  user_id  uuid not null references auth.users on delete cascade,
+  sub      jsonb not null,
+  ua       text,
+  criado   timestamptz not null default now()
+);
+alter table public.push_subs enable row level security;
+drop policy if exists "as minhas subscricoes" on public.push_subs;
+create policy "as minhas subscricoes" on public.push_subs for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Registo do que já foi enviado (evita avisos repetidos na mesma hora)
+create table if not exists public.notif_log (
+  chave  text primary key,
+  enviado timestamptz not null default now(),
+  n      int
+);
+alter table public.notif_log enable row level security;

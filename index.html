@@ -246,6 +246,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <main>
 <div class="note" id="note">A carregar dados…</div>
 <div class="card hide" id="askAccess" style="margin-bottom:16px"></div>
+<div class="card hide" id="pushAsk" style="margin-bottom:16px"></div>
 
 <section id="v-classificacao">
 <div id="mvpA"></div>
@@ -1039,7 +1040,39 @@ $('pcfile').addEventListener('change',async e=>{
     if(await save(path,{jogador:nome,img:url,t:Date.now()}))openCard(nome);
   }catch(x){note('Não foi possível ler essa imagem.')}
 });
-function renderConta(){const em=window.FB&&FB.email&&FB.email();$('conta').innerHTML=`<div class="row" style="justify-content:space-between"><div><b>A tua conta</b><br><span class="tag" style="margin:0">${esc(em||'')}</span></div><button class="btn" id="sair" type="button">Terminar sessão</button></div>`}
+/* ---------- notificações ---------- */
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+let pushState='?';
+const b64u=s=>{const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))};
+async function checkPush(){
+  try{
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))pushState=isIOS&&!standalone()?'ios':'nao';
+    else if(Notification.permission==='denied')pushState='negado';
+    else{const r=await Promise.race([navigator.serviceWorker.ready,new Promise((_,ko)=>setTimeout(()=>ko(new Error('sw')),8000))]);const sub=await r.pushManager.getSubscription();pushState=sub?'on':'off';
+      if(sub&&me.id&&window.SB)window.SB.from('push_subs').upsert({endpoint:sub.endpoint,user_id:me.id,sub:sub.toJSON(),ua:navigator.userAgent.slice(0,200)})}
+  }catch(x){pushState='nao'}
+  renderConta();renderPushAsk();
+}
+async function pushOn(){
+  try{const p=await Notification.requestPermission();if(p!=='granted'){pushState=p==='denied'?'negado':'off';renderConta();renderPushAsk();return note('Não deste autorização para notificações.')}
+    const r=await navigator.serviceWorker.ready;
+    const sub=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(FB.vapid)});
+    const {error}=await window.SB.from('push_subs').upsert({endpoint:sub.endpoint,user_id:me.id,sub:sub.toJSON(),ua:navigator.userAgent.slice(0,200)});
+    if(error)throw error;pushState='on';renderConta();renderPushAsk();note('Notificações ativas. A enviar uma de teste…');pushTest();
+  }catch(x){note('Não foi possível ativar as notificações: '+(x.message||x))}}
+async function pushOff(){try{const r=await navigator.serviceWorker.ready,sub=await r.pushManager.getSubscription();
+  if(sub){await window.SB.from('push_subs').delete().eq('endpoint',sub.endpoint);await sub.unsubscribe()}pushState='off';renderConta();note('Notificações desligadas neste telemóvel.')}catch(x){note('Erro: '+(x.message||x))}}
+async function pushTest(){try{const {data,error}=await window.SB.functions.invoke('notificar',{body:{teste:true}});
+  if(error)throw error;note(data&&data.enviados?'Notificação de teste enviada.':'O servidor não encontrou este telemóvel. Desliga e volta a ativar.')}catch(x){note('O envio de teste falhou: '+(x.message||x))}}
+const PUSHTXT={on:'Ativas neste telemóvel.',off:'Desligadas neste telemóvel.',negado:'Bloqueadas: autoriza as notificações desta app nas definições do telemóvel/navegador.',ios:'No iPhone, instala primeiro a app no ecrã principal (Partilhar → Adicionar ao ecrã principal) e abre-a pelo ícone.',nao:'Este navegador não suporta notificações.','?':'A verificar…'};
+function renderPushAsk(){const box=$('pushAsk');let dis=false;try{dis=localStorage.getItem('pushAskX')==='1'}catch(x){}
+  const show=me.id&&!dis&&(pushState==='off'||pushState==='ios');box.classList.toggle('hide',!show);if(!show)return;
+  box.innerHTML=`<div class="row" style="justify-content:space-between;align-items:flex-start;flex-wrap:nowrap"><div><h2 style="margin:0 0 4px">🔔 Recebe os avisos no telemóvel</h2><p class="tag" style="margin:0">${pushState==='ios'?PUSHTXT.ios:'Convocatória, equipas, MVP e quotas.'}</p></div><button type="button" class="btn" id="pushX" aria-label="Fechar" style="flex:none">✕</button></div>${pushState==='off'?'<button type="button" class="btn pri" id="pushOn2" style="margin-top:10px">Ativar notificações</button>':''}`}
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+  if(t.id==='pushOn'||t.id==='pushOn2')pushOn();else if(t.id==='pushOff')pushOff();else if(t.id==='pushTest')pushTest();
+  else if(t.id==='pushX'){try{localStorage.setItem('pushAskX','1')}catch(x){}renderPushAsk()}});
+function renderConta(){const em=window.FB&&FB.email&&FB.email();$('conta').innerHTML=`<div class="row" style="justify-content:space-between"><div><b>A tua conta</b><br><span class="tag" style="margin:0">${esc(em||'')}</span></div><button class="btn" id="sair" type="button">Terminar sessão</button></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><b>🔔 Notificações</b><p class="tag" style="margin:2px 0 8px">${PUSHTXT[pushState]||''}</p><div class="row" style="gap:8px">${pushState==='off'?'<button class="btn pri" id="pushOn" type="button">Ativar notificações</button>':''}${pushState==='on'?'<button class="btn" id="pushTest" type="button">Enviar teste</button><button class="btn no" id="pushOff" type="button">Desligar</button>':''}</div></div>`}
 $('conta').addEventListener('click',e=>{if(e.target.id==='sair')window.FB&&FB.sair()});
 let convites={lista:[]};
 const inviteURL=c=>location.origin+location.pathname+'?convite='+c;
@@ -1051,7 +1084,7 @@ $('inew').addEventListener('click',async()=>{const a=new Uint8Array(9);crypto.ge
 $('ilist').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.icp){const u=inviteURL(b.dataset.icp);try{await navigator.clipboard.writeText(u);note('Link copiado.')}catch(x){prompt('Copia o link:',u)}}
   const c=b.dataset.ioff||b.dataset.ion;if(c)await save('config/convites',{lista:(convites.lista||[]).map(x=>x.code===c?{...x,ativo:!!b.dataset.ion}:x)})});
-function renderMyCard(){renderConta();renderInvites();const mp=myPlayer();$('mycard').classList.toggle('hide',!mp);if(!mp)return;
+function renderMyCard(){renderConta();renderInvites();renderPushAsk();const mp=myPlayer();$('mycard').classList.toggle('hide',!mp);if(!mp)return;
   $('mycard').innerHTML=`<div class="row" style="justify-content:space-between"><div class="row">${avatar(mp,'av big-av')}<div><b>${esc(mp)}</b><br><span class="tag" style="margin:0">O teu perfil</span></div></div><button class="btn pri" data-card="${esc(mp)}" type="button">Ver o meu cartão</button></div>`}
 
 /* ---------- MVP ---------- */
@@ -1235,7 +1268,7 @@ function refresh(){
   buildNav();
   const timer=setTimeout(()=>note('Os dados ainda não chegaram. Verifica a ligação; a página continua a tentar.'),10000);
   clearTimeout(timer);
-  const fb=await window.FBready;db=fb.db;U=fb.U;me=fb.me;
+  const fb=await window.FBready;db=fb.db;U=fb.U;me=fb.me;checkPush();
   const got=new Set(),need=['plantel','jogos'];
   const done=k=>{got.add(k);if(need.every(x=>got.has(x))){if(!loaded){loaded=true;clearTimeout(timer);note(games.length?'':'Ainda não há jogos guardados.');openForm(null)}refresh()}};
   const fail=e=>{clearTimeout(timer);note('Erro a ler dados: '+(e.message||e.code))};

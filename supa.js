@@ -1,7 +1,7 @@
 // Futeboladas FC — ligação ao Supabase: contas (entrar, convite, recuperar password)
 // e uma camada de dados com o mesmo formato que a app usa (doc/collection/onSnapshot).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, VAPID_PUBLIC } from './config.js';
 
 const $ = id => document.getElementById(id);
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -240,7 +240,8 @@ const U = {
   }
 };
 const resolveReady = window.__fbReady;
-window.FB = { sair: async () => { await sb.auth.signOut(); location.replace(location.pathname); }, email: () => user && user.email };
+window.FB = { sair: async () => { await sb.auth.signOut(); location.replace(location.pathname); }, email: () => user && user.email, vapid: VAPID_PUBLIC };
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(e => console.warn('sw', e));
 
 async function enter(session) {
   user = session.user;
