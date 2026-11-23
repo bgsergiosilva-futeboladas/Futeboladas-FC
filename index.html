@@ -40,6 +40,43 @@ body{margin:0;color:var(--ink);font:16px/1.5 var(--f);font-feature-settings:"tnu
 h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 .glass,.card,.ticket,.side{-webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%)}
 /* header */
+/* ---------- bonecos animados ao lado do título ---------- */
+.ttl{display:flex;align-items:center;gap:10px;min-width:0}.ttl h1{min-width:0}
+.mascot{flex:none;width:64px;height:48px;display:block}.mascot svg{display:block;width:100%;height:100%;overflow:visible}
+.mascot .ink{fill:var(--ink)}.mascot .sk{fill:#f1c7a3}.mascot .ln{stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;fill:none}
+.m-ref{animation:mRef 3.2s ease-in-out infinite;transform-origin:22px 22px}
+.m-led{animation:mLed .5s steps(2) infinite}
+@keyframes mRef{0%,8%{transform:rotate(70deg)}30%,80%{transform:rotate(0)}100%{transform:rotate(70deg)}}
+@keyframes mLed{50%{opacity:.35}}
+.m-bb{animation:mBall 1s infinite}
+.m-kl{animation:mKick 1s infinite;transform-origin:26px 30px}
+@keyframes mBall{0%{transform:translateY(0);animation-timing-function:cubic-bezier(.2,.6,.4,1)}50%{transform:translateY(-27px);animation-timing-function:cubic-bezier(.6,0,.8,.4)}100%{transform:translateY(0)}}
+@keyframes mKick{0%{transform:rotate(-42deg)}15%,85%{transform:rotate(-8deg)}100%{transform:rotate(-42deg)}}
+.m-up{animation:mUp 4s ease-in-out infinite}.m-dn{animation:mDn 4s ease-in-out infinite}.m-ua,.m-da{animation:mArr 4s infinite}
+@keyframes mUp{0%,25%{transform:none}42%,80%{transform:translateY(-14px)}95%,100%{transform:none}}
+@keyframes mDn{0%,25%{transform:none}42%,80%{transform:translateY(14px)}95%,100%{transform:none}}
+@keyframes mArr{0%,24%{opacity:0}30%,70%{opacity:1}78%,100%{opacity:0}}
+.m-note{animation:mNote 2.6s ease-in-out infinite}.m-hop{animation:mHop 2.6s ease-out infinite}.m-arm{animation:mArm 2.6s ease-in-out infinite;transform-origin:17px 24px}
+@keyframes mNote{0%,8%{transform:translateX(0);opacity:0}15%{opacity:1}55%{transform:translateX(22px);opacity:1}70%,100%{transform:translateX(22px);opacity:0}}
+@keyframes mHop{0%,55%{transform:none}63%{transform:translateY(-4px)}71%,100%{transform:none}}
+@keyframes mArm{0%,5%{transform:rotate(25deg)}15%,55%{transform:rotate(-10deg)}70%,100%{transform:rotate(25deg)}}
+.m-bl{animation:mPass 3s linear infinite}.m-w1{animation:mSw 2.2s ease-in-out infinite}.m-w2{animation:mSw 2.8s ease-in-out infinite reverse}.m-r{animation:mSw2 3s ease-in-out infinite}
+@keyframes mPass{0%,8%{transform:translate(0,0)}33%,41%{transform:translate(12px,17px)}66%,74%{transform:translate(30px,4px)}100%{transform:translate(0,0)}}
+@keyframes mSw{0%,100%{transform:none}50%{transform:translate(4px,-3px)}}
+@keyframes mSw2{0%,100%{transform:none}50%{transform:translate(-2px,2px)}}
+.m-sa{animation:mSa 3.6s ease-in-out infinite}.m-sb{animation:mSb 3.6s ease-in-out infinite}
+@keyframes mSa{0%,25%{transform:none}38%{transform:translate(15px,-9px)}50%,75%{transform:translate(30px,0)}88%{transform:translate(15px,9px)}100%{transform:none}}
+@keyframes mSb{0%,25%{transform:none}38%{transform:translate(-15px,9px)}50%,75%{transform:translate(-30px,0)}88%{transform:translate(-15px,-9px)}100%{transform:none}}
+.m-d{opacity:0}.m-l0{animation:mL0 4.8s infinite}.m-l1{animation:mL1 4.8s infinite}.m-l2{animation:mL2 4.8s infinite}.m-r0{animation:mR0 4.8s infinite}.m-r1{animation:mR1 4.8s infinite}.m-pop{animation:mPop 1.2s ease-out infinite;transform-origin:32px 8px}
+@keyframes mL0{0%,24.9%{opacity:1}25%,100%{opacity:0}}
+@keyframes mL1{0%,24.9%{opacity:0}25%,74.9%{opacity:1}75%,100%{opacity:0}}
+@keyframes mL2{0%,74.9%{opacity:0}75%,100%{opacity:1}}
+@keyframes mR0{0%,49.9%{opacity:1}50%,100%{opacity:0}}
+@keyframes mR1{0%,49.9%{opacity:0}50%,100%{opacity:1}}
+@keyframes mPop{0%{transform:scale(.6);opacity:0}20%{transform:scale(1.1);opacity:1}60%{opacity:1}100%{transform:translateY(-4px);opacity:0}}
+@media (max-width:700px){.mascot{width:50px;height:38px}.ttl{gap:6px}}
+@media (prefers-reduced-motion:reduce){.mascot *{animation:none!important}.mascot .m-d{opacity:0}.mascot .m-l2,.mascot .m-r1{opacity:1}}
+
 .top{position:relative;z-index:6;padding:calc(22px + env(safe-area-inset-top)) max(4vw,16px) 6px}
 .brand{display:flex;gap:12px;align-items:center;max-width:1180px;margin:0 auto}
 .brand img{width:58px;height:58px;flex:none;filter:drop-shadow(0 6px 12px rgba(120,20,20,.35))}
@@ -172,7 +209,7 @@ details summary{list-style:none}details summary::-webkit-details-marker{display:
 .foot{margin:28px 0 0;padding:14px 0 0;border-top:1px solid var(--line);text-align:center;font-size:12px;color:var(--mute);line-height:1.6}.foot b{color:var(--ink);font-weight:600}.foot span{white-space:nowrap}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:700px){
- .top{padding:calc(16px + env(safe-area-inset-top)) 14px 2px}.whot,.whoc{display:none}.whob{padding:3px}.whob .who-av{width:40px;height:40px}
+ .top{padding:calc(16px + env(safe-area-inset-top)) 14px 2px}@media (display-mode:standalone){.top{padding-top:calc(34px + env(safe-area-inset-top))}}.whot,.whoc{display:none}.whob{padding:3px}.whob .who-av{width:40px;height:40px}
  .brand img{width:48px;height:48px}.brand h1{font-size:24px}.brand .club{font-size:11px}
  main{padding:12px 12px calc(104px + env(safe-area-inset-bottom))}
  .card,.side{padding:14px;border-radius:18px}
@@ -232,34 +269,6 @@ body.au-on{overflow:hidden}
 .acc-b{display:flex;flex-direction:column;gap:6px;padding:4px 2px 14px}.acc-b label{font-size:12px;color:var(--mute);margin:4px 0 0}.acc-b select{max-width:16em}
 a.btn{text-decoration:none;display:inline-flex;align-items:center}
 
-/* ---------- bilhete do próximo jogo: relvado animado ---------- */
-.ticket{position:relative;overflow:hidden}
-.ticket>.day,.ticket>div:not(.apitch){position:relative;z-index:1}
-.apitch{grid-column:1/-1;margin:4px -22px -22px;height:150px;position:relative;border-top:1px solid rgba(255,255,255,.18);background:repeating-linear-gradient(90deg,#2a7d43 0 50px,#2f8a4a 50px 100px)}
-.apitch svg{display:block;width:100%;height:100%;position:absolute;inset:0}
-.apitch .fig{transform-box:fill-box}
-.apitch .run{animation:pRun 7s linear infinite}
-.apitch .def{animation:pDef 7s linear infinite}
-.apitch .ball{animation:pBall 7s linear infinite}
-.apitch .ball circle{animation:pSpin .35s linear infinite;transform-box:fill-box;transform-origin:center}
-.apitch .keep{animation:pKeep 7s ease-in-out infinite}
-.apitch .net{animation:pNet 7s ease-out infinite;transform-box:fill-box;transform-origin:left center}
-.apitch .golo{animation:pGolo 7s ease-out infinite;transform-box:fill-box;transform-origin:center}
-.apitch .legA{animation:pLegA .32s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:top center}
-.apitch .legB{animation:pLegA .32s ease-in-out infinite alternate-reverse;transform-box:fill-box;transform-origin:top center}
-.apitch .kick{animation:pKick 7s ease-in infinite;transform-box:fill-box;transform-origin:top center}
-@keyframes pLegA{from{transform:rotate(28deg)}to{transform:rotate(-28deg)}}
-@keyframes pRun{0%{transform:translate(190px,0);opacity:0}5%{opacity:1}42%{transform:translate(400px,0)}88%{transform:translate(410px,0);opacity:1}96%,100%{transform:translate(410px,0);opacity:0}}
-@keyframes pDef{0%{transform:translate(140px,0);opacity:0}6%{opacity:1}42%{transform:translate(352px,0)}60%{transform:translate(372px,0)}88%{opacity:1}96%,100%{transform:translate(372px,0);opacity:0}}
-@keyframes pKick{0%,40%{transform:rotate(0)}43%{transform:rotate(-70deg)}48%,100%{transform:rotate(0)}}
-@keyframes pBall{0%{transform:translate(212px,-6px);opacity:0}5%{opacity:1}10%{transform:translate(240px,-14px)}15%{transform:translate(272px,-6px)}20%{transform:translate(305px,-14px)}25%{transform:translate(335px,-6px)}30%{transform:translate(362px,-14px)}36%{transform:translate(400px,-6px)}42%{transform:translate(424px,-6px)}47%{transform:translate(510px,-58px)}51%{transform:translate(566px,-52px)}58%{transform:translate(572px,-12px)}62%{transform:translate(569px,-6px)}86%{transform:translate(569px,-6px);opacity:1}94%,100%{transform:translate(569px,-6px);opacity:0}}
-@keyframes pKeep{0%,43%{transform:translate(538px,0) rotate(0)}50%{transform:translate(520px,-26px) rotate(-75deg)}60%,70%{transform:translate(522px,-4px) rotate(-88deg)}82%,100%{transform:translate(538px,0) rotate(0)}}
-@keyframes pNet{0%,50%{transform:scaleX(1)}54%{transform:scaleX(1.45)}60%{transform:scaleX(.92)}66%,100%{transform:scaleX(1)}}
-@keyframes pGolo{0%,51%{transform:scale(0);opacity:0}56%{transform:scale(1.25);opacity:1}60%{transform:scale(1)}84%{transform:scale(1);opacity:1}92%,100%{transform:scale(.6);opacity:0}}
-@keyframes pSpin{to{transform:rotate(360deg)}}
-@media (min-width:760px){.ticket{grid-template-columns:auto 1fr minmax(320px,44%)}.apitch{grid-column:3;grid-row:1;align-self:stretch;margin:-22px -22px -22px 0;height:auto;min-height:150px;border-top:0;border-left:1px solid rgba(255,255,255,.18)}}
-@media (max-width:700px){.apitch{margin:2px -16px -16px;height:112px}}
-@media (prefers-reduced-motion:reduce){.apitch *{animation:none!important}.apitch .golo{opacity:0}}
 .crwrap{position:relative;width:min(280px,calc(100vw - 80px));aspect-ratio:1;margin:0 auto;border-radius:16px;overflow:hidden;touch-action:none}.crwrap canvas{width:100%;height:100%;display:block;cursor:grab;touch-action:none}.crwrap canvas:active{cursor:grabbing}.crmask{position:absolute;inset:0;pointer-events:none;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);outline:2px solid rgba(255,255,255,.85);outline-offset:-2px}
 .pc.fut{background:transparent;border:1px dashed var(--line);color:var(--mute)}
 .qlist{list-style:none;margin:6px 0 0;padding:0}
@@ -281,7 +290,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div id="au-sheet"><p class="au-txt">A carregar…</p></div>
 </div>
 <header class="top">
-<div class="brand"><img src="assets/logo.webp" alt="Emblema Futeboladas"><div class="bt"><p class="club">Futeboladas FC <span>· Época 2026/27</span></p><h1 id="vt">Classificação</h1><p id="vs"></p></div><div class="who" id="who"></div></div>
+<div class="brand"><img src="assets/logo.webp" alt="Emblema Futeboladas"><div class="bt"><p class="club">Futeboladas FC <span>· Época 2026/27</span></p><div class="ttl"><h1 id="vt">Classificação</h1><span class="mascot" id="vm" aria-hidden="true"></span></div><p id="vs"></p></div><div class="who" id="who"></div></div>
 </header>
 <main>
 <div class="note" id="note">A carregar dados…</div>
@@ -507,7 +516,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
-const BUILD='20261123205625';
+const BUILD='20261123210236';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -576,7 +585,7 @@ function view(){
   if(!all.includes(v)||((v==='novo'||v==='equipas')&&!isApo()))v='classificacao';
   for(const s of all)$('v-'+s).classList.toggle('hide',s!==v);
   const VT={classificacao:['Classificação',''],jogos:['Jogos','Resultados por mês'],novo:['Registar jogo',''],convocatoria:['Convocatória','Quintas às 21h00 · Fut7 Palmeira'],equipas:['Equipas','Automáticas ou sorteio de capitães'],pagamentos:['Quotas','Pagamentos e caixa'],jogadores:['Jogadores','Plantel e acessos']};
-  curView=v;$('vt').textContent=VT[v][0];$('vs').textContent=v==='classificacao'?seasonMeta:VT[v][1];
+  curView=v;$('vt').textContent=VT[v][0];if($('vm').dataset.v!==v){$('vm').dataset.v=v;$('vm').innerHTML=MASCOT[v]||''}$('vs').textContent=v==='classificacao'?seasonMeta:VT[v][1];
   for(const a of $('nav').children)a.classList.toggle('on',a.dataset.k===v||(v==='novo'&&a.dataset.k==='jogos'));
   if(v==='novo'&&!formOpen){startEdit(null);return}
   if(v!=='novo'&&(myLock||formOpen))dropLock();
@@ -774,32 +783,44 @@ function presence(date){
   return {go:yes.slice(0,MAXJ),wait:yes.slice(MAXJ),no,none,map,subs};
 }
 
-const pitchHTML=()=>{
-  const fig=(cls,shirt,shorts,skin='#f1c7a3',hair='#3b2a20',kick='')=>`<g class="fig ${cls}"><g transform="translate(0,0)">
-    <line class="legA ${kick}" x1="-3" y1="-16" x2="-3" y2="0" stroke="${skin}" stroke-width="3.2" stroke-linecap="round"/>
-    <line class="legB" x1="3" y1="-16" x2="3" y2="0" stroke="${skin}" stroke-width="3.2" stroke-linecap="round"/>
-    <rect x="-6" y="-21" width="12" height="7" rx="2" fill="${shorts}"/>
-    <rect x="-7" y="-36" width="14" height="16" rx="4" fill="${shirt}"/>
-    <line x1="-7" y1="-33" x2="-11" y2="-24" stroke="${skin}" stroke-width="2.6" stroke-linecap="round"/>
-    <line x1="7" y1="-33" x2="11" y2="-24" stroke="${skin}" stroke-width="2.6" stroke-linecap="round"/>
-    <circle cx="0" cy="-42" r="6" fill="${skin}"/><path d="M-6 -44a6 6 0 0 1 12 0z" fill="${hair}"/></g></g>`;
-  const stripes=[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>`<rect x="${i*50}" y="0" width="50" height="130" fill="${i%2?'#2f8a4a':'#2a7d43'}"/>`).join('');
-  return `<div class="apitch" aria-hidden="true"><svg viewBox="0 0 600 130" preserveAspectRatio="${innerWidth>=760?'xMaxYMax meet':'xMaxYMax slice'}">
-  ${stripes}
-  <g fill="none" stroke="rgba(255,255,255,.65)" stroke-width="2"><line x1="8" y1="118" x2="592" y2="118"/><line x1="230" y1="8" x2="230" y2="118"/><path d="M230 40a38 38 0 0 1 0 78"/><rect x="470" y="30" width="122" height="88"/></g>
-  <g transform="translate(578,118)">
-    <g class="net"><rect x="0" y="-70" width="16" height="70" fill="rgba(255,255,255,.18)"/>
-      <g stroke="rgba(255,255,255,.55)" stroke-width="1">${[0,1,2,3,4,5,6].map(i=>`<line x1="0" y1="${-70+i*10}" x2="16" y2="${-70+i*10}"/>`).join('')}<line x1="8" y1="-70" x2="8" y2="0"/><line x1="16" y1="-70" x2="16" y2="0"/></g></g>
-    <rect x="-3" y="-72" width="4" height="72" fill="#fff"/><rect x="-3" y="-72" width="21" height="4" fill="#fff"/></g>
-  <g transform="translate(0,118)">
-    ${fig('keep','#f3c623','#222','#e9b98f','#1d1d1d')}
-    ${fig('def','#1f3b73','#16264a','#d9a07a','#111')}
-    ${fig('run','#c81d24','#fff','#f1c7a3','#3b2a20','kick')}
-    <g class="ball"><circle r="5.2" fill="#fff" stroke="#222" stroke-width="1"/><path d="M-2.5 -1.5l2.5-2 2.5 2-1 3h-3z" fill="#222"/></g>
-  </g>
-  <g transform="translate(470,40)"><g class="golo"><text x="0" y="0" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="30" font-weight="900" fill="#ffe7b0" stroke="#7d0f14" stroke-width="5" paint-order="stroke">GOLO!</text></g></g>
-  </svg></div>`;
-};
+
+/* ---------- bonecos animados (um por página) ---------- */
+const MASCOT=(()=>{
+  const svg=b=>`<svg viewBox="0 0 64 48">${b}</svg>`;
+  const head=(x,y)=>`<circle class="sk" cx="${x}" cy="${y}" r="5"/><path d="M${x-5} ${y-1}a5 5 0 0 1 10 0z" fill="#3b2a20"/>`;
+  const man=(x,shirt,shorts='#1d2a44')=>`${head(x,10)}<rect x="${x-5}" y="16" width="10" height="13" rx="3" fill="${shirt}"/><rect x="${x-4.5}" y="28" width="9" height="5" rx="1.5" fill="${shorts}"/><line class="ln" x1="${x-2.5}" y1="33" x2="${x-2.5}" y2="45"/><line class="ln" x1="${x+2.5}" y1="33" x2="${x+2.5}" y2="45"/>`;
+  return {
+  /* árbitro a levantar o painel das substituições */
+  convocatoria:svg(`${man(16,'#f2c200','#111')}<line class="ln" x1="11" y1="19" x2="9" y2="28"/>
+    <g class="m-ref"><line class="ln" x1="21" y1="19" x2="31" y2="13"/><rect x="29" y="2" width="31" height="20" rx="3" fill="#111" stroke="#555" stroke-width="1"/>
+    <g class="m-led" font-family="ui-monospace,monospace" font-weight="800" font-size="12"><text x="33" y="16.5" fill="#ff3b30">7</text><text x="44" y="16.5" fill="#34c759">11</text></g></g>`),
+  /* boneco a dar toques na bola */
+  jogadores:svg(`${head(26,10)}<rect x="21" y="16" width="10" height="13" rx="3" fill="#c81d24"/><rect x="21.5" y="28" width="9" height="5" rx="1.5" fill="#fff" stroke="#bbb" stroke-width=".6"/>
+    <line class="ln" x1="21" y1="19" x2="16" y2="26"/><line class="ln" x1="31" y1="19" x2="36" y2="25"/><line class="ln" x1="24" y1="33" x2="23" y2="45"/>
+    <g class="m-kl"><line class="ln" x1="26" y1="30" x2="26" y2="45"/></g>
+    <g class="m-bb"><circle cx="36" cy="38" r="4.2" fill="#fff" stroke="#222" stroke-width="1"/><path d="M36 35.6l2 1.5-.8 2.3h-2.4l-.8-2.3z" fill="#222"/></g>`),
+  /* tabela com jogadores a trocar de lugar */
+  classificacao:svg(`<g font-family="var(--f)" font-weight="800" font-size="8" class="ink"><text x="1" y="11">1</text><text x="1" y="25">2</text><text x="1" y="39">3</text></g>
+    <g class="m-dn"><rect x="8" y="3" width="54" height="11" rx="3" fill="#c9a04a" opacity=".9"/><circle cx="14" cy="8.5" r="3" fill="#fff"/><rect x="20" y="7" width="22" height="3" rx="1.5" fill="#fff" opacity=".85"/><path class="m-da" d="M52 6.5h6l-3 4z" fill="#ff3b30"/></g>
+    <g class="m-up"><rect x="8" y="17" width="54" height="11" rx="3" fill="#c81d24"/><circle cx="14" cy="22.5" r="3" fill="#fff"/><rect x="20" y="21" width="28" height="3" rx="1.5" fill="#fff" opacity=".85"/><path class="m-ua" d="M52 24.5h6l-3-4z" fill="#34c759"/></g>
+    <rect x="8" y="31" width="54" height="11" rx="3" fill="#8a8a8a" opacity=".55"/><circle cx="14" cy="36.5" r="3" fill="#fff"/><rect x="20" y="35" width="18" height="3" rx="1.5" fill="#fff" opacity=".85"/>`),
+  /* um boneco a dar dinheiro ao outro */
+  pagamentos:svg(`${man(12,'#c81d24')}<line class="ln" x1="7" y1="19" x2="5" y2="28"/><g class="m-arm"><line class="ln" x1="17" y1="19" x2="23" y2="24"/></g>
+    <g class="m-hop">${man(52,'#c9a04a')}<line class="ln" x1="57" y1="19" x2="59" y2="28"/><line class="ln" x1="47" y1="19" x2="42" y2="24"/></g>
+    <g class="m-note"><rect x="17" y="19" width="15" height="9" rx="1.5" fill="#2e9e5b" stroke="#1f6e3f" stroke-width=".8"/><text x="24.5" y="26.2" text-anchor="middle" font-size="7.5" font-weight="800" fill="#fff">€</text></g>`),
+  /* campo visto de cima, jogadores a trocar a bola */
+  jogos:svg(`<rect x="1" y="5" width="62" height="38" rx="4" fill="#2f8a4a"/><g fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1"><rect x="3" y="7" width="58" height="34" rx="1.5"/><line x1="32" y1="7" x2="32" y2="41"/><circle cx="32" cy="24" r="6"/><rect x="3" y="16" width="7" height="16"/><rect x="54" y="16" width="7" height="16"/></g>
+    <g class="m-r"><circle cx="14" cy="14" r="3" fill="#c81d24" stroke="#fff" stroke-width=".8"/><circle cx="26" cy="31" r="3" fill="#c81d24" stroke="#fff" stroke-width=".8"/><circle cx="44" cy="18" r="3" fill="#c81d24" stroke="#fff" stroke-width=".8"/></g>
+    <circle class="m-w1" cx="36" cy="30" r="3" fill="#f2f2f2" stroke="#333" stroke-width=".8"/><circle class="m-w2" cx="22" cy="20" r="3" fill="#f2f2f2" stroke="#333" stroke-width=".8"/><circle cx="58" cy="24" r="3" fill="#f2c200" stroke="#333" stroke-width=".8"/>
+    <circle class="m-bl" cx="17" cy="15" r="1.8" fill="#fff" stroke="#111" stroke-width=".6"/>`),
+  /* duas camisolas a trocar de equipa */
+  equipas:svg(`<g class="m-sa"><path d="M10 12l-6 4 3 6 3-2v17h14V20l3 2 3-6-6-4q-7 5-14 0z" fill="#c81d24" stroke="#7d0f14" stroke-width="1"/><text x="17" y="31" text-anchor="middle" font-size="9" font-weight="800" fill="#fff">1</text></g>
+    <g class="m-sb"><path d="M40 12l-6 4 3 6 3-2v17h14V20l3 2 3-6-6-4q-7 5-14 0z" fill="#f2c200" stroke="#8a6d00" stroke-width="1"/><text x="47" y="31" text-anchor="middle" font-size="9" font-weight="800" fill="#222">2</text></g>`),
+  /* marcador a mudar o resultado */
+  novo:svg(`<rect x="4" y="12" width="56" height="30" rx="5" fill="#111" stroke="#555" stroke-width="1"/><rect x="4" y="12" width="56" height="7" rx="3" fill="#c81d24"/>
+    <g font-family="ui-monospace,monospace" font-weight="800" font-size="16" fill="#ffd60a" text-anchor="middle"><text class="m-d m-l0" x="18" y="37">0</text><text class="m-d m-l1" x="18" y="37">1</text><text class="m-d m-l2" x="18" y="37">2</text><text x="32" y="36" font-size="12" fill="#888">-</text><text class="m-d m-r0" x="46" y="37">0</text><text class="m-d m-r1" x="46" y="37">1</text></g>
+    <g class="m-pop"><text x="32" y="9" text-anchor="middle" font-size="8.5" font-weight="900" fill="#34c759">GOLO!</text></g>`)
+  }})();
 function renderConv(){
   if(!cdate)cdate=nextThu(today());
   const d=dobj(cdate),g=games.find(x=>x.data===cdate);
@@ -811,7 +832,7 @@ function renderConv(){
   $('ticket').innerHTML=`<div class="day"><span>${DIA[d.getDay()]}</span><b>${d.getDate()}</b><span>${MES[d.getMonth()].slice(0,3)} · 21h00</span></div>
    <div><h2>${g?g.cancelado?'Não houve jogo':'Jogo disputado':'Próximo jogo'}</h2><p><b>${esc(k.nome||'Campo FUT7')}</b> · Futebol 7 · Palmeira</p><p>${esc(k.morada||'')}</p>
    <p>${coords?'Coordenadas: '+esc(coords)+' · ':''}<a href="${esc(maps)}" target="_blank" rel="noopener">Abrir no mapa</a></p>
-   <p>Tempo previsto: <a href="${esc(wx)}" target="_blank" rel="noopener">ver previsão para quinta às 21h</a></p></div>`+pitchHTML();
+   <p>Tempo previsto: <a href="${esc(wx)}" target="_blank" rel="noopener">ver previsão para quinta às 21h</a></p></div>`;
   const P=presence(cdate),mp=myPlayer(),mine=mp&&P.map[mp];
   const closed=convClosed(cdate),notOpen=convNotOpen(cdate),lock=notOpen||(closed&&!isAdm());
   const closeTxt=notOpen?(isAdm()?'Inscrições abrem '+fdt(iso(new Date(convOpenAt(cdate))))+' (segunda) às 08:30. Como administrador já podes marcar os outros com ✓ / ✕.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
