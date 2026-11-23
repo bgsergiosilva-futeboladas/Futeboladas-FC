@@ -764,20 +764,39 @@ function withCaptain(t){
 const keepSel=(root,fn)=>{const v={};root.querySelectorAll('select[data-sk2]').forEach(s=>v[s.dataset.sk2]=s.value);fn();root.querySelectorAll('select[data-sk2]').forEach(s=>{if(v[s.dataset.sk2])s.value=v[s.dataset.sk2]})};
 const subSkOpts=sel=>'<option value="">skill</option>'+[0,1,2,3,4,5].map(v=>`<option${v===sel?' selected':''}>${v}</option>`).join('');
 const pkey=P=>P.go.join('|')+'#'+P.subs.map(s=>s.nome+':'+subSk(cdate,s)).join('|');
+let tKey=null;
 function buildTeams(prev){
   if(!cdate)cdate=nextThu(today());tDate=cdate;
-  const P=presence(cdate);
-  const pl=P.go.map(n=>({nome:n,skill:skillOf(n)}));
-  const avg0=pl.length?Math.round(pl.reduce((s,p)=>s+p.skill,0)/pl.length):SKDEF;
-  for(const s of P.subs)pl.push({nome:SUB,label:'Substituto · '+s.nome,skill:okSk(subSk(cdate,s))?subSk(cdate,s):avg0});
-  const avg=pl.length?Math.round(pl.reduce((s,p)=>s+p.skill,0)/pl.length):SKDEF;
-  while(pl.length<MAXJ)pl.push({nome:SUB,skill:avg});
-  tOpts=balance(pl,pairHistory(games,roster));
-  const top=Math.min(6,tOpts.length);
+  const P=presence(cdate),key=cdate+'#'+pkey(P)+'#'+games.length;
+  if(tKey!==key){
+    tKey=key;tOpts=null;teams=null;
+    const pl=P.go.map(n=>({nome:n}));
+    for(const s of P.subs)pl.push({nome:SUB,label:'Substituto · '+s.nome,sub:s.nome});
+    while(pl.length<MAXJ)pl.push({nome:SUB});
+    if(isAdm()){
+      /* o administrador tem as skills: calcula aqui */
+      for(const p of pl)if(p.nome!==SUB)p.skill=skillOf(p.nome);
+      const r0=pl.filter(p=>p.nome!==SUB),avg0=r0.length?Math.round(r0.reduce((s,p)=>s+p.skill,0)/r0.length):SKDEF;
+      for(const p of pl)if(p.sub){const v=subSk(cdate,{nome:p.sub});p.skill=okSk(v)?v:avg0}
+      const kn=pl.filter(p=>okSk(p.skill)),avg=kn.length?Math.round(kn.reduce((s,p)=>s+p.skill,0)/kn.length):SKDEF;
+      for(const p of pl)if(!okSk(p.skill))p.skill=avg;
+      tOpts=balance(pl,pairHistory(games,roster)).map(o=>({a:withCaptain(o.a),b:withCaptain(o.b)}));
+    }else{
+      /* o apontador não vê skills: o servidor equilibra e devolve só as equipas */
+      window.SB.rpc('equipas_auto',{p_data:cdate,p_lista:pl.map(p=>({nome:p.nome,sub:p.sub||null})),p_pares:pairHistory(games,roster),p_cap:capCounts()})
+        .then(({data,error})=>{if(tKey!==key)return;
+          if(error||!Array.isArray(data)||!data.length){tKey=null;note('Não foi possível fazer as equipas'+(error?': '+error.message:'')+'.');return}
+          tOpts=data.map(o=>({a:o.a.map(i=>pl[i]),b:o.b.map(i=>pl[i])}));pickTeam(prev)});
+      return;
+    }
+  }
+  if(tOpts&&tOpts.length)pickTeam(prev);
+}
+function pickTeam(prev){const top=Math.min(6,tOpts.length);
   do{tIdx=Math.floor(Math.random()*top)}while(top>1&&tIdx===prev);
   setTeam();
 }
-function setTeam(){const o=tOpts[tIdx];teams={a:withCaptain(o.a),b:withCaptain(o.b),n:pkey(presence(cdate))};sel=null;renderTeams(true)}
+function setTeam(){const o=tOpts[tIdx];teams={a:[...o.a],b:[...o.b],n:pkey(presence(cdate))};sel=null;renderTeams(true)}
 function renderTeams(keep){
   if(!loaded)return;
   if(!cdate)cdate=nextThu(today());
@@ -790,13 +809,14 @@ function renderTeams(keep){
   if(!P.go.length){teams=null;$('etitle').textContent='Equipas para '+fdt(cdate);$('einfo').textContent='';
     $('epitch').innerHTML='<div class="card" style="grid-column:1/-1"><p style="margin:0">Ainda ninguém confirmou presença para este jogo. As equipas são feitas só com quem disse que vai, por isso confirma primeiro os jogadores na <a href="#convocatoria">Convocatória</a>.</p></div>';return}
   if(!keep||!teams||tDate!==cdate||teams.n!==pkey(P))buildTeams();
+  if(!teams){$('epitch').innerHTML='<div class="card" style="grid-column:1/-1"><p style="margin:0">A preparar as equipas…</p></div>';$('einfo').textContent='';return}
   $('etitle').textContent='Equipas para '+fdt(cdate);$('esave').textContent=isAdm()?'Publicar na convocatória':'Enviar para aprovação';
   const lastG=[...games].filter(played).sort((a,b)=>a.data<b.data?1:-1)[0];
   let kept=0;if(lastG){const same=(x,y)=>(teams.a.some(p=>p.nome===x)&&teams.a.some(p=>p.nome===y))||(teams.b.some(p=>p.nome===x)&&teams.b.some(p=>p.nome===y));
     for(const t of [lastG.a,lastG.b])for(let i=0;i<t.length;i++)for(let j=i+1;j<t.length;j++)if(t[i]!==SUB&&t[j]!==SUB&&same(t[i],t[j]))kept++}
   const fill=MAXJ-P.go.length-P.subs.length;$('einfo').textContent=P.go.length+' confirmados'+(P.subs.length?' + '+P.subs.length+' substituto'+(P.subs.length>1?'s':''):'')+(fill>0?' · faltam '+fill+', preenchidos com Substituto':'')+(lastG?' · '+kept+' dupla'+(kept===1?'':'s')+' repetida'+(kept===1?'':'s')+' do último jogo':'');
   const sum=t=>t.reduce((s,p)=>s+p.skill,0);
-  $('epitch').innerHTML=[['a','Equipa 1'],['b','Equipa 2']].map(([k,l])=>`<div class="side"><h3>${l}${isAdm()?`<span class="num">skill ${sum(teams[k])}</span>`:''}</h3>${teams[k].map((p,i)=>`<button type="button" class="pl ${sel&&sel.k===k&&sel.i===i?'sel':''}" data-k="${k}" data-i="${i}"><span>${esc(p.label||p.nome)}${i===0&&p.nome!==SUB?'<span class="cap">C</span>':''}</span><small>${p.skill}</small></button>`).join('')}</div>`).join('');
+  $('epitch').innerHTML=[['a','Equipa 1'],['b','Equipa 2']].map(([k,l])=>`<div class="side"><h3>${l}${isAdm()?`<span class="num">skill ${sum(teams[k])}</span>`:''}</h3>${teams[k].map((p,i)=>`<button type="button" class="pl ${sel&&sel.k===k&&sel.i===i?'sel':''}" data-k="${k}" data-i="${i}"><span>${esc(p.label||p.nome)}${i===0&&p.nome!==SUB?'<span class="cap">C</span>':''}</span>${isAdm()?`<small>${p.skill}</small>`:''}</button>`).join('')}</div>`).join('');
 }
 $('epitch').addEventListener('click',e=>{
   const b=e.target.closest('.pl');if(!b)return;const k=b.dataset.k,i=+b.dataset.i;
