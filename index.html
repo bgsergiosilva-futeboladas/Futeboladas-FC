@@ -353,7 +353,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="card" style="margin-top:16px"><h2>Cópia de segurança</h2>
 <p class="tag" style="margin:0 0 8px">Guarda todos os dados (plantel, jogos, convocatórias, votos, MVP, quotas, caixa e fotos). Para restaurar, carrega o ficheiro ou cola o texto e toca em Restaurar.</p>
 <textarea id="bk" spellcheck="false" style="width:100%;min-height:110px;font:13px ui-monospace,monospace;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);padding:8px"></textarea>
-<div class="row" style="margin-top:8px"><button class="btn pri" id="bdown" type="button">Descarregar cópia</button><button class="btn" id="bcopy" type="button">Copiar texto</button><label class="btn" style="margin:0;cursor:pointer">Carregar ficheiro<input type="file" id="bfile" accept=".json,application/json" class="hide"></label><button class="btn no" id="brest" type="button">Restaurar</button></div><p class="err" id="berr"></p></div>
+<div class="row" style="margin-top:8px"><button class="btn pri" id="bdown" type="button">Descarregar cópia</button><button class="btn" id="bcopy" type="button">Copiar texto</button><label class="btn" style="margin:0;cursor:pointer">Carregar ficheiro<input type="file" id="bfile" accept=".json,.txt,application/json,text/plain" class="hide"></label><button class="btn no" id="brest" type="button">Restaurar</button></div><p class="err" id="berr"></p></div>
 </div>
 </div>
 </section>
@@ -1237,7 +1237,7 @@ $('brest').addEventListener('click',async e=>{
     if(o.caixa){await db.doc('config/caixa').set({...caixa,...o.caixa});feito.push('caixa')}
     for(const c of ['conv','votos','mvpvotos','fotos'])for(const [k,v] of Object.entries(o[c]||{}))await db.doc(c+'/'+k).set(v);
     $('berr').textContent='Restaurado: '+(feito.join(', ')||'nada para gravar')+'.';
-  }catch(x){$('berr').textContent='Texto inválido ou falha ao gravar.'}
+  }catch(x){$('berr').textContent=x instanceof SyntaxError?'Texto inválido: confirma que colaste o texto todo, do primeiro { ao último }.':'Falha ao gravar: '+(x&&(x.message||x.code)||x)}
 });
 
 /* ---------- pedido de acesso ---------- */
