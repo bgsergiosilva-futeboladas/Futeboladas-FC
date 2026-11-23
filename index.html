@@ -258,11 +258,11 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 </section>
 
 <section id="v-jogos" class="hide">
-<div class="row" style="justify-content:space-between;margin-bottom:12px"><div class="chips" id="months" style="margin:0"></div><button class="btn pri apo" id="newGame" type="button">+ Novo jogo</button></div>
+<div class="row" style="justify-content:space-between;margin-bottom:12px"><div style="flex:1 1 12em;max-width:16em"><label for="msel" style="margin:0 0 4px">Mês</label><select id="msel"></select></div><button class="btn pri apo" id="newGame" type="button">+ Novo jogo</button></div>
 <div class="card hide" id="ppanel" style="margin-bottom:14px"></div>
 <div id="mvpB"></div>
 <div class="card scroll" id="mtab"></div>
-<h2 id="mtitle">Jogos</h2>
+<div class="row" style="justify-content:space-between;align-items:end;margin:18px 0 10px"><h2 id="mtitle" style="margin:0">Jogos</h2><div style="flex:0 1 16em"><label for="gsel" style="margin:0 0 4px">Jogo</label><select id="gsel"></select></div></div>
 <div id="glist"></div>
 </section>
 
@@ -549,9 +549,9 @@ function renderTable(){
 /* ---------- jogos ---------- */
 function renderGames(){
   const keys=[...new Set(games.map(g=>mkey(g.data)))].sort();
-  if(!keys.length){$('months').innerHTML='';$('mtab').innerHTML='<p>Ainda não há jogos.</p>';$('glist').innerHTML='';return}
+  if(!keys.length){$('msel').innerHTML='';$('gsel').innerHTML='';$('mtab').innerHTML='<p>Ainda não há jogos.</p>';$('glist').innerHTML='';return}
   if(!keys.includes(month))month=keys[keys.length-1];
-  $('months').innerHTML=keys.map(k=>`<button type="button" data-m="${k}" class="${k===month?'on':''}">${mname(k)}</button>`).join('');
+  $('msel').innerHTML=[...keys].reverse().map(k=>`<option value="${k}"${k===month?' selected':''}>${mname(k)}</option>`).join('');
   const mg=games.filter(g=>mkey(g.data)===month).sort((a,b)=>a.data<b.data?-1:1);
   const S=compute(mg,roster,MVP.win),rows=S.list.filter(s=>s.J>0);
   $('mtab').innerHTML=rows.length?`<table><thead><tr><th>#</th><th class="l">Jogador</th><th>Pts</th><th>J</th><th>V</th><th>E</th><th>D</th><th class="hm">+Cap</th><th>Atr.</th></tr></thead><tbody>`+
@@ -562,10 +562,15 @@ function renderGames(){
   const gameMeta=g=>{const m=MVP.by[g.id],t=[g.modo==='auto'?'Equipas automáticas (sem ponto de capitão)':g.modo==='capitaes'?'Capitães sorteados (+1 ao capitão vencedor)':''];if(m)t.push(m.open?'Votação MVP aberta até '+fdt(iso(new Date(m.closeAt)))+' às 23:59':m.winners.length?'MVP: '+m.winners.join(', ')+' ('+m.max+' voto'+(m.max>1?'s':'')+')':'');const x=t.filter(Boolean);return x.length?`<p class="tag" style="margin:0;grid-column:1/-1">${esc(x.join(' · '))}</p>`:''};
   const pend=id=>Object.values(propostas).some(p=>p.tipo==='jogo'&&p.estado!=='rejeitada'&&(p.alvo===id||p.de===id));
   const acts=g=>(isAdm()?`<span class="row"><button class="btn" data-e="${g.id}">Editar</button><button class="btn no" data-d="${g.id}">Apagar</button></span>`:isApo()?`<span class="row"><button class="btn" data-e="${g.id}">Propor alteração</button></span>`:'')+(pend(g.id)?'<span class="tag">alteração pendente</span>':'')+(lockedByOther(g.id)?`<span class="tag">🔒 ${esc(lockedByOther(g.id).autor||'')} a editar</span>`:'');
-  $('glist').innerHTML=mg.map(g=>g.cancelado?`<div class="card game"><h3>${fdt(g.data)} · Não houve jogo${acts(g)}</h3>${g.motivo?`<p style="margin:0;grid-column:1/-1" class="tag">${esc(g.motivo)}</p>`:''}</div>`:
+  if(!mg.some(g=>g.id===gsel))gsel=mg.length?mg[mg.length-1].id:null;
+  $('gsel').innerHTML=[...mg].reverse().map(g=>`<option value="${g.id}"${g.id===gsel?' selected':''}>${fdt(g.data)}${g.cancelado?' · não houve jogo':''}</option>`).join('');
+  const sg=mg.filter(g=>g.id===gsel);
+  $('glist').innerHTML=sg.map(g=>g.cancelado?`<div class="card game"><h3>${fdt(g.data)} · Não houve jogo${acts(g)}</h3>${g.motivo?`<p style="margin:0;grid-column:1/-1" class="tag">${esc(g.motivo)}</p>`:''}</div>`:
     `<div class="card game"><h3>${fdt(g.data)}${acts(g)}</h3>${gameMeta(g)}${team(g.a,g.r,'Equipa 1'+(g.coletes==='a'?' · coletes':''),g.atr||[])}${team(g.b,INV[g.r],'Equipa 2'+(g.coletes==='b'?' · coletes':''),g.atr||[])}</div>`).join('');
 }
-$('months').addEventListener('click',e=>{const b=e.target.closest('button');if(b){month=b.dataset.m;renderGames()}});
+var gsel=null;
+$('msel').addEventListener('change',e=>{month=e.target.value;gsel=null;renderGames()});
+$('gsel').addEventListener('change',e=>{gsel=e.target.value;renderGames()});
 $('newGame').addEventListener('click',()=>startEdit(null));
 $('glist').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
@@ -690,7 +695,7 @@ $('f').addEventListener('submit',async e=>{
   }
   if(await save('jogos/'+id,doc)){
     if(editId&&editId!==id)try{await db.doc('jogos/'+editId).delete()}catch(x){}
-    month=mkey(data);await dropLock();openForm(null,null,true);location.hash='#jogos';
+    month=mkey(data);gsel=id;await dropLock();openForm(null,null,true);location.hash='#jogos';
   }
 });
 
