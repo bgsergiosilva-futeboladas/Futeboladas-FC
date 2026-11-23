@@ -51,6 +51,7 @@ h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 .whob{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--edge);border-radius:999px;padding:4px 12px 4px 4px;color:inherit;font:inherit;cursor:pointer;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 .whob .who-av{width:38px;height:38px;font-size:12px}.whot{text-align:left;line-height:1.25}.whot b{display:block;color:var(--ink);font-size:14px}.whoc{font-size:11px}
 .whom{position:absolute;right:0;top:calc(100% + 8px);min-width:220px;z-index:40;padding:6px;border-radius:16px;background:light-dark(#fffaf6,#241819);border:1px solid var(--edge);box-shadow:var(--shadow);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);display:flex;flex-direction:column}
+.simbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;border:0;border-radius:999px;padding:10px 18px;background:#1f6feb;color:#fff;font:700 14px var(--f);box-shadow:0 8px 20px rgba(0,0,0,.3);cursor:pointer;white-space:nowrap}
 .whom button{all:unset;cursor:pointer;padding:11px 12px;border-radius:10px;font-size:15px;color:var(--ink)}.whom button:hover,.whom button:focus-visible{background:light-dark(rgba(179,20,27,.08),rgba(255,255,255,.08))}.whom .out{color:var(--red)}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;gap:2px;padding:6px max(8px,calc((100% - 680px)/2)) calc(6px + env(safe-area-inset-bottom));background:light-dark(#fbf8f6,#1a1112);border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(0,0,0,.10)}
 nav a{flex:1 1 0;max-width:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:6px 2px;border-radius:16px;color:var(--mute);text-decoration:none;font-weight:600;font-size:11px;white-space:nowrap;position:relative;transition:background .2s,color .2s}
@@ -459,7 +460,8 @@ const SUB='Substituto',OUT='__outro__',MAXJ=14;
 const ICONS={classificacao:'M4 20h16M6 16V10M12 16V4M18 16v-8',jogos:'M4 5h16v14H4zM4 10h16M9 5v14',convocatoria:'M8 4h8v3H8zM6 6h12v14H6zM9 12l2 2 4-4',equipas:'M8 8a2.5 2.5 0 1 0 0-.1M16 8a2.5 2.5 0 1 0 0-.1M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5',pagamentos:'M3 7h18v10H3zM3 11h18M7 15h3',jogadores:'M12 8a3 3 0 1 0 0-.1M5 20c0-4 3-6 7-6s7 2 7 6'};
 const TABS=[['classificacao','Tabela','all'],['jogos','Jogos','all'],['convocatoria','Convocatória','all'],['equipas','Equipas','apo'],['pagamentos','Quotas','all'],['jogadores','Jogadores','all']];
 const PAPEL={admin:'Administrador',tesoureiro:'Tesoureiro',apontador:'Apontador',jogador:'Jogador'};
-const rolesOf=a=>a?(Array.isArray(a.papeis)?a.papeis:a.papel?[a.papel]:[]):[];
+/* todas as contas são Jogador; Administrador, Tesoureiro e Apontador são extra, atribuídos pelo admin */
+const rolesOf=a=>{if(!a)return[];const r=Array.isArray(a.papeis)?a.papeis:a.papel?[a.papel]:[];return r.includes('jogador')?r:['jogador',...r]};
 let roles=[],propostas={};
 let db=null,U=null,me={id:null,owner:false},role='anon';
 let caixa={},roster=[],acessos={},games=[],conv={},votos={},pags={},pedidos={},campo={};
@@ -478,10 +480,13 @@ const inRoster=n=>roster.some(r=>r.nome===n);
 const isAdm=()=>roles.includes('admin'),isTes=()=>isAdm()||roles.includes('tesoureiro'),isApo=()=>isAdm()||roles.includes('apontador');
 let whoOpen=false;
 function renderWho(){const mp=myPlayer();
+  let sw=$('simwrap');if(!sw){sw=document.createElement('div');sw.id='simwrap';document.body.appendChild(sw)}
+  sw.innerHTML=realAdm&&simJog?'<button type="button" id="simoff" class="simbar">👁 A ver como jogador · Voltar</button>':'';
   $('who').innerHTML=me.id?`<button type="button" class="whob" id="whob" aria-haspopup="menu" aria-expanded="${whoOpen}" aria-label="A minha conta">${avatar(mp||'?','av who-av')}<span class="whot"><b>${esc(mp||'Sem jogador associado')}</b>${roleLabel()}</span><span class="whoc">▾</span></button>
-  <div class="whom${whoOpen?'':' hide'}" role="menu">${mp?`<button type="button" role="menuitem" data-card="${esc(mp)}">O meu cartão e foto</button>`:''}<button type="button" role="menuitem" class="out" id="whosair">Terminar sessão</button></div>`:''}
+  <div class="whom${whoOpen?'':' hide'}" role="menu">${mp?`<button type="button" role="menuitem" data-card="${esc(mp)}">O meu cartão e foto</button>`:''}${realAdm?`<button type="button" role="menuitem" id="whosim">${simJog?'Voltar a ver como administrador':'Ver como jogador'}</button>`:''}<button type="button" role="menuitem" class="out" id="whosair">Terminar sessão</button></div>`:''}
 document.addEventListener('click',e=>{
   if(e.target.closest('#whob')){whoOpen=!whoOpen;renderWho();return}
+  if(e.target.closest('#whosim')||e.target.closest('#simoff')){setSim(!simJog);return}
   if(e.target.closest('#whosair')){whoOpen=false;window.FB&&FB.sair();return}
   if(whoOpen&&!e.target.closest('.whom')||e.target.closest('.whom [data-card]')){whoOpen=false;renderWho()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&whoOpen){whoOpen=false;renderWho()}});
@@ -1122,7 +1127,7 @@ async function renderAccess(){
   const ps=U&&U.profiles?await U.profiles(ids):{};
   const nm=id=>(ps[id]&&ps[id].name)||'Conta sem nome visível';
   const plOpts=v=>'<option value="">— jogador —</option>'+roster.filter(r=>r.ativo!==false).map(r=>`<option${r.nome===v?' selected':''}>${esc(r.nome)}</option>`).join('');
-  const roleChecks=(id,vals,attr)=>`<span class="checks" style="gap:4px">${Object.entries(PAPEL).map(([k,l])=>`<label style="min-height:36px;padding:0 10px"><input type="checkbox" ${attr}="${id}" value="${k}"${vals.includes(k)?' checked':''}${attr==='data-ar'&&id===me.id&&me.owner&&k==='admin'?' disabled':''}>${l}</label>`).join('')}</span>`;
+  const roleChecks=(id,vals,attr)=>`<span class="checks" style="gap:4px">${Object.entries(PAPEL).map(([k,l])=>`<label style="min-height:36px;padding:0 10px"><input type="checkbox" ${attr}="${id}" value="${k}"${vals.includes(k)?' checked':''}${k==='jogador'?' checked disabled title="Todas as contas são Jogador"':attr==='data-ar'&&id===me.id&&me.owner&&k==='admin'?' disabled':''}>${l}</label>`).join('')}</span>`;
   $('aped').innerHTML=Object.entries(pedidos).filter(([id])=>!acessos[id]).map(([id,p])=>`<li><span>${esc(nm(id))}<br><span class="tag" style="margin:0">diz ser ${esc(p.jogador||'?')}</span></span><span class="mini" style="flex-wrap:wrap">${roleChecks(id,['jogador'],'data-pr')}<button class="btn ok" data-ap="${id}">Aprovar</button></span></li>`).join('')||'<li class="tag">Sem pedidos.</li>';
   const list=Object.keys(acessos);if(me.id&&!list.includes(me.id))list.unshift(me.id);
   { const pend=Object.keys(pedidos).filter(id=>!acessos[id]).length,act=roster.filter(r=>r.ativo!==false),
@@ -1155,10 +1160,10 @@ $('v-jogadores').addEventListener('change',async e=>{const s=e.target;
   if(s.dataset.aj||s.dataset.ar){const id=s.dataset.aj||s.dataset.ar;const a={...(acessos[id]||{})};
     if(s.dataset.aj)a.jogador=s.value;
     else{let ps=[...document.querySelectorAll(`[data-ar="${id}"]:checked`)].map(i=>i.value);if(id===me.id&&me.owner&&!ps.includes('admin'))ps.unshift('admin');
-      if(!ps.length){s.checked=true;return note('Cada conta precisa de pelo menos um perfil. Para tirar o acesso, usa Remover.')}a.papeis=ps;delete a.papel}
+      if(!ps.includes('jogador'))ps.unshift('jogador');a.papeis=ps;delete a.papel}
     await save('config/acessos',{map:{...acessos,[id]:a}})}});
 $('v-jogadores').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.ap){const id=b.dataset.ap,papeis=[...document.querySelectorAll(`[data-pr="${id}"]:checked`)].map(i=>i.value);if(!papeis.length)return note('Escolhe pelo menos um perfil.');
+  if(b.dataset.ap){const id=b.dataset.ap,papeis=[...document.querySelectorAll(`[data-pr="${id}"]:checked`)].map(i=>i.value);if(!papeis.includes('jogador'))papeis.unshift('jogador');
     if(await save('config/acessos',{map:{...acessos,[id]:{jogador:pedidos[id].jogador||'',papeis}}}))try{await db.doc('pedidos/'+id).delete()}catch(x){}}
   if(b.dataset.ax){const m={...acessos};delete m[b.dataset.ax];await save('config/acessos',{map:m})}});
 $('bdown').addEventListener('click',()=>{const t=backupJSON(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'application/json'}));a.download='futeboladas-copia-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();$('berr').textContent='Cópia descarregada ('+Math.round(t.length/1024)+' KB).'});
@@ -1197,7 +1202,13 @@ function renderAsk(){
 $('askAccess').addEventListener('click',async e=>{if(e.target.id!=='askBtn')return;const v=$('askSel').value;if(!v)return;await save('pedidos/'+me.id,{jogador:v,t:Date.now()})});
 
 /* ---------- arranque ---------- */
-function computeRole(){const a=acessos[me.id];const gone=a&&a.jogador&&roster.some(r=>r.nome===a.jogador&&r.ativo===false);roles=gone?[]:rolesOf(a);if(me.owner&&!roles.includes('admin'))roles=['admin',...roles];role=roles.join(',')||(me.id?'pendente':'anon')}
+let simJog=false;try{simJog=sessionStorage.getItem('simJog')==='1'}catch(x){}
+let realAdm=false;
+function computeRole(){const a=acessos[me.id];const gone=a&&a.jogador&&roster.some(r=>r.nome===a.jogador&&r.ativo===false);roles=gone?[]:rolesOf(a);if(me.owner&&!roles.includes('admin'))roles=['admin',...roles];
+  realAdm=roles.includes('admin');if(realAdm&&simJog)roles=['jogador'];
+  document.body.classList.toggle('sim',realAdm&&simJog);
+  role=roles.join(',')||(me.id?'pendente':'anon')}
+function setSim(on){simJog=on;try{sessionStorage.setItem('simJog',on?'1':'0')}catch(x){}whoOpen=false;refresh();note(on?'Estás a ver a app como um jogador.':'De volta à vista de administrador.')}
 let lastRole=null;
 function refresh(){
   if(!loaded)return;
