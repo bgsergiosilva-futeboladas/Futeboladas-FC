@@ -45,6 +45,7 @@ function loginScreen(info) {
     const email = $('au-e').value.trim(), password = $('au-p').value;
     if (!email || !password) return out('Escreve o email e a password.');
     busy(b, true, 'A entrar…');
+    marcaLogin();
     const { error } = await sb.auth.signInWithPassword({ email, password });
     busy(b, false, 'Entrar');
     if (error) out(msgOf(error));
@@ -87,6 +88,7 @@ function newPasswordScreen() {
     const { error } = await sb.auth.updateUser({ password: p });
     busy(b, false, 'Guardar password');
     if (error) return out(msgOf(error));
+    marcaLogin();
     location.replace(location.pathname);
   };
 }
@@ -123,7 +125,7 @@ async function inviteScreen(code) {
     busy(b, false, 'Criar conta');
     if (er) return out(msgOf(er));
     history.replaceState(null, '', location.pathname);
-    if (r && r.session) return; // confirmação de email desligada: entra logo
+    if (r && r.session) { marcaLogin(); return; } // confirmação de email desligada: entra logo
     show(`<h2>Confirma o email</h2><p class="au-txt">Enviámos um email para <b>${esc(email)}</b>. Abre-o e toca no link de confirmação; depois entra com o email e a password.</p><p class="au-txt">Não chegou? Vê a pasta de spam.</p><button class="au-btn" id="au-back">Ir para Entrar</button>`);
     $('au-back').onclick = () => loginScreen();
   };
@@ -131,7 +133,7 @@ async function inviteScreen(code) {
 
 function blockedScreen() {
   show(`<h2>Sem acesso</h2><p class="au-txt">Esta conta não tem acesso à app. Se saíste do grupo, o acesso foi cancelado; se és novo, pede o link de convite ao administrador.</p><button class="au-btn" id="au-out">Terminar sessão</button>`);
-  $('au-out').onclick = async () => { await sb.auth.signOut(); loginScreen(); };
+  $('au-out').onclick = async () => { await sb.auth.signOut({ scope: 'local' }); loginScreen(); };
 }
 
 /* ------------------------------------------------------------------ camada de dados */
@@ -218,6 +220,16 @@ async function resync() {
   } catch (e) { console.warn(e); }
 }
 
+/* ------------------------------------------------------------------ sessão: máximo 1 hora */
+const MAX_SESSAO = 60 * 60 * 1000;
+const loginAt = () => { try { return +localStorage.getItem('fbLoginAt') || 0; } catch (e) { return 0; } };
+const marcaLogin = () => { try { localStorage.setItem('fbLoginAt', String(Date.now())); } catch (e) {} };
+const expirada = () => loginAt() > 0 && Date.now() - loginAt() > MAX_SESSAO;
+async function terminaPorTempo() {
+  try { localStorage.removeItem('fbLoginAt'); } catch (e) {}
+  await sb.auth.signOut({ scope: 'local' }); location.replace(location.pathname + '?expirou=1');
+}
+
 /* ------------------------------------------------------------------ arranque */
 let user = null, started = false, owner = false;
 async function access() {
@@ -240,11 +252,13 @@ const U = {
   }
 };
 const resolveReady = window.__fbReady;
-window.FB = { sair: async () => { await sb.auth.signOut(); location.replace(location.pathname); }, email: () => user && user.email, vapid: VAPID_PUBLIC };
+window.FB = { sair: async () => { try { localStorage.removeItem('fbLoginAt'); } catch (e) {} await sb.auth.signOut({ scope: 'local' }); location.replace(location.pathname); }, email: () => user && user.email, vapid: VAPID_PUBLIC };
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(e => console.warn('sw', e));
 
 async function enter(session) {
   user = session.user;
+  if (!loginAt()) marcaLogin();
+  if (expirada()) return terminaPorTempo();
   let acc;
   try { acc = await access(); } catch (e) { return show(`<h2>Sem ligação</h2><p class="au-txt">Não foi possível contactar o servidor. Verifica a internet e volta a abrir a app.</p>`); }
   if (!acc.member && !acc.pending) return blockedScreen();
@@ -254,9 +268,9 @@ async function enter(session) {
   await loadAll(); subscribe();
   resolveReady({ db, U, me: { id: user.id, owner } });
   // o administrador pode retirar o acesso a qualquer momento (ex.: jogador "Saiu")
-  const recheck = async () => { try { const a = await access(); if (!a.member && !a.pending) { await sb.auth.signOut(); location.replace(location.pathname + '?saiu=1'); } } catch (e) {} };
-  setInterval(recheck, 60000);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { recheck(); resync(); } });
+  const recheck = async () => { try { const a = await access(); if (!a.member && !a.pending) { await sb.auth.signOut({ scope: 'local' }); location.replace(location.pathname + '?saiu=1'); } } catch (e) {} };
+  setInterval(() => { if (expirada()) terminaPorTempo(); else recheck(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { if (expirada()) return terminaPorTempo(); recheck(); resync(); } });
 }
 
 (async () => {
@@ -271,5 +285,5 @@ async function enter(session) {
   if (recovering) return newPasswordScreen();
   if (code && !session) return inviteScreen(code);
   if (session) return enter(session);
-  loginScreen(q.get('saiu') ? 'O teu acesso à app foi cancelado pelo administrador.' : '');
+  loginScreen(q.get('saiu') ? 'O teu acesso à app foi cancelado pelo administrador.' : q.get('expirou') ? 'A sessão terminou ao fim de 1 hora. Entra de novo.' : '');
 })();
