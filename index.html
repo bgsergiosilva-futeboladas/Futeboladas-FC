@@ -447,11 +447,13 @@ function compute(games,roster,mvpW){
   list.forEach((s,i)=>s.pos=i+1);
   return {list,total,guests};
 }
+/* tabela geral: quem saiu do grupo (inativo) não aparece; as posições são renumeradas */
+const soAtivos=S=>{S.list=S.list.filter(s=>s.ativo);S.list.forEach((s,i)=>s.pos=i+1);return S};
 function standings(games,roster,mvpW){
-  const cur=compute(games,roster,mvpW);
+  const cur=soAtivos(compute(games,roster,mvpW));
   const dates=[...new Set(games.filter(played).map(g=>g.data))].sort();
   if(dates.length>1){
-    const prev=compute(games.filter(g=>g.data<dates[dates.length-1]),roster,mvpW);
+    const prev=soAtivos(compute(games.filter(g=>g.data<dates[dates.length-1]),roster,mvpW));
     const pp=Object.fromEntries(prev.list.map(s=>[s.nome,s.pos]));
     cur.list.forEach(s=>s.ant=pp[s.nome]??null);
   }
@@ -516,7 +518,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
-const BUILD='20261124130242';
+const BUILD='20261124130741';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -1138,7 +1140,7 @@ const ini=n=>n.split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpp
 const avatar=(n,cls='av')=>{const f=fotoOf(n);return f?`<img class="${cls}" src="${f}" alt="">`:`<span class="${cls} ph">${esc(ini(n))}</span>`};
 const slug=n=>n.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-');
 function playerStats(nome){
-  const S=standings(games,roster,MVP.win),me_=S.list.find(s=>s.nome===nome)||{J:0,V:0,E:0,D:0,pts:0,mvp:0,cap:0,capW:0,atr:0,pv:0,comp:0,forma:[],pos:'–'};
+  const S=standings(games,roster,MVP.win),me_=S.list.find(s=>s.nome===nome)||(x=>x&&{...x,pos:'–'})(compute(games,roster,MVP.win).list.find(s=>s.nome===nome))||{J:0,V:0,E:0,D:0,pts:0,mvp:0,cap:0,capW:0,atr:0,pv:0,comp:0,forma:[],pos:'–'};
   const gs=games.filter(played).sort((a,b)=>a.data<b.data?-1:1),seq=[],mates={},months={};
   for(const g of gs){const side=g.a.includes(nome)?'a':g.b.includes(nome)?'b':null;if(!side)continue;
     const res=side==='a'?g.r:INV[g.r];seq.push(res);
