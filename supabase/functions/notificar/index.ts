@@ -60,7 +60,7 @@ export function presenca(D: Any, data: string) {
   for (const [n, x] of Object.entries(man) as Any) if (!map[n] || x.t > map[n].t) map[n] = x;
   const act = D.roster.filter((r: Any) => r.ativo !== false).map((r: Any) => r.nome);
   const yes = Object.entries(map).filter(([n, x]: Any) => x.vai && act.includes(n)).sort((a: Any, b: Any) => a[1].t - b[1].t).map((e) => e[0]);
-  return { go: yes.slice(0, MAXJ), none: act.filter((n: string) => !map[n]) };
+  return { go: yes.slice(0, MAXJ), wait: yes.slice(MAXJ), none: act.filter((n: string) => !map[n]) };
 }
 
 // Decide o que enviar agora. Devolve [{chave, para:[user_id], titulo, texto, url}]
@@ -147,6 +147,48 @@ async function enviar(sb: Any, para: string[], msg: Any) {
   return ok;
 }
 
+async function carregar(sb: Any) {
+  const { data: rows } = await sb.from("docs").select("col,id,data");
+  const D: Any = { roster: [], acessos: {}, conv: {}, votos: {}, mvpvotos: {}, jogos: {}, pags: {}, propostas: {}, donos: [] };
+  for (const r of rows || []) {
+    if (r.col === "config" && r.id === "plantel") D.roster = r.data.roster || [];
+    else if (r.col === "config" && r.id === "acessos") D.acessos = r.data.map || {};
+    else if (r.col === "conv") D.conv[r.id] = r.data;
+    else if (r.col === "votos") D.votos[r.id] = r.data;
+    else if (r.col === "mvpvotos") D.mvpvotos[r.id] = r.data;
+    else if (r.col === "jogos") D.jogos[r.id] = r.data;
+    else if (r.col === "pagamentos") D.pags[r.id] = r.data;
+    else if (r.col === "propostas") D.propostas[r.id] = r.data;
+  }
+  return D;
+}
+
+// Lista de espera: regista quem está nela e avisa quem entrar nos 14 depois de lá ter estado.
+export function esperaPlano(D: Any, data: string, agoraMs: number) {
+  if (agoraMs >= lisEpoch(data, 21, 0, 0)) return { registar: [], go: null }; // o jogo já começou
+  const P = presenca(D, data);
+  return { registar: P.wait as string[], go: P.go as string[] };
+}
+async function tratarEspera(sb: Any, D: Any, data: string, agoraMs: number) {
+  const pl: Any = esperaPlano(D, data, agoraMs);
+  if (!pl.go) return [];
+  for (const n of pl.registar) await sb.from("notif_log").insert({ chave: `espera|${data}|${n}` });
+  const { data: ks } = await sb.from("notif_log").select("chave").like("chave", `espera|${data}|%`);
+  const esteve = new Set((ks || []).map((k: Any) => k.chave.split("|").slice(2).join("|")));
+  const feito: Any[] = [];
+  for (const n of pl.go) {
+    if (!esteve.has(n)) continue;
+    const { error } = await sb.from("notif_log").insert({ chave: `promo|${data}|${n}` });
+    if (error) continue; // já avisado
+    const uids = Object.entries(D.acessos as Record<string, Any>).filter(([, a]) => a && a.jogador === n).map(([u]) => u);
+    const k = await enviar(sb, uids, { title: "✅ Foste convocado!", body: `Alguém desistiu e entraste nos ${MAXJ} para quinta, ${fdt(data)} às 21h00. Se já não puderes ir, retira a resposta na app.`, url: "/#convocatoria" });
+    await sb.from("notif_log").update({ n: k }).eq("chave", `promo|${data}|${n}`);
+    feito.push({ promovido: n, enviados: k });
+  }
+  return feito;
+}
+const proxQuinta = (hoje: string, dow: number) => addDias(hoje, (4 - dow + 7) % 7);
+
 if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return json({});
   webpush.setVapidDetails("mailto:futeboladas@example.com", Deno.env.get("VAPID_PUBLIC")!, Deno.env.get("VAPID_PRIVATE")!);
@@ -162,20 +204,20 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     return json({ enviados: n });
   }
 
+  // alguém mudou a resposta na convocatória: tratar a lista de espera desse jogo
+  if (body.espera) {
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");
+    const { data: u } = await sb.auth.getUser(token);
+    if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(body.espera))) return json({ erro: "data inválida" }, 400);
+    const D = await carregar(sb);
+    if (!D.acessos[u.user.id]) return json({ erro: "sem acesso" }, 403);
+    return json({ feito: await tratarEspera(sb, D, body.espera, Date.now()) });
+  }
+
   // chamada do agendamento
   if (req.headers.get("x-cron-secret") !== Deno.env.get("CRON_SECRET")) return json({ erro: "proibido" }, 403);
-  const { data: rows } = await sb.from("docs").select("col,id,data");
-  const D: Any = { roster: [], acessos: {}, conv: {}, votos: {}, mvpvotos: {}, jogos: {}, pags: {}, propostas: {}, donos: [] };
-  for (const r of rows || []) {
-    if (r.col === "config" && r.id === "plantel") D.roster = r.data.roster || [];
-    else if (r.col === "config" && r.id === "acessos") D.acessos = r.data.map || {};
-    else if (r.col === "conv") D.conv[r.id] = r.data;
-    else if (r.col === "votos") D.votos[r.id] = r.data;
-    else if (r.col === "mvpvotos") D.mvpvotos[r.id] = r.data;
-    else if (r.col === "jogos") D.jogos[r.id] = r.data;
-    else if (r.col === "pagamentos") D.pags[r.id] = r.data;
-    else if (r.col === "propostas") D.propostas[r.id] = r.data;
-  }
+  const D = await carregar(sb);
   const { data: donos } = await sb.from("donos").select("user_id");
   D.donos = (donos || []).map((d: Any) => d.user_id);
 
@@ -187,5 +229,7 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     await sb.from("notif_log").update({ n }).eq("chave", p.chave);
     feito.push({ chave: p.chave, pessoas: p.para.length, enviados: n });
   }
+  const agora = body.agora ? new Date(body.agora) : new Date(), Lh = lisboa(agora);
+  feito.push(...await tratarEspera(sb, D, proxQuinta(Lh.data, Lh.dow), agora.getTime()));
   return json({ hora: lisboa(new Date()), feito });
 });

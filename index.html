@@ -516,7 +516,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
-const BUILD='20261123210236';
+const BUILD='20261124130242';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -837,7 +837,7 @@ function renderConv(){
   const closed=convClosed(cdate),notOpen=convNotOpen(cdate),lock=notOpen||(closed&&!isAdm());
   const closeTxt=notOpen?(isAdm()?'Inscrições abrem '+fdt(iso(new Date(convOpenAt(cdate))))+' (segunda) às 08:30. Como administrador já podes marcar os outros com ✓ / ✕.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
   $('mine').innerHTML=!me.id?'<p style="margin:0">Inicia sessão para responder à convocatória.</p>':!mp?'<p style="margin:0">A tua conta ainda não está associada a um jogador. Pede acesso no topo da Tabela.</p>':
-   `<div class="row" style="justify-content:space-between"><div><b>${esc(mp)}</b>, vais jogar?<br><span class="tag" style="margin:0">${mine?mine.vai?(P.go.includes(mp)?'Estás confirmado.':'Estás em lista de espera (suplente).'):'Disseste que não vais.':'Ainda não respondeste.'}<br>${closeTxt}</span></div>
+   `<div class="row" style="justify-content:space-between"><div><b>${esc(mp)}</b>, vais jogar?<br><span class="tag" style="margin:0">${mine?mine.vai?(P.go.includes(mp)?'Estás confirmado.':'Estás em lista de espera ('+(P.wait.indexOf(mp)+1)+'.º). Só vais se alguém desistir; recebes um aviso se fores convocado.'):'Disseste que não vais.':'Ainda não respondeste.'}<br>${closeTxt}</span></div>
    <div class="row"><button class="btn ${mine&&mine.vai?'ok':''}" data-v="1" ${lock?'disabled':''}>Vou</button><button class="btn ${mine&&!mine.vai?'pri':''}" data-v="0" ${lock?'disabled':''}>Não vou</button>${mine&&!lock?'<button class="btn" data-vx="1" title="Tirar a minha resposta">Tirar resposta</button>':''}</div></div>`;
   $('ccount').textContent=(P.go.length+P.subs.length)+'/'+MAXJ;
   const ctl=n=>isAdm()?`<span class="mini"><button class="btn" data-m="${esc(n)}" data-x="1" aria-label="${esc(n)} vai">✓</button><button class="btn" data-m="${esc(n)}" data-x="0" aria-label="${esc(n)} não vai">✕</button></span>`:'';
@@ -870,22 +870,27 @@ $('cyes').addEventListener('click',async e=>{const b=e.target.closest('button');
   if(b.dataset.sr){const p=propostas[b.dataset.sr];if(p)await save('propostas/'+b.dataset.sr,{...p,estado:'rejeitada',nota:''})}});
 $('cprev').addEventListener('click',()=>{cdate=addD(cdate||nextThu(today()),-7);renderConv()});
 $('cnext').addEventListener('click',()=>{cdate=addD(cdate||nextThu(today()),7);renderConv()});
+/* avisa o servidor para notificar quem sai da lista de espera (e registar quem entra nela) */
+function pingEspera(d){try{window.SB&&window.SB.functions.invoke('notificar',{body:{espera:d}}).catch(()=>{})}catch(x){}}
+function avisoEspera(d){const P=presence(d),mp=myPlayer(),i=P.wait.indexOf(mp);
+  if(i>=0)alert('⚠️ Já há '+MAXJ+' jogadores confirmados.\n\nFicas em lista de espera ('+(i+1)+'.º). Só vais jogar se alguém desistir — se isso acontecer, recebes um aviso de que foste convocado.')}
 $('mine').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b||!me.id)return;
   if(convNotOpen(cdate)&&(b.dataset.v!==undefined||b.dataset.vx!==undefined)){renderConv();return note('As inscrições para este jogo abrem na segunda-feira às 08:30.')}
   if(b.dataset.vx!==undefined){if(convClosed(cdate)&&!isAdm()){renderConv();return note('A convocatória já fechou (quarta às 23:59).')}
     b.disabled=true;const cur=votos[me.id]||{},v={...(cur.v||{})};delete v[cdate];await save('votos/'+me.id,{jogador:myPlayer(),v});
     const c=conv[cdate]||{};if(isAdm()&&c.manual&&c.manual[myPlayer()]){const man={...c.manual};delete man[myPlayer()];await save('conv/'+cdate,{...c,manual:man})}
-    note('Resposta retirada.');return}
+    pingEspera(cdate);note('Resposta retirada.');return}
   if(convClosed(cdate)){if(!isAdm()){renderConv();return note('A convocatória já fechou (quarta às 23:59).')}
-    const c=conv[cdate]||{},man={...(c.manual||{})};man[myPlayer()]={vai:b.dataset.v==='1',t:Date.now(),adm:true};return save('conv/'+cdate,{...c,manual:man})}
+    const c=conv[cdate]||{},man={...(c.manual||{})};man[myPlayer()]={vai:b.dataset.v==='1',t:Date.now(),adm:true};if(await save('conv/'+cdate,{...c,manual:man})){conv[cdate]={...c,manual:man};pingEspera(cdate);if(b.dataset.v==='1')avisoEspera(cdate)}return}
   const cur=votos[me.id]||{},v={...(cur.v||{})};v[cdate]={vai:b.dataset.v==='1',t:Date.now()};
-  b.disabled=true;await save('votos/'+me.id,{jogador:myPlayer(),v});b.disabled=false;
+  b.disabled=true;const ok=await save('votos/'+me.id,{jogador:myPlayer(),v});b.disabled=false;
+  if(ok){votos[me.id]={jogador:myPlayer(),v};pingEspera(cdate);if(b.dataset.v==='1')avisoEspera(cdate)}
 });
 $('v-convocatoria').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-m]');if(!b||!isAdm())return;
   const c=conv[cdate]||{},man={...(c.manual||{})};man[b.dataset.m]={vai:b.dataset.x==='1',t:Date.now(),adm:true};
-  await save('conv/'+cdate,{...c,manual:man});
+  if(await save('conv/'+cdate,{...c,manual:man}))pingEspera(cdate);
 });
 $('ksave').addEventListener('click',async()=>{
   const la=$('kla').value.trim().replace(',','.'),lo=$('klo').value.trim().replace(',','.');
