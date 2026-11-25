@@ -462,7 +462,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="card" id="mine" style="margin-top:14px"></div>
 <div class="two" style="margin-top:14px">
 <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Vão jogar</h2><span class="count" id="ccount"></span></div><ul class="plist" id="cyes"></ul><div id="cfill" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="cfillinfo" style="margin:0 0 8px"></p><div class="row"><select id="cfillsel" aria-label="Jogador para a vaga" style="flex:1 1 12em;width:auto"></select><button class="btn pri" id="cfillb" type="button">Adicionar</button></div></div><div id="csub" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="csubinfo" style="margin:0 0 8px"></p><div class="row"><input type="text" id="csubn" placeholder="Nome do substituto" autocomplete="off" style="flex:1 1 12em;width:auto"><select id="csubsk" class="adm" aria-label="Skill do substituto" style="width:6em"></select><button class="btn pri" id="csubb" type="button">Adicionar substituto</button></div></div><h3 id="cwaitH" class="hide" style="margin:14px 0 4px">Suplentes</h3><ul class="plist" id="cwait"></ul></div>
-<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Não vão</h2><span class="count" id="cnon"></span></div><ul class="plist" id="cno"></ul>
+<div class="card hide" id="cdesist" style="margin-bottom:14px;border-color:#e0a030"></div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Não vão</h2><span class="count" id="cnon"></span></div><ul class="plist" id="cno"></ul>
 <div class="row" style="justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><h2 style="margin:0">Ainda não responderam</h2><span class="count" id="cnonen"></span></div><ul class="plist" id="cnone"></ul></div>
 </div>
 <div class="card hide" id="cteams" style="margin-top:14px"></div>
@@ -1053,7 +1053,7 @@ function renderConv(){
   const closeTxt=notOpen?(isAdm()?'Inscrições abrem '+fdt(iso(new Date(convOpenAt(cdate))))+' (segunda) às 08:30. Como administrador já podes marcar os outros com ✓ / ✕.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
   $('mine').innerHTML=!me.id?'<p style="margin:0">Inicia sessão para responder à convocatória.</p>':!mp?'<p style="margin:0">A tua conta ainda não está associada a um jogador. Pede acesso no topo da Tabela.</p>':
    `<div class="row" style="justify-content:space-between"><div><b>${esc(mp)}</b>, vais jogar?<br><span class="tag" style="margin:0">${mine?mine.vai?(P.go.includes(mp)?'Estás confirmado.':'Estás em lista de espera ('+(P.wait.indexOf(mp)+1)+'.º). Só vais se alguém desistir; recebes um aviso se fores convocado.'):'Disseste que não vais.':'Ainda não respondeste.'}<br>${closeTxt}</span></div>
-   <div class="row"><button class="btn ${mine&&mine.vai?'ok':''}" data-v="1" ${lock?'disabled':''}>Vou</button><button class="btn ${mine&&!mine.vai?'pri':''}" data-v="0" ${lock?'disabled':''}>Não vou</button>${mine&&!lock?'<button class="btn" data-vx="1" title="Tirar a minha resposta">Tirar resposta</button>':''}</div></div>`;
+   <div class="row"><button class="btn ${mine&&mine.vai?'ok':''}" data-v="1" ${lock?'disabled':''}>Vou</button><button class="btn ${mine&&!mine.vai?'pri':''}" data-v="0" ${lock?'disabled':''}>Não vou</button></div></div>`;
   $('ccount').textContent=(P.go.length+P.subs.length)+'/'+MAXJ;
   const ctl=n=>isAdm()?`<span class="mini"><button class="btn" data-m="${esc(n)}" data-x="1" aria-label="${esc(n)} vai">✓</button><button class="btn" data-m="${esc(n)}" data-x="0" aria-label="${esc(n)} não vai">✕</button></span>`:'';
   const pendS=Object.entries(propostas).filter(([,p])=>p.tipo==='substituto'&&p.alvo===cdate&&p.estado==='pendente');
@@ -1076,6 +1076,9 @@ function renderConv(){
   $('cno').innerHTML=P.no.map(n=>`<li><span><span class="dot n"></span>${esc(n)}</span>${ctl(n)}</li>`).join('')||'<li class="tag">Ninguém disse que não vai.</li>';
   $('cnone').innerHTML=P.none.map(n=>`<li><span><span class="dot"></span>${esc(n)}</span>${ctl(n)}</li>`).join('')||'<li class="tag">Já todos responderam.</li>';
   $('cnon').textContent=P.no.length;$('cnonen').textContent=P.none.length;
+  const ds=isApo()?Object.values(propostas).filter(p=>p.tipo==='desistencia'&&p.alvo===cdate).sort((a,b)=>b.t-a.t):[];
+  $('cdesist').classList.toggle('hide',!ds.length);
+  $('cdesist').innerHTML=ds.length?`<h2 style="margin:0 0 6px">↩️ Desistências (${ds.length})</h2><p class="tag" style="margin:0 0 6px">Disseram que iam e depois mudaram para “Não vou”. Só o administrador e os apontadores veem isto.</p><ul class="plist">${ds.map(p=>`<li><span><b>${esc(p.doc.nome)}</b></span><span class="tag" style="margin:0">${new Date(p.t).toLocaleString('pt-PT',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></li>`).join('')}</ul>`:'';
   const t=(conv[cdate]||{}).equipas;
   $('cteams').classList.toggle('hide',!t);
   if(!t||t.modo==='capitaes')delete $('cteams').dataset.k;
@@ -1111,9 +1114,14 @@ $('mine').addEventListener('click',async e=>{
     pingEspera(cdate);note('Resposta retirada.');return}
   if(convClosed(cdate)){if(!isAdm()){renderConv();return note('A convocatória já fechou (quarta às 23:59).')}
     const c=conv[cdate]||{},man={...(c.manual||{})};man[myPlayer()]={vai:b.dataset.v==='1',t:Date.now(),adm:true};if(await save('conv/'+cdate,{...c,manual:man})){conv[cdate]={...c,manual:man};pingEspera(cdate);if(b.dataset.v==='1')avisoEspera(cdate)}return}
-  const cur=votos[me.id]||{},v={...(cur.v||{})};v[cdate]={vai:b.dataset.v==='1',t:Date.now()};
+  const cur=votos[me.id]||{},v={...(cur.v||{})},antes=presence(cdate).map[myPlayer()];v[cdate]={vai:b.dataset.v==='1',t:Date.now()};
+  if(antes&&antes.vai===(b.dataset.v==='1'))return;   /* já estava assim */
   b.disabled=true;const ok=await save('votos/'+me.id,{jogador:myPlayer(),v});b.disabled=false;
-  if(ok){votos[me.id]={jogador:myPlayer(),v};pingEspera(cdate);if(b.dataset.v==='1')avisoEspera(cdate)}
+  if(ok){votos[me.id]={jogador:myPlayer(),v};pingEspera(cdate);if(b.dataset.v==='1')avisoEspera(cdate);
+    /* mudou de "Vou" para "Não vou": fica o aviso na app e o admin e os apontadores são notificados */
+    if(antes&&antes.vai&&b.dataset.v==='0'){const id='d'+Date.now()+Math.random().toString(36).slice(2,6);
+      if(await save('propostas/'+id,{tipo:'desistencia',alvo:cdate,doc:{nome:myPlayer()},por:me.id,autor:myPlayer()||'',t:Date.now(),estado:'aviso'}))
+        try{window.SB&&window.SB.functions.invoke('notificar',{body:{desistencia:id}}).catch(()=>{})}catch(x){}}}
 });
 $('v-convocatoria').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-m]');if(!b||!isAdm())return;
@@ -1542,7 +1550,7 @@ function propSummary(p){
 }
 function renderPending(){
   const box=$('ppanel');
-  const list=Object.entries(propostas).filter(([,p])=>p.tipo!=='pagamento'&&p.tipo!=='lock'&&(isAdm()?p.estado==='pendente':p.por===me.id)).sort((a,b)=>a[1].t-b[1].t);
+  const list=Object.entries(propostas).filter(([,p])=>p.tipo!=='pagamento'&&p.tipo!=='lock'&&p.tipo!=='desistencia'&&(isAdm()?p.estado==='pendente':p.por===me.id)).sort((a,b)=>a[1].t-b[1].t);
   const n=Object.values(propostas).filter(p=>p.tipo!=='pagamento'&&p.estado==='pendente').length;
   const tab=document.querySelector('#nav a[data-k="jogos"]');
   if(tab){const old=tab.querySelector('.badge');if(old)old.remove();if(isAdm()&&n)tab.insertAdjacentHTML('beforeend',`<span class="badge">${n}</span>`)}

@@ -282,6 +282,25 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     return json(out);
   }
 
+  // um jogador mudou de "Vou" para "Não vou": avisar o admin e os apontadores
+  if (body.desistencia) {
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");
+    const { data: u } = await sb.auth.getUser(token);
+    if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
+    const D = await carregar(sb);
+    const p = D.propostas[String(body.desistencia)];
+    if (!p || p.tipo !== "desistencia" || p.por !== u.user.id) return json({ erro: "aviso inválido" }, 400);
+    if ((await sb.from("notif_log").insert({ chave: `desist|${body.desistencia}` })).error) return json({ feito: [] });
+    const { data: dn } = await sb.from("donos").select("user_id");
+    const donos = (dn || []).map((d: Any) => d.user_id);
+    const papeis = (uid: string) => { const a = D.acessos[uid] || {}; const q = Array.isArray(a.papeis) ? [...a.papeis] : a.papel ? [a.papel] : []; if (donos.includes(uid)) q.push("admin"); return q; };
+    const para = [...new Set([...Object.keys(D.acessos), ...donos])].filter((uid) => uid !== u.user.id && papeis(uid).some((x: string) => x === "admin" || x === "apontador"));
+    const P = presenca(D, p.alvo);
+    const n = await enviar(sb, para, { title: "↩️ Desistência", body: `${p.doc.nome} mudou para “Não vou” no jogo de quinta, ${fdt(p.alvo)}. Vão ${P.go.length} de ${MAXJ}.`, url: "/#convocatoria" });
+    await sb.from("notif_log").update({ n }).eq("chave", `desist|${body.desistencia}`);
+    return json({ enviados: n });
+  }
+
   // alguém mudou a resposta na convocatória: tratar a lista de espera desse jogo
   if (body.espera) {
     const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");
