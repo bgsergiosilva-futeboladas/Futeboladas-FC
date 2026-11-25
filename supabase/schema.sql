@@ -181,6 +181,14 @@ create policy "apontador completa jogo" on public.docs for update to authenticat
   using (public.tem_papel('apontador') and col = 'jogos' and coalesce(data->>'r', '') = '')
   with check (public.tem_papel('apontador') and col = 'jogos');
 
+-- Apontador: preencher vagas da convocatória (jogadores e "Substituto")
+drop policy if exists "apontador convocatoria" on public.docs;
+create policy "apontador convocatoria" on public.docs for update to authenticated
+  using (public.tem_papel('apontador') and col = 'conv') with check (public.tem_papel('apontador') and col = 'conv');
+drop policy if exists "apontador convocatoria nova" on public.docs;
+create policy "apontador convocatoria nova" on public.docs for insert to authenticated
+  with check (public.tem_papel('apontador') and col = 'conv');
+
 -- Pedido de acesso da própria conta
 drop policy if exists "pedido" on public.docs;
 create policy "pedido" on public.docs for all to authenticated

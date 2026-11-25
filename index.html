@@ -461,7 +461,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <a class="card wa" style="margin-top:14px" href="https://chat.whatsapp.com/C3UwZLZBEwv7y59yhtY8II" target="_blank" rel="noopener"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></i><span><b>Grupo do WhatsApp</b>Conversa da malta, avisos e combinações</span><em>Abrir ›</em></a>
 <div class="card" id="mine" style="margin-top:14px"></div>
 <div class="two" style="margin-top:14px">
-<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Vão jogar</h2><span class="count" id="ccount"></span></div><ul class="plist" id="cyes"></ul><div id="csub" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="csubinfo" style="margin:0 0 8px"></p><div class="row"><input type="text" id="csubn" placeholder="Nome do substituto" autocomplete="off" style="flex:1 1 12em;width:auto"><select id="csubsk" class="adm" aria-label="Skill do substituto" style="width:6em"></select><button class="btn pri" id="csubb" type="button">Adicionar substituto</button></div></div><h3 id="cwaitH" class="hide" style="margin:14px 0 4px">Suplentes</h3><ul class="plist" id="cwait"></ul></div>
+<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Vão jogar</h2><span class="count" id="ccount"></span></div><ul class="plist" id="cyes"></ul><div id="cfill" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="cfillinfo" style="margin:0 0 8px"></p><div class="row"><select id="cfillsel" aria-label="Jogador para a vaga" style="flex:1 1 12em;width:auto"></select><button class="btn pri" id="cfillb" type="button">Adicionar</button></div></div><div id="csub" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="csubinfo" style="margin:0 0 8px"></p><div class="row"><input type="text" id="csubn" placeholder="Nome do substituto" autocomplete="off" style="flex:1 1 12em;width:auto"><select id="csubsk" class="adm" aria-label="Skill do substituto" style="width:6em"></select><button class="btn pri" id="csubb" type="button">Adicionar substituto</button></div></div><h3 id="cwaitH" class="hide" style="margin:14px 0 4px">Suplentes</h3><ul class="plist" id="cwait"></ul></div>
 <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Não vão</h2><span class="count" id="cnon"></span></div><ul class="plist" id="cno"></ul>
 <div class="row" style="justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><h2 style="margin:0">Ainda não responderam</h2><span class="count" id="cnonen"></span></div><ul class="plist" id="cnone"></ul></div>
 </div>
@@ -595,10 +595,10 @@ function mvpCloseAt(data){const[y,m,d]=data.split('-').map(Number);const o=new D
 const gameStart=data=>{const[y,m,d]=data.split('-').map(Number);return new Date(y,m-1,d,21,0,0).getTime()};
 const mvpOpenAt=data=>gameStart(data)+3600e3;
 const mvpGame=(g,now)=>!g.cancelado&&now>=mvpOpenAt(g.data);
-function mvpResults(games,roster,mvpvotos,now){
+function mvpResults(games,roster,mvpvotos,now,extra){
   const names=new Set(roster.map(r=>r.nome)),by={},win={};
   for(const g of games.filter(g=>mvpGame(g,now))){
-    const cand=[...g.a,...g.b].filter(n=>names.has(n)),closeAt=mvpCloseAt(g.data),counts={};let total=0;
+    const base=[...g.a,...g.b];const cand=[...new Set(base.length<10&&extra?[...base,...extra(g)]:base)].filter(n=>names.has(n)),closeAt=mvpCloseAt(g.data),counts={};let total=0;
     for(const v of Object.values(mvpvotos||{})){const x=v.v&&v.v[g.id];if(!x||!cand.includes(x.nome)||x.nome===v.jogador||(x.t&&x.t>closeAt))continue;counts[x.nome]=(counts[x.nome]||0)+1;total++}
     const open=now<=closeAt,max=Math.max(0,...Object.values(counts));
     const winners=!open&&max>0?Object.keys(counts).filter(n=>counts[n]===max):[];
@@ -768,7 +768,7 @@ function renderGames(){
   $('gsel').innerHTML=[...mg].reverse().map(g=>`<option value="${g.id}"${g.id===gsel?' selected':''}>${fdt(g.data)}${g.cancelado?' · não houve jogo':g.r?'':' · falta o resultado'}</option>`).join('');
   const sg=mg.filter(g=>g.id===gsel);
   $('glist').innerHTML=sg.map(g=>g.cancelado?`<div class="card game"><h3>${fdt(g.data)} · Não houve jogo${acts(g)}</h3>${g.motivo?`<p style="margin:0;grid-column:1/-1" class="tag">${esc(g.motivo)}</p>`:''}</div>`:
-    `<div class="card game"><h3>${fdt(g.data)}${acts(g)}</h3>${g.r?'':`<p class="tag" style="margin:0;grid-column:1/-1">⏳ Equipas publicadas (automáticas). ${Date.now()<gameStart(g.data)?'Ainda não se jogou.':'Falta registar quem ganhou e quem chegou atrasado.'}</p>`}${gameMeta(g)}${team(g.a,g.r,'Equipa 1'+(g.coletes==='a'?' · coletes':''),g.atr||[])}${team(g.b,INV[g.r],'Equipa 2'+(g.coletes==='b'?' · coletes':''),g.atr||[])}</div>`).join('');
+    `<div class="card game"><h3>${fdt(g.data)}${acts(g)}</h3>${g.r?'':`<p class="tag" style="margin:0;grid-column:1/-1">⏳ ${g.modo==='capitaes'?'Capitães sorteados.':'Equipas publicadas (automáticas).'} ${Date.now()<gameStart(g.data)?'Ainda não se jogou.':g.modo==='capitaes'?'Falta escolher os restantes jogadores, quem ganhou e quem chegou atrasado.':'Falta registar quem ganhou e quem chegou atrasado.'}</p>`}${gameMeta(g)}${team(g.a,g.r,'Equipa 1'+(g.coletes==='a'?' · coletes':''),g.atr||[])}${team(g.b,INV[g.r],'Equipa 2'+(g.coletes==='b'?' · coletes':''),g.atr||[])}</div>`).join('');
 }
 var gsel=null;
 $('prizes').addEventListener('click',e=>{const b=e.target.closest('.pflip');if(b)b.classList.toggle('on')});
@@ -785,8 +785,8 @@ $('glist').addEventListener('click',async e=>{
 });
 
 /* ---------- formulário de jogo ---------- */
-function opts(sel){
-  const act=roster.filter(r=>r.ativo!==false||r.nome===sel).map(r=>r.nome).sort((a,b)=>a.localeCompare(b,'pt'));
+function opts(sel,taken){
+  const act=roster.filter(r=>(r.ativo!==false||r.nome===sel)&&(r.nome===sel||!(taken&&taken.has(r.nome)))).map(r=>r.nome).sort((a,b)=>a.localeCompare(b,'pt'));
   const isOther=sel&&sel!==SUB&&!inRoster(sel);
   return '<option value="">— escolher —</option>'+act.map(n=>`<option${n===sel?' selected':''}>${esc(n)}</option>`).join('')+
    `<option value="${SUB}"${sel===SUB||isOther?' selected':''}>Substituto</option>`;
@@ -842,14 +842,16 @@ function openForm(id,preset,noLock){
   for(const r of document.querySelectorAll('input[name=modo]'))r.checked=!!(g&&g.modo===r.value);modoInfo();$('fmot').value=g&&g.motivo||'';
   for(const r of document.querySelectorAll('#fres input'))r.checked=!!(g&&r.value===g.r);
   $('fteams').innerHTML=teamHtml('a','Equipa 1',g&&g.a||[])+teamHtml('b','Equipa 2',g&&g.b||[]);
-  $('fteams').dataset.built=1;$('ferr').textContent='';
+  $('fteams').dataset.built=1;$('ferr').textContent='';refreshSelects();
   lateBoxes(g&&g.atr||[]);
 }
 function refreshSelects(){
-  for(const s of document.querySelectorAll('#fteams select')){
+  const all=[...document.querySelectorAll('#fteams select')],val=s=>s.value===OUT?'':s.value;
+  for(const s of all){
     const o=document.querySelector(`[data-o="${s.dataset.t}${s.dataset.i}"]`);
     const v=s.value===OUT?(o.value.trim()||OUT):s.value;
-    s.innerHTML=opts(v===OUT?'':v);if(v===OUT)s.value=OUT;
+    const taken=new Set(all.filter(x=>x!==s).map(val).filter(n=>n&&n!==SUB));
+    s.innerHTML=opts(v===OUT?'':v,taken);if(v===OUT)s.value=OUT;
     o.classList.toggle('hide',s.value!==OUT);
   }
   lateBoxes();
@@ -862,7 +864,7 @@ function lateBoxes(checked){
 }
 for(const r of document.querySelectorAll('input[name=hj]'))r.addEventListener('change',()=>setPlayed(r.value==='1'&&r.checked||(r.value==='0'&&!r.checked)));
 $('fteams').addEventListener('change',e=>{
-  const s=e.target;if(s.tagName==='SELECT'){const o=document.querySelector(`[data-o="${s.dataset.t}${s.dataset.i}"]`);o.classList.toggle('hide',s.value!==OUT);if(s.value===OUT)o.focus()}
+  const s=e.target;if(s.tagName==='SELECT'){const o=document.querySelector(`[data-o="${s.dataset.t}${s.dataset.i}"]`);o.classList.toggle('hide',s.value!==OUT);if(s.value===OUT)o.focus();refreshSelects();return}
   lateBoxes();
 });
 $('fteams').addEventListener('input',e=>{if(e.target.dataset.o)lateBoxes()});
@@ -1058,9 +1060,15 @@ function renderConv(){
   const g0=games.some(x=>x.data===cdate&&(x.r||x.cancelado)),free=MAXJ-P.go.length-P.subs.length-pendS.length;
   const canSub=!g0&&!!myPlayer()&&free>0&&!(notOpen&&!isAdm())&&(P.none.length===0||P.go.length+P.subs.length+P.none.length<MAXJ);
   keepSel($('cyes'),()=>$('cyes').innerHTML=(P.go.map((n,i)=>`<li><span><span class="dot y"></span>${i+1}. ${esc(n)}</span>${ctl(n)}</li>`).join('')
-    +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. Substituto · <b>${esc(s.nome)}</b> <span class="tag">trazido por ${esc(s.por||'?')}</span></span>${isAdm()?`<span class="mini"><select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(subSk(cdate,s))}</select><button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
+    +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. ${s.nome===SUB?'<b>Substituto</b>':'Substituto · <b>'+esc(s.nome)+'</b>'} <span class="tag">${s.nome===SUB?'vaga preenchida por':'trazido por'} ${esc(s.por||'?')}</span></span>${isApo()?`<span class="mini">${isAdm()?`<select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(subSk(cdate,s))}</select>`:''}<button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
     +pendS.map(([id,p])=>`<li><span><span class="dot"></span>Substituto · ${esc(p.doc.nome)} <span class="tag">pendente · proposto por ${esc(p.autor||'?')}</span></span>${isAdm()?`<span class="mini"><select data-sk2="${id}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(null)}</select><button class="btn ok" data-sa="${id}">Aprovar</button><button class="btn no" data-sr="${id}">Rejeitar</button></span>`:''}</li>`).join(''))||'<li class="tag">Ainda ninguém confirmou.</li>');
-  $('csub').classList.toggle('hide',!canSub);
+  $('csub').classList.toggle('hide',!canSub||isApo());
+  /* admin e apontadores: preencher as vagas que faltam com um jogador (sem repetir) ou com "Substituto" (pode repetir) */
+  const canFill=isApo()&&!g0&&free>0;$('cfill').classList.toggle('hide',!canFill);
+  if(canFill){$('cfillinfo').textContent='Faltam '+free+' jogador'+(free>1?'es':'')+' para os '+MAXJ+'. Escolhe quem vai jogar ou põe “Substituto” nas vagas.';
+    const livre=roster.filter(r=>r.ativo!==false&&!P.go.includes(r.nome)).map(r=>r.nome).sort((a,b)=>a.localeCompare(b,'pt'));
+    const cur=$('cfillsel').value;$('cfillsel').innerHTML='<option value="">— escolher —</option>'+livre.map(n=>`<option>${esc(n)}</option>`).join('')+`<option value="${SUB}">Substituto</option>`;
+    if([...$('cfillsel').options].some(o=>o.value===cur))$('cfillsel').value=cur}
   if(isAdm()&&!$('csubsk').options.length)$('csubsk').innerHTML=subSkOpts(null);
   $('csubinfo').textContent=canSub?(P.none.length===0?'Já todos responderam e faltam '+free+' jogador'+(free>1?'es':'')+'.':'Mesmo que todos os que faltam respondam, não se chega a 14: faltam pelo menos '+(MAXJ-P.go.length-P.subs.length-P.none.length)+'.')+' Podes propor um substituto; o administrador tem de aprovar.':'';
   $('cwaitH').classList.toggle('hide',!P.wait.length);
@@ -1074,12 +1082,18 @@ function renderConv(){
   if(t&&t.modo==='capitaes'){$('cteams').innerHTML=`<h2 style="margin-top:0">Capitães sorteados</h2><p class="tag" style="margin:0 0 8px">Os dois capitães escolhem as equipas. O capitão da equipa vencedora ganha 1 ponto extra.</p><div class="pitch">${[['Equipa 1',t.capA,'a'],['Equipa 2',t.capB,'b']].map(([l,c,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes===k?'De coletes':'Sem coletes'}</span></h3><p class="big" style="margin:0">${esc(c)}<span class="cap">C</span></p></div>`).join('')}</div>`}
   else if(t){const k=cdate+'|'+JSON.stringify(t);if($('cteams').dataset.k!==k){$('cteams').dataset.k=k;$('cteams').innerHTML=lineupHTML(t,cdate)}}
 }
+$('cfillb').addEventListener('click',async()=>{const n=$('cfillsel').value;if(!n)return note('Escolhe primeiro o jogador ou “Substituto”.');
+  const c=conv[cdate]||{};let ok;
+  if(n===SUB)ok=await save('conv/'+cdate,{...c,subs:[...(c.subs||[]),{nome:SUB,por:myPlayer()||'Administrador'}]});
+  else{const man={...(c.manual||{})};man[n]={vai:true,t:Date.now(),adm:true};ok=await save('conv/'+cdate,{...c,manual:man})}
+  if(ok){$('cfillsel').value='';pingEspera(cdate)}});
 $('csubb').addEventListener('click',async()=>{const n=$('csubn').value.trim().replace(/\s+/g,' ');if(!n)return note('Escreve o nome do substituto.');
   if(isAdm()){const sk=$('csubsk').value;if(sk==='')return note('Atribui a skill (0 a 5) ao substituto.');const c=conv[cdate]||{};if(await save('conv/'+cdate,{...c,subs:[...(c.subs||[]),{nome:n,por:myPlayer()||'Administrador'}]})&&await saveSubSk(cdate,n,+sk)){$('csubn').value='';$('csubsk').value=''}return}
   if(await propor({tipo:'substituto',alvo:cdate,doc:{nome:n}})){$('csubn').value='';note('Substituto enviado para aprovação do administrador.')}});
 $('cyes').addEventListener('change',async e=>{const s=e.target;if(!s.dataset.ss||!isAdm()||s.value==='')return;const x=((conv[cdate]||{}).subs||[])[+s.dataset.ss];if(x)await saveSubSk(cdate,x.nome,+s.value)});
-$('cyes').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!isAdm())return;
+$('cyes').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!isApo())return;
   if(b.dataset.rs){const c=conv[cdate]||{},s=[...(c.subs||[])];s.splice(+b.dataset.rs,1);await save('conv/'+cdate,{...c,subs:s})}
+  if(!isAdm())return;
   if(b.dataset.sa)await aprovarProp(b.dataset.sa,(document.querySelector(`[data-sk2="${b.dataset.sa}"]`)||{}).value);
   if(b.dataset.sr){const p=propostas[b.dataset.sr];if(p)await save('propostas/'+b.dataset.sr,{...p,estado:'rejeitada',nota:''})}});
 $('cprev').addEventListener('click',()=>{cdate=addD(cdate||nextThu(today()),-7);renderConv()});
@@ -1133,7 +1147,7 @@ function buildTeams(prev){
   if(tKey!==key){
     tKey=key;tOpts=null;teams=null;
     const pl=P.go.map(n=>({nome:n}));
-    for(const s of P.subs)pl.push({nome:SUB,label:'Substituto · '+s.nome,sub:s.nome});
+    for(const s of P.subs)pl.push(s.nome===SUB?{nome:SUB}:{nome:SUB,label:'Substituto · '+s.nome,sub:s.nome});
     while(pl.length<MAXJ)pl.push({nome:SUB});
     if(isAdm()){
       /* o administrador tem as skills: calcula aqui */
@@ -1215,16 +1229,18 @@ $('emode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b
 $('eother').addEventListener('click',()=>{if(emode==='capitaes'){drawCaps(true);renderCaps(true)}else buildTeams(tIdx)});
 /* equipas automáticas publicadas → o jogo fica pré-registado (só falta o resultado e os atrasados) */
 async function preRegistar(data,eq){
-  if(!eq||eq.modo!=='auto'||!eq.an||!isAdm())return;
+  if(!eq||!isAdm())return;
   const id='g'+data.replace(/-/g,''),g=games.find(x=>x.id===id);
   if(g&&(g.r||g.cancelado))return;
-  await save('jogos/'+id,{data,a:eq.an,b:eq.bn,modo:'auto',coletes:eq.coletes,atr:[]});
+  if(eq.modo==='auto'&&eq.an)await save('jogos/'+id,{data,a:eq.an,b:eq.bn,modo:'auto',coletes:eq.coletes,atr:[]});
+  /* sorteio de capitães: fica o registo da quinta só com os capitães; o resto escolhe-se ao registar o resultado */
+  if(eq.modo==='capitaes'&&eq.capA&&eq.capB)await save('jogos/'+id,{data,a:[eq.capA],b:[eq.capB],modo:'capitaes',coletes:eq.coletes,atr:[]});
 }
 function avisaResultado(gid){try{window.SB&&window.SB.functions.invoke('notificar',{body:{resultado:gid}}).catch(()=>{})}catch(x){}}
 $('esave').addEventListener('click',async()=>{const c=conv[cdate]||{};const col=Math.random()<.5?'a':'b';
   const eq=emode==='capitaes'?{modo:'capitaes',capA:caps.a,capB:caps.b,coletes:col}:{modo:'auto',a:teams.a.map(p=>p.label||p.nome),b:teams.b.map(p=>p.label||p.nome),an:teams.a.map(p=>p.nome),bn:teams.b.map(p=>p.nome),coletes:col};
   if(!isAdm()){if(await propor({tipo:'equipas',alvo:cdate,doc:eq}))$('eerr').textContent='Enviado para aprovação do administrador.';return}
-  if(await save('conv/'+cdate,{...c,equipas:eq})){await preRegistar(cdate,eq);$('eerr').textContent='Publicado na convocatória. Sorteio: a '+(col==='a'?'Equipa 1':'Equipa 2')+' joga de coletes.'+(eq.modo==='auto'?' O jogo ficou pré-registado em Jogos: depois só falta indicar quem ganhou e quem chegou atrasado.':'')}});
+  if(await save('conv/'+cdate,{...c,equipas:eq})){await preRegistar(cdate,eq);$('eerr').textContent='Publicado na convocatória. Sorteio: a '+(col==='a'?'Equipa 1':'Equipa 2')+' joga de coletes.'+(eq.modo==='auto'?' O jogo ficou pré-registado em Jogos: depois só falta indicar quem ganhou e quem chegou atrasado.':' O jogo ficou pré-registado em Jogos com os dois capitães: no fim escolhem-se os restantes jogadores e o resultado.')}});
 $('egame').addEventListener('click',()=>{const pre=games.find(x=>x.data===cdate&&!x.r&&!x.cancelado);if(pre)return startEdit(pre.id);const pub=(conv[cdate]||{}).equipas;startEdit(null,emode==='capitaes'?{data:cdate,a:[caps.a],b:[caps.b],modo:'capitaes',coletes:pub&&pub.coletes}:{data:cdate,a:teams.a.map(p=>p.nome),b:teams.b.map(p=>p.nome),modo:'auto',coletes:pub&&pub.coletes})});
 
 /* ---------- pagamentos ---------- */
@@ -1660,7 +1676,7 @@ function refresh(){
   if(!loaded)return;
   computeRole();if(role!==lastRole){lastRole=role;buildNav()}
   else renderWho();
-  MVP=mvpResults(games,roster,mvpvotos,Date.now());
+  MVP=mvpResults(games,roster,mvpvotos,Date.now(),g=>presence(g.data).go);
   renderAsk();renderMyCard();renderMVP();renderTable();renderGames();renderPending();renderConv();renderPay();renderRoster();refreshSelects();
 }
 (async()=>{
