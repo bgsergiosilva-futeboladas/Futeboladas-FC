@@ -461,7 +461,7 @@ function standings(games,roster,mvpW){
   const ext=(arr,f,m)=>{if(!arr.length)return{v:null,n:[]};const v=Math[m](...arr.map(f));return{v,n:arr.filter(s=>f(s)===v).map(s=>s.nome)}};
   cur.stats={maisJogos:ext(L,s=>s.J,'max'),menosJogos:ext(L,s=>s.J,'min'),menosDerr:ext(L,s=>s.D,'min'),maisDerr:ext(L,s=>s.D,'max'),
     maisVit:ext(L,s=>s.V,'max'),maiorPV:ext(L,s=>s.pv,'max'),menorPV:ext(L,s=>s.pv,'min'),maisCap:ext(L,s=>s.cap,'max'),maisMVP:ext(L.filter(s=>s.mvp>0),s=>s.mvp,'max'),subsJogo:T?cur.guests/T:0};
-  cur.prizes={p1:ext(L,s=>s.pts,'max'),p2:ext(L.filter(s=>s.J>=T/2),s=>s.pv,'max'),p3:ext(L,s=>s.J,'max'),p4:ext(L,s=>s.D,'max'),minJ:T/2};
+  cur.prizes={p1:ext(L,s=>s.pts,'max'),p2:ext(L.filter(s=>s.J>=T/2),s=>s.pv,'max'),p3:ext(L,s=>s.J,'max'),p4:(()=>{const x=ext(L,s=>s.D,'max');if(x.n.length<2)return x;const t=L.filter(s=>x.n.includes(s.nome)),y=ext(t,s=>s.J,'max');return{v:x.v,n:y.n}})(),minJ:T/2};
   return cur;
 }
 /* MVP: votação aberta depois do jogo até domingo às 23:59; quem tiver mais votos ganha 1 ponto (empate: todos os empatados) */
@@ -518,7 +518,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.0';
-const BUILD='20261125104328';
+const BUILD='20261125110924';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
