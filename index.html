@@ -1126,9 +1126,12 @@ const keepSel=(root,fn)=>{const v={};root.querySelectorAll('select[data-sk2]').f
 const subSkOpts=sel=>'<option value="">skill</option>'+[0,1,2,3,4,5].map(v=>`<option${v===sel?' selected':''}>${v}</option>`).join('');
 const pkey=P=>P.go.join('|')+'#'+P.subs.map(s=>s.nome+':'+subSk(cdate,s)).join('|');
 let tKey=null;
+/* chave das equipas: muda só quando muda alguma coisa que as afeta (presenças, skills, jogos ou equipas publicadas) —
+   assim as equipas não mudam ao entrar na app enquanto os dados ainda estão a chegar */
+const teamKey=P=>cdate+'#'+pkey(P)+'#'+games.filter(played).length+'#'+(isAdm()?JSON.stringify(skills.jog||{}):'')+'#'+JSON.stringify(((conv[cdate]||{}).equipas)||null);
 function buildTeams(prev){
   if(!cdate)cdate=nextThu(today());tDate=cdate;
-  const P=presence(cdate),key=cdate+'#'+pkey(P)+'#'+games.length;
+  const P=presence(cdate),key=teamKey(P);
   if(tKey!==key){
     tKey=key;tOpts=null;teams=null;
     const pl=P.go.map(n=>({nome:n}));
@@ -1153,11 +1156,22 @@ function buildTeams(prev){
   }
   if(tOpts&&tOpts.length)pickTeam(prev);
 }
+/* ao abrir: mostra as equipas publicadas (se as houver) ou a melhor combinação — sempre as mesmas.
+   Só "Outra combinação" escolhe outra ao acaso. */
+function publishedIdx(){const pub=(conv[cdate]||{}).equipas;if(!pub||pub.modo!=='auto'||!pub.an||!pub.bn)return 0;
+  const key=L=>L.map(p=>p.nome+'|'+(p.label||'')).sort().join(','),want=L=>[...L].sort().join(',');
+  const nm=L=>L.map(p=>p.nome).sort().join(','),A=want(pub.an),B=want(pub.bn);
+  let i=tOpts.findIndex(o=>nm(o.a)===A&&nm(o.b)===B);if(i>=0)return i;
+  i=tOpts.findIndex(o=>nm(o.a)===B&&nm(o.b)===A);if(i>=0){const o=tOpts[i];tOpts.splice(i,0,{a:o.b,b:o.a});return i}
+  /* não está entre as opções calculadas: reconstrói a partir do que foi publicado */
+  const pool=[...tOpts[0].a,...tOpts[0].b],used=new Set(),take=(n,l)=>{let k=pool.findIndex((p,j)=>!used.has(j)&&p.nome===n&&(p.label||p.nome)===l);if(k<0)k=pool.findIndex((p,j)=>!used.has(j)&&p.nome===n);if(k<0)return{nome:n};used.add(k);return pool[k]};
+  const o={a:pub.an.map((n,j)=>take(n,pub.a[j])),b:pub.bn.map((n,j)=>take(n,pub.b[j]))};tOpts.unshift(o);return 0}
 function pickTeam(prev){const top=Math.min(6,tOpts.length);
+  if(prev===undefined){tIdx=publishedIdx();setTeam();return}
   do{tIdx=Math.floor(Math.random()*top)}while(top>1&&tIdx===prev);
   setTeam();
 }
-function setTeam(){const o=tOpts[tIdx];teams={a:[...o.a],b:[...o.b],n:pkey(presence(cdate))};sel=null;renderTeams(true)}
+function setTeam(){const o=tOpts[tIdx];teams={a:[...o.a],b:[...o.b],n:teamKey(presence(cdate))};sel=null;renderTeams(true)}
 function renderTeams(keep){
   if(!loaded)return;
   if(!cdate)cdate=nextThu(today());
@@ -1169,7 +1183,7 @@ function renderTeams(keep){
   for(const id of ['eother','esave','egame'])$(id).disabled=!P.go.length;
   if(!P.go.length){teams=null;$('etitle').textContent='Equipas para '+fdt(cdate);$('einfo').textContent='';
     $('epitch').innerHTML='<div class="card" style="grid-column:1/-1"><p style="margin:0">Ainda ninguém confirmou presença para este jogo. As equipas são feitas só com quem disse que vai, por isso confirma primeiro os jogadores na <a href="#convocatoria">Convocatória</a>.</p></div>';return}
-  if(!keep||!teams||tDate!==cdate||teams.n!==pkey(P))buildTeams();
+  if(!keep||!teams||tDate!==cdate||teams.n!==teamKey(P))buildTeams();
   if(!teams){$('epitch').innerHTML='<div class="card" style="grid-column:1/-1"><p style="margin:0">A preparar as equipas…</p></div>';$('einfo').textContent='';return}
   $('etitle').textContent='Equipas para '+fdt(cdate);$('esave').textContent=isAdm()?'Publicar na convocatória':'Enviar para aprovação';
   const lastG=[...games].filter(played).sort((a,b)=>a.data<b.data?1:-1)[0];
@@ -1185,7 +1199,8 @@ $('epitch').addEventListener('click',e=>{
   const o=sel.k;const x=teams[o][sel.i];teams[o][sel.i]=teams[k][i];teams[k][i]=x;
   teams.a=withCaptain(teams.a);teams.b=withCaptain(teams.b);sel=null;renderTeams(true);
 });
-function drawCaps(){const P=presence(cdate),pool=P.go.filter(inRoster);if(pool.length<2){caps=null;return}
+function drawCaps(force){const P=presence(cdate),pool=P.go.filter(inRoster);if(pool.length<2){caps=null;return}
+  const pub=(conv[cdate]||{}).equipas;if(!force&&pub&&pub.modo==='capitaes'&&pool.includes(pub.capA)&&pool.includes(pub.capB)){caps={a:pub.capA,b:pub.capB,d:cdate,n:P.go.join('|')};return}
   const i=Math.floor(Math.random()*pool.length);let j;do{j=Math.floor(Math.random()*pool.length)}while(j===i);caps={a:pool[i],b:pool[j],d:cdate,n:P.go.join('|')}}
 function renderCaps(keep){
   const P=presence(cdate),pool=P.go.filter(inRoster);
@@ -1199,7 +1214,7 @@ function renderCaps(keep){
   $('epitch').innerHTML=[['Capitão Equipa 1',caps.a],['Capitão Equipa 2',caps.b]].map(([l,n])=>`<div class="side"><h3>${l}</h3><p class="big" style="margin:0">${esc(n)}<span class="cap">C</span></p></div>`).join('');
 }
 $('emode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;emode=b.dataset.em;$('eerr').textContent='';renderTeams(true)});
-$('eother').addEventListener('click',()=>{if(emode==='capitaes'){drawCaps();renderCaps(true)}else buildTeams(tIdx)});
+$('eother').addEventListener('click',()=>{if(emode==='capitaes'){drawCaps(true);renderCaps(true)}else buildTeams(tIdx)});
 /* equipas automáticas publicadas → o jogo fica pré-registado (só falta o resultado e os atrasados) */
 async function preRegistar(data,eq){
   if(!eq||eq.modo!=='auto'||!eq.an||!isAdm())return;
