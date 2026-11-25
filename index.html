@@ -39,6 +39,31 @@ body{margin:0;color:var(--ink);font:16px/1.5 var(--f);font-feature-settings:"tnu
  radial-gradient(800px 600px at 50% 110%,light-dark(rgba(179,20,27,.12),rgba(120,15,20,.3)),transparent 70%),var(--bg);background-attachment:fixed}
 h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 .glass,.card,.ticket,.side{-webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%)}
+/* ---------- cartão do próximo jogo: estilo transmissão (FTV) ---------- */
+.ftv{position:relative;height:300px;border-radius:22px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.35);color:#fff;background:#0d1a10}
+.ftv .ph{position:absolute;inset:0;background:url(assets/campo.jpg) center 62%/cover;filter:saturate(1.1) contrast(1.05)}
+.ftv .sh{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.4),transparent 30%,transparent 45%,rgba(0,0,0,.85))}
+.ftv .bug{position:absolute;top:12px;left:12px;display:flex;border-radius:6px;overflow:hidden;font:800 12px var(--f);box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.ftv .bug .ch{background:#fff;color:#7d0f14;padding:6px 8px;font-size:13px;letter-spacing:-.02em}.ftv .bug .ch i{font-style:normal;color:#c81d24}
+.ftv .bug .lv{background:#c81d24;padding:6px 9px;display:flex;align-items:center;gap:6px;letter-spacing:.08em}
+.ftv .bug .lv:before{content:"";width:7px;height:7px;border-radius:50%;background:#fff;animation:ftvbl 1.2s infinite}
+.ftv .bug .lv.off{background:#3a3f4a}.ftv .bug .lv.off:before{animation:none;opacity:.5}
+@keyframes ftvbl{50%{opacity:.25}}
+.ftv .wxb{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:7px;background:rgba(10,14,22,.66);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:12px;padding:6px 10px;font:800 16px var(--f);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.ftv .wxb small{display:block;font:500 11px/1.25 var(--f);opacity:.85}
+.ftv .lt{position:absolute;left:12px;right:12px;bottom:46px}
+.ftv .lt .k{display:inline-block;background:#c81d24;font:800 11px var(--f);letter-spacing:.12em;text-transform:uppercase;padding:4px 8px}
+.ftv .lt .t{background:#fff;color:#1b1416;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ftv .lt .t b{font:900 30px/1 var(--f);letter-spacing:-.04em}.ftv .lt .t b i{font-style:normal;color:#c81d24}
+.ftv .lt .t small{font:700 12px/1.2 var(--f);color:#6e6266;text-align:right}
+.ftv .lt .s{background:rgba(20,22,28,.92);padding:6px 10px;font:600 12.5px var(--f);display:flex;justify-content:space-between;gap:8px}
+.ftv .tk{position:absolute;left:0;right:0;bottom:0;height:34px;background:#e0b65a;color:#2a0608;display:flex;align-items:center;overflow:hidden;font:700 12.5px var(--f);white-space:nowrap}
+.ftv .tk b{background:#2a0608;color:#e0b65a;height:100%;display:flex;align-items:center;padding:0 10px;letter-spacing:.08em;flex:none;position:relative;z-index:1}
+.ftv .tk .run{display:flex;flex:none;animation:ftvtk var(--dur,30s) linear infinite}.ftv .tk .run span{flex:none;padding-left:14px}
+@keyframes ftvtk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (min-width:760px){.ftv{height:340px}.ftv .lt{right:auto;min-width:420px}}
+@media (prefers-reduced-motion:reduce){.ftv .tk .run{animation:none}.ftv .bug .lv:before{animation:none}}
+
 /* header */
 /* ---------- bonecos animados ao lado do título ---------- */
 .ttl{display:flex;align-items:center;gap:10px;min-width:0}.ttl h1{min-width:0}
@@ -350,7 +375,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 
 <section id="v-convocatoria" class="hide">
 <div class="row" style="margin-bottom:12px"><button class="btn" id="cprev" type="button" aria-label="Semana anterior">‹</button><button class="btn" id="cnext" type="button" aria-label="Semana seguinte">›</button><span class="tag" id="cweek"></span></div>
-<div class="ticket" id="ticket"></div>
+<div class="ftv" id="ticket"></div>
 <a class="card wa" style="margin-top:14px" href="https://chat.whatsapp.com/C3UwZLZBEwv7y59yhtY8II" target="_blank" rel="noopener"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></i><span><b>Grupo do WhatsApp</b>Conversa da malta, avisos e combinações</span><em>Abrir ›</em></a>
 <div class="card" id="mine" style="margin-top:14px"></div>
 <div class="two" style="margin-top:14px">
@@ -540,7 +565,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261125115915';
+const BUILD='20261125122015';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -857,6 +882,54 @@ const MASCOT=(()=>{
     <g font-family="ui-monospace,monospace" font-weight="800" font-size="16" fill="#ffd60a" text-anchor="middle"><text class="m-d m-l0" x="18" y="37">0</text><text class="m-d m-l1" x="18" y="37">1</text><text class="m-d m-l2" x="18" y="37">2</text><text x="32" y="36" font-size="12" fill="#888">-</text><text class="m-d m-r0" x="46" y="37">0</text><text class="m-d m-r1" x="46" y="37">1</text></g>
     <g class="m-pop"><text x="32" y="9" text-anchor="middle" font-size="8.5" font-weight="900" fill="#34c759">GOLO!</text></g>`)
   }})();
+
+/* ---------- cartão FTV: meteorologia (Open-Meteo), contagem e rodapé "última hora" ---------- */
+const WXC={0:['Céu limpo','c'],1:['Pouco nublado','p'],2:['Pouco nublado','p'],3:['Nublado','n'],45:['Nevoeiro','f'],48:['Nevoeiro','f'],51:['Chuvisco','r'],53:['Chuvisco','r'],55:['Chuvisco','r'],56:['Chuvisco','r'],57:['Chuvisco','r'],61:['Chuva fraca','r'],63:['Chuva','r'],65:['Chuva forte','r'],66:['Chuva gelada','r'],67:['Chuva gelada','r'],71:['Neve','s'],73:['Neve','s'],75:['Neve','s'],77:['Neve','s'],80:['Aguaceiros','r'],81:['Aguaceiros','r'],82:['Aguaceiros fortes','r'],85:['Neve','s'],86:['Neve','s'],95:['Trovoada','t'],96:['Trovoada','t'],99:['Trovoada','t']};
+const wxIcon=t=>{const moon='<path d="M19 6a9 9 0 1 0 9 12 7 7 0 0 1-9-12z" fill="#ffe08a"/>',cl=(f='#eef3f8')=>`<path d="M12 31h18a6 6 0 0 0 0-12 8 8 0 0 0-15-1 6 6 0 0 0-3 13z" fill="${f}"/>`;
+  const b={c:moon,p:'<g transform="translate(-3 -3) scale(.8)">'+moon+'</g>'+cl(),n:cl('#d5dde6'),f:cl('#d5dde6')+'<path d="M8 34h24M11 37h18" stroke="#d5dde6" stroke-width="2" stroke-linecap="round"/>',r:cl('#d5dde6')+'<path d="M15 33l-2 5M21 33l-2 5M27 33l-2 5" stroke="#7cc4ff" stroke-width="2.2" stroke-linecap="round"/>',s:cl('#d5dde6')+'<g fill="#fff"><circle cx="15" cy="36" r="1.6"/><circle cx="21" cy="38" r="1.6"/><circle cx="27" cy="36" r="1.6"/></g>',t:cl('#bfc7d1')+'<path d="M21 31l-4 6h4l-2 5 6-7h-4l2-4z" fill="#ffd24a"/>'}[t]||cl();
+  return `<svg width="30" height="30" viewBox="0 0 40 40" aria-hidden="true">${b}</svg>`};
+const wxCache={};
+function getWx(date){
+  const k=campo||{},lat=+k.lat||41.588,lon=+k.lon||-8.432,key=date+'|'+lat+'|'+lon;
+  if(wxCache[key])return wxCache[key].v;
+  const dd=Math.round((dobj(date)-dobj(today()))/864e5);if(dd<0||dd>15)return null;
+  wxCache[key]={v:null};
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m,relative_humidity_2m&timezone=Europe%2FLisbon&start_date=${date}&end_date=${date}`)
+    .then(r=>r.json()).then(j=>{const h=j.hourly,i=h.time.findIndex(t=>t.endsWith('T21:00'));if(i<0)return;
+      wxCache[key].v={t:Math.round(h.temperature_2m[i]),p:h.precipitation_probability[i],c:h.weather_code[i],w:Math.round(h.wind_speed_10m[i]),u:h.relative_humidity_2m[i]};
+      if(curView==='convocatoria'&&cdate===date)renderFTV(dobj(date),games.find(x=>x.data===date))}).catch(()=>{});
+  return null}
+function ftvTime(date,g){
+  const st=gameStart(date),now=Date.now();
+  if(g&&g.cancelado)return{lv:'SEM JOGO',off:true,cd:'não houve jogo'};
+  if(g&&g.r||now>=st+3600e3)return{lv:'FINAL',off:true,cd:'jogo terminado'};
+  if(now>=st)return{lv:'AO VIVO',cd:'a decorrer'};
+  const m=Math.floor((st-now)/6e4),dd=Math.floor(m/1440),hh=Math.floor(m%1440/60),mi=m%60;
+  return{lv:'EM BREVE',cd:'faltam '+(dd?dd+'d '+hh+'h':hh?hh+'h '+String(mi).padStart(2,'0')+'min':mi+' min')}}
+function renderFTV(d,g){
+  const date=cdate,P=presence(date),T=ftvTime(date,g),eq=(conv[date]||{}).equipas,wx=getWx(date);
+  const items=[];
+  if(g&&g.r)items.push('RESULTADO: '+(g.r==='E'?'empate':'ganhou a Equipa '+(g.r==='V'?1:2)),'EQUIPA 1: '+g.a.join(', '),'EQUIPA 2: '+g.b.join(', '));
+  else if(g&&g.cancelado)items.push('Não houve jogo'+(g.motivo?': '+g.motivo:''));
+  else if(eq&&eq.modo==='auto')items.push('EQUIPA 1'+(eq.coletes==='a'?' (coletes)':'')+': '+eq.a.join(', '),'EQUIPA 2'+(eq.coletes==='b'?' (coletes)':'')+': '+eq.b.join(', '));
+  else if(eq&&eq.modo==='capitaes')items.push('CAPITÃES: '+eq.capA+(eq.coletes==='a'?' (coletes)':'')+' vs '+eq.capB+(eq.coletes==='b'?' (coletes)':''));
+  if(!(g&&(g.r||g.cancelado))){
+    if(convNotOpen(date))items.push('Inscrições abrem segunda às 08:30');
+    else{const c=[...P.go,...P.subs.map(x=>x.nome)];items.push('CONFIRMADOS ('+c.length+'/'+MAXJ+'): '+(c.join(', ')||'ainda ninguém'));
+      if(c.length<MAXJ)items.push('Faltam '+(MAXJ-c.length));if(P.wait.length)items.push('Lista de espera: '+P.wait.join(', '));
+      if(!convClosed(date))items.push('Respostas até quarta às 23:59')}}
+  if(wx)items.push('Previsão para as 21h: '+wx.t+'° · '+(WXC[wx.c]||['—'])[0].toLowerCase()+' · chuva '+wx.p+'% · vento '+wx.w+' km/h · humidade '+wx.u+'%');
+  const txt=items.map(x=>`<span>${esc(x)} ·</span>`).join(''),dur=Math.max(18,Math.round(items.join(' ').length/6));
+  const nConf=P.go.length+P.subs.length;
+  $('ticket').innerHTML=`<div class="ph"></div><div class="sh"></div>
+   <div class="bug"><span class="ch">F<i>TV</i></span><span class="lv${T.off?' off':''}" id="ftvlv">${T.lv}</span></div>
+   ${wx?`<div class="wxb">${wxIcon((WXC[wx.c]||[])[1])}<div>${wx.t}°<small>${esc((WXC[wx.c]||['—'])[0])} · chuva ${wx.p}%</small></div></div>`:''}
+   <div class="lt"><span class="k">${g&&(g.r||g.cancelado)||Date.now()>=gameStart(date)?'Jogo':'Próximo jogo'} · ${esc((campo&&campo.nome)||'Campo FUT7')}</span>
+    <div class="t"><b>${DIA[d.getDay()].slice(0,3).toUpperCase()} ${d.getDate()} · <i>21:00H</i></b><small>${MES[d.getMonth()]}<br>Fut7 · Palmeira</small></div>
+    <div class="s"><span>✅ ${nConf}/${MAXJ} confirmados</span><span id="ftvcd">⏱ ${T.cd}</span></div></div>
+   <div class="tk"><b>ÚLTIMA HORA</b><div class="run" style="--dur:${dur}s">${txt}${txt}</div></div>`;
+}
+setInterval(()=>{if(curView!=='convocatoria'||!cdate||!$('ftvcd'))return;const T=ftvTime(cdate,games.find(x=>x.data===cdate));$('ftvcd').textContent='⏱ '+T.cd;const l=$('ftvlv');l.textContent=T.lv;l.classList.toggle('off',!!T.off)},30000);
 function renderConv(){
   if(!cdate)cdate=nextThu(today());
   const d=dobj(cdate),g=games.find(x=>x.data===cdate);
@@ -865,10 +938,7 @@ function renderConv(){
   const wx=coords?`https://www.windy.com/${k.lat}/${k.lon}?${k.lat},${k.lon},13`:'https://www.ipma.pt/pt/otempo/prev.localidade.hora/#Braga&Braga';
   const diff=Math.round((d-dobj(today()))/864e5);
   $('cweek').textContent=diff===0?'Hoje':diff>0?'Daqui a '+diff+(diff===1?' dia':' dias'):'Há '+(-diff)+' dias';
-  $('ticket').innerHTML=`<div class="day"><span>${DIA[d.getDay()]}</span><b>${d.getDate()}</b><span>${MES[d.getMonth()].slice(0,3)} · 21h00</span></div>
-   <div><h2>${g&&(g.r||g.cancelado)?g.cancelado?'Não houve jogo':'Jogo disputado':'Próximo jogo'}</h2><p><b>${esc(k.nome||'Campo FUT7')}</b> · Futebol 7 · Palmeira</p><p>${esc(k.morada||'')}</p>
-   <p>${coords?'Coordenadas: '+esc(coords)+' · ':''}<a href="${esc(maps)}" target="_blank" rel="noopener">Abrir no mapa</a></p>
-   <p>Tempo previsto: <a href="${esc(wx)}" target="_blank" rel="noopener">ver previsão para quinta às 21h</a></p></div>`;
+  renderFTV(d,g);
   const P=presence(cdate),mp=myPlayer(),mine=mp&&P.map[mp];
   const closed=convClosed(cdate),notOpen=convNotOpen(cdate),lock=notOpen||(closed&&!isAdm());
   const closeTxt=notOpen?(isAdm()?'Inscrições abrem '+fdt(iso(new Date(convOpenAt(cdate))))+' (segunda) às 08:30. Como administrador já podes marcar os outros com ✓ / ✕.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
