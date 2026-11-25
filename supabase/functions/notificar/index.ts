@@ -254,19 +254,33 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     const papeis = (uid: string) => { const a = D.acessos[uid] || {}; const p = Array.isArray(a.papeis) ? [...a.papeis] : a.papel ? [a.papel] : []; if (donos.includes(uid)) p.push("admin"); return p; };
     const eApont = (uid: string) => papeis(uid).some((p: string) => p === "admin" || p === "apontador");
     if (!eApont(u.user.id)) return json({ erro: "sem permissão" }, 403);
-    const g = D.jogos[gid] && D.jogos[gid].r ? D.jogos[gid]
-      : (Object.values(D.propostas) as Any[]).filter((p) => p.tipo === "jogo" && p.alvo === gid && p.por === u.user.id && p.doc && p.doc.r).map((p) => p.doc)[0];
+    const oficial = D.jogos[gid] && D.jogos[gid].r ? D.jogos[gid] : null;
+    const g = oficial || (Object.values(D.propostas) as Any[]).filter((p) => p.tipo === "jogo" && p.alvo === gid && p.por === u.user.id && p.doc && p.doc.r).map((p) => p.doc)[0];
     if (!g) return json({ erro: "sem resultado" }, 400);
-    const { error } = await sb.from("notif_log").insert({ chave: `resultado|${gid}` });
-    if (error) return json({ feito: [] }); // já avisado
-    const { data: pf } = await sb.from("perfis").select("nome").eq("user_id", u.user.id).maybeSingle();
-    const quem = (D.acessos[u.user.id] || {}).jogador || (pf && pf.nome) || "um apontador";
     const ontem = addDias(lisboa(new Date()).data, -1) === g.data;
-    const res = g.r === "E" ? "Empate." : `Ganhou a Equipa ${g.r === "V" ? 1 : 2}.`;
-    const para = [...new Set([...Object.keys(D.acessos), ...donos])].filter((uid) => uid !== u.user.id && eApont(uid));
-    const n = await enviar(sb, para, { title: "📋 Resultado registado", body: `O resultado do jogo ${ontem ? "de ontem" : "de " + fdt(g.data)} foi apontado por: ${quem}. ${res}`, url: "/#jogos" });
-    await sb.from("notif_log").update({ n }).eq("chave", `resultado|${gid}`);
-    return json({ enviados: n });
+    const venc = g.r === "V" ? "a" : g.r === "D" ? "b" : null;
+    const nomeEq = (k: string) => g.coletes ? (k === g.coletes ? "Equipa Coletes" : "Equipa S/ Coletes") : `Equipa ${k === "a" ? 1 : 2}`;
+    const res = venc ? `Ganhou a ${nomeEq(venc)}.` : "Empate.";
+    const out: Any = {};
+    // 1) aos outros admins/apontadores: quem apontou (uma vez por jogo)
+    if (!(await sb.from("notif_log").insert({ chave: `resultado|${gid}` })).error) {
+      const { data: pf } = await sb.from("perfis").select("nome").eq("user_id", u.user.id).maybeSingle();
+      const quem = (D.acessos[u.user.id] || {}).jogador || (pf && pf.nome) || "um apontador";
+      const para = [...new Set([...Object.keys(D.acessos), ...donos])].filter((uid) => uid !== u.user.id && eApont(uid));
+      out.apontado = await enviar(sb, para, { title: "📋 Resultado registado", body: `O resultado do jogo ${ontem ? "de ontem" : "de " + fdt(g.data)} foi apontado por: ${quem}. ${res}`, url: "/#jogos" });
+      await sb.from("notif_log").update({ n: out.apontado }).eq("chave", `resultado|${gid}`);
+    }
+    // 2) a todos, quando o resultado é oficial (gravado pelo admin ou aprovado): a equipa que venceu
+    if (oficial && !(await sb.from("notif_log").insert({ chave: `resultado-todos|${gid}` })).error) {
+      const NICK: Record<string, string> = { "Kevin Silva": "Kevin", "Kevin Azevedo": "Kevin Az", "Gonçalo Brás": "Gonçalo", "Gonçalo Lage": "Lage", "Tiago Félix": "Félix", "Tiago Costa": "Costa", "Miguel Menezes": "Miguel" };
+      const curto = (n: string) => NICK[n] || n.split(" ")[0];
+      const quemGanhou = venc ? (g[venc] as string[]).filter((n) => n !== "Substituto").map(curto).join(", ") : "";
+      const corpo = venc ? `🏆 Ganhou a ${nomeEq(venc)}${quemGanhou ? ": " + quemGanhou : ""}.` : `🤝 O jogo ${ontem ? "de ontem" : "de " + fdt(g.data)} acabou empatado.`;
+      const todos = [...new Set([...Object.keys(D.acessos), ...donos])];
+      out.todos = await enviar(sb, todos, { title: "Resultado do último jogo disponível", body: corpo, url: "/#jogos" });
+      await sb.from("notif_log").update({ n: out.todos }).eq("chave", `resultado-todos|${gid}`);
+    }
+    return json(out);
   }
 
   // alguém mudou a resposta na convocatória: tratar a lista de espera desse jogo

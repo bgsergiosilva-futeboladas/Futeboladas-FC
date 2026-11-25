@@ -1539,7 +1539,8 @@ function renderPending(){
 }
 async function aprovarProp(id,sk){const p=propostas[id];if(!p)return;let ok;
   if(p.tipo==='substituto'&&(sk===undefined||sk===null||sk===''))return note('Atribui a skill (0 a 5) ao substituto antes de aprovar.');
-  if(p.tipo==='jogo'){ok=await save('jogos/'+p.alvo,p.doc);if(ok&&p.de&&p.de!==p.alvo)try{await db.doc('jogos/'+p.de).delete()}catch(x){}}
+  if(p.tipo==='jogo'){ok=await save('jogos/'+p.alvo,p.doc);if(ok&&p.de&&p.de!==p.alvo)try{await db.doc('jogos/'+p.de).delete()}catch(x){}
+    if(ok&&p.doc&&p.doc.r)avisaResultado(p.alvo)}   /* resultado aprovado: aviso a todos */
   else if(p.tipo==='substituto'){const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,subs:[...(c.subs||[]),{nome:p.doc.nome,por:p.autor||''}]})&&await saveSubSk(p.alvo,p.doc.nome,+sk)}
   else{const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,equipas:p.doc});if(ok)await preRegistar(p.alvo,p.doc)}
   if(ok)try{await db.doc('propostas/'+id).delete()}catch(x){}}
