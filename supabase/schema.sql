@@ -171,6 +171,16 @@ create policy "propostas" on public.docs for all to authenticated
          and (data->>'por' = auth.uid()::text)
          and (data->>'tipo' <> 'jogo' and data->>'tipo' <> 'equipas' or public.tem_papel('apontador')));
 
+-- Apontador: regista jogos e resultados diretamente (sem aprovação).
+-- Pode criar jogos e completar os que ainda não têm resultado; um jogo com resultado só o admin altera. Não apaga.
+drop policy if exists "apontador cria jogo" on public.docs;
+create policy "apontador cria jogo" on public.docs for insert to authenticated
+  with check (public.tem_papel('apontador') and col = 'jogos');
+drop policy if exists "apontador completa jogo" on public.docs;
+create policy "apontador completa jogo" on public.docs for update to authenticated
+  using (public.tem_papel('apontador') and col = 'jogos' and coalesce(data->>'r', '') = '')
+  with check (public.tem_papel('apontador') and col = 'jogos');
+
 -- Pedido de acesso da própria conta
 drop policy if exists "pedido" on public.docs;
 create policy "pedido" on public.docs for all to authenticated
