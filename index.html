@@ -531,7 +531,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261125114705';
+const BUILD='20261125115054';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -640,7 +640,7 @@ function renderGames(){
   const team=(t,r,lbl,atr)=>`<div class="team"><h4>${lbl} ${r?`<span class="res" style="background:${resl[r][1]}">${resl[r][0]}</span>`:''}</h4><ol>${t.map((n,i)=>`<li class="${inRoster(n)?'':'g'}">${esc(n)}${i===0?'<span class="cap">C</span>':''}${atr.includes(n)?'<span class="late">atrasado</span>':''}</li>`).join('')}</ol></div>`;
   const gameMeta=g=>{const m=MVP.by[g.id],t=[g.modo==='auto'?'Equipas automáticas (sem ponto de capitão)':g.modo==='capitaes'?'Capitães sorteados (+1 ao capitão vencedor)':''];if(m)t.push(m.open?'Votação MVP aberta até '+fdt(iso(new Date(m.closeAt)))+' às 23:59':m.winners.length?'MVP: '+m.winners.join(', ')+' ('+m.max+' voto'+(m.max>1?'s':'')+')':'');const x=t.filter(Boolean);return x.length?`<p class="tag" style="margin:0;grid-column:1/-1">${esc(x.join(' · '))}</p>`:''};
   const pend=id=>Object.values(propostas).some(p=>p.tipo==='jogo'&&p.estado!=='rejeitada'&&(p.alvo===id||p.de===id));
-  const acts=g=>(!g.cancelado&&!g.r&&isApo()?`<span class="row"><button class="btn pri" data-e="${g.id}">Registar resultado</button>${isAdm()?`<button class="btn no" data-d="${g.id}">Apagar</button>`:''}</span>`:g.r?`<span class="row"><span class="tag" style="margin:0">🔒 Resultado confirmado</span>${isAdm()?`<button class="btn no" data-d="${g.id}">Apagar</button>`:''}</span>`:isAdm()?`<span class="row"><button class="btn" data-e="${g.id}">Editar</button><button class="btn no" data-d="${g.id}">Apagar</button></span>`:isApo()?`<span class="row"><button class="btn" data-e="${g.id}">Propor alteração</button></span>`:'')+(pend(g.id)?'<span class="tag">alteração pendente</span>':'')+(lockedByOther(g.id)?`<span class="tag">🔒 ${esc(lockedByOther(g.id).autor||'')} a editar</span>`:'');
+  const acts=g=>(!g.cancelado&&!g.r&&isApo()?`<span class="row"><button class="btn pri" data-e="${g.id}">Registar resultado</button>${isAdm()?`<button class="btn no" data-d="${g.id}">Apagar</button>`:''}</span>`:g.r&&!isAdm()?`<span class="row"><span class="tag" style="margin:0">🔒 Resultado confirmado</span></span>`:isAdm()?`<span class="row"><button class="btn" data-e="${g.id}">Editar</button><button class="btn no" data-d="${g.id}">Apagar</button></span>`:isApo()?`<span class="row"><button class="btn" data-e="${g.id}">Propor alteração</button></span>`:'')+(pend(g.id)?'<span class="tag">alteração pendente</span>':'')+(lockedByOther(g.id)?`<span class="tag">🔒 ${esc(lockedByOther(g.id).autor||'')} a editar</span>`:'');
   if(!mg.some(g=>g.id===gsel))gsel=mg.length?mg[mg.length-1].id:null;
   $('gsel').innerHTML=[...mg].reverse().map(g=>`<option value="${g.id}"${g.id===gsel?' selected':''}>${fdt(g.data)}${g.cancelado?' · não houve jogo':g.r?'':' · falta o resultado'}</option>`).join('');
   const sg=mg.filter(g=>g.id===gsel);
@@ -700,7 +700,7 @@ function lostLock(c){dropLock();openForm(null,null,true);location.hash='#jogos';
 const busyMsg=l=>(l.autor||'Outra pessoa')+' está a editar este jogo desde as '+hhmm(l.t)+'. Espera que termine (fica livre ao fim de 2 minutos sem atividade).';
 async function startEdit(id,preset){
   const gid=id||'g'+((preset&&preset.data)||'').replace(/-/g,'');
-  if(id&&(games.find(g=>g.id===id)||{}).r)return note('O resultado deste jogo já foi confirmado: as equipas e o resultado já não podem ser alterados.');
+  if(id&&!isAdm()&&(games.find(g=>g.id===id)||{}).r)return note('O resultado deste jogo já foi confirmado: as equipas e o resultado já não podem ser alterados.');
   if(id&&!isAdm()&&Object.values(propostas).some(p=>p.tipo==='jogo'&&p.estado==='pendente'&&(p.alvo===id||p.de===id)))return note('Já há uma alteração deste jogo à espera de aprovação.');
   if(gid.length>1){const o=lockedByOther(gid);if(o)return note(busyMsg(o))}
   formOpen=true;openForm(id,preset);location.hash='#novo';
@@ -754,7 +754,7 @@ $('f').addEventListener('submit',async e=>{
   const lk=editId||id,ol=lockedByOther(lk)||(editId&&id!==editId?lockedByOther(id):null);
   if(ol)return err(busyMsg(ol));
   if(myLock!==lk){const o=await takeLock(lk);if(o)return err(busyMsg(o))}
-  if(editId&&(games.find(g=>g.id===editId)||{}).r)return err('O resultado deste jogo já foi confirmado e não pode ser alterado.');
+  if(editId&&!isAdm()&&(games.find(g=>g.id===editId)||{}).r)return err('O resultado deste jogo já foi confirmado e não pode ser alterado.');
   if(editId){const cur=games.find(g=>g.id===editId);if(!cur||JSON.stringify(cur)!==openSnap)return err('Este jogo foi alterado por outra pessoa enquanto editavas. Sai e volta a abrir para veres a versão atual.')}
   const houve=document.querySelector('input[name=hj]:checked').value==='1';
   let doc;
@@ -770,7 +770,7 @@ $('f').addEventListener('submit',async e=>{
     if(dup)return err(dup+' aparece mais do que uma vez.');
     doc={data,r,a,b,atr:[...document.querySelectorAll('#flate input:checked')].map(i=>i.value)};if(fCol)doc.coletes=fCol;if(modo)doc.modo=modo;
     const rt=r==='E'?'Empate':r==='V'?'Ganhou a Equipa 1':'Ganhou a Equipa 2',at=doc.atr.length?'\nAtrasados: '+doc.atr.join(', '):'';
-    if(!confirm('Confirmas as equipas e o resultado?\n\nEquipa 1: '+a.join(', ')+'\nEquipa 2: '+b.join(', ')+'\nResultado: '+rt+at+'\n\nDepois de gravar já não é possível alterar.'))return;
+    if(!confirm('Confirmas as equipas e o resultado?\n\nEquipa 1: '+a.join(', ')+'\nEquipa 2: '+b.join(', ')+'\nResultado: '+rt+at+''+(editId&&(games.find(g=>g.id===editId)||{}).r?'\n\nEste jogo já tinha resultado confirmado. Como administrador podes alterá-lo.':'\n\nDepois de gravar já não é possível alterar (só o administrador).')))return;
   }
   if(!isAdm()){
     if(await propor({tipo:'jogo',alvo:id,de:editId||null,doc,antigo:editId?(({id,...g})=>g)(games.find(g=>g.id===editId)||{}):null})){if(doc.r)avisaResultado(id);month=mkey(data);await dropLock();openForm(null,null,true);location.hash='#jogos';note('Registo enviado. Fica pendente até o administrador aprovar.')}
@@ -1329,7 +1329,6 @@ function renderPending(){
 }
 async function aprovarProp(id,sk){const p=propostas[id];if(!p)return;let ok;
   if(p.tipo==='substituto'&&(sk===undefined||sk===null||sk===''))return note('Atribui a skill (0 a 5) ao substituto antes de aprovar.');
-  if(p.tipo==='jogo'&&(games.find(g=>g.id===p.alvo)||{}).r)return note('Este jogo já tem o resultado confirmado e não pode ser alterado. Rejeita esta proposta.');
   if(p.tipo==='jogo'){ok=await save('jogos/'+p.alvo,p.doc);if(ok&&p.de&&p.de!==p.alvo)try{await db.doc('jogos/'+p.de).delete()}catch(x){}}
   else if(p.tipo==='substituto'){const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,subs:[...(c.subs||[]),{nome:p.doc.nome,por:p.autor||''}]})&&await saveSubSk(p.alvo,p.doc.nome,+sk)}
   else{const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,equipas:p.doc});if(ok)await preRegistar(p.alvo,p.doc)}

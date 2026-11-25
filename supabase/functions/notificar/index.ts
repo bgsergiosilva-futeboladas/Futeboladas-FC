@@ -70,7 +70,9 @@ export function planear(now: Date, D: Any) {
   const abre = L.dow === 1 && L.hora === 8 && L.min >= 30;
   const mvpAbre = L.dow === 4 && L.hora === 22 && L.min < 30; // quinta 22h: fim do jogo, abre a votação do MVP
   const manha = L.dow === 5 && L.hora >= 8 && L.hora % 2 === 0 && L.min < 30; // sexta: 8h, 10h, 12h … 22h
-  if (!abre && !manha && !mvpAbre && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
+  const mvpLembra = (L.dow === 5 || L.dow === 6 || L.dow === 0) && [10, 15, 20].includes(L.hora) && L.min < 30; // sex/sáb/dom: 3 lembretes por dia
+  const mvpVencedor = L.dow === 1 && L.hora === 9 && L.min < 30; // segunda 09:00: parabéns ao MVP
+  if (!abre && !manha && !mvpAbre && !mvpLembra && !mvpVencedor && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
   // contas → jogador e perfis
   const contas = Object.entries(D.acessos as Record<string, Any>).map(([uid, a]) => ({
     uid, jogador: a.jogador || "", papeis: Array.isArray(a.papeis) ? a.papeis : a.papel ? [a.papel] : [],
@@ -102,6 +104,30 @@ export function planear(now: Date, D: Any) {
     }
   }
 
+  // MVP: lembretes sexta, sábado e domingo (10h, 15h, 20h) a quem jogou e ainda não votou
+  if (mvpLembra) {
+    const qui = addDias(L.data, -((L.dow + 7 - 4) % 7)), g = houveJogo(qui);
+    if (g && !g.cancelado) {
+      const gid = `g${qui.replace(/-/g, "")}`;
+      const jogou = [...g.a, ...g.b].filter((n: string) => n !== "Substituto");
+      const votou = new Set(Object.entries(D.mvpvotos as Record<string, Any>).filter(([, v]) => v.v && v.v[gid]).map(([uid]) => uid));
+      add("mvp-" + L.hora, deJog(jogou).filter((u) => !votou.has(u)), "Quem foi o MVP? 🏆",
+        L.dow === 0 ? "Último dia: vota no MVP do jogo de quinta até hoje às 23:59. O eleito ganha +1 ponto." : `Ainda não votaste no MVP do jogo de quinta (${fdt(qui)}). Vota até domingo às 23:59.`, "/#classificacao");
+    }
+  }
+  // segunda 09:00: avisar o(s) MVP eleito(s) do último jogo
+  if (mvpVencedor) {
+    const qui = addDias(L.data, -4), g = houveJogo(qui);
+    if (g && !g.cancelado) {
+      const gid = `g${qui.replace(/-/g, "")}`, fecho = lisEpoch(addDias(qui, 3), 23, 59, 59);
+      const nomes = new Set(D.roster.map((r: Any) => r.nome)), cand = [...g.a, ...g.b].filter((n: string) => nomes.has(n));
+      const cont: Record<string, number> = {};
+      for (const v of Object.values(D.mvpvotos) as Any[]) { const x = v.v && v.v[gid]; if (!x || !cand.includes(x.nome) || x.nome === v.jogador || (x.t && x.t > fecho)) continue; cont[x.nome] = (cont[x.nome] || 0) + 1; }
+      const max = Math.max(0, ...Object.values(cont)), venc = max > 0 ? Object.keys(cont).filter((n) => cont[n] === max) : [];
+      add("mvp-venc", deJog(venc), "🏆 Foste eleito MVP!", `Parabéns! Foste o MVP do jogo de quinta (${fdt(qui)}) com ${max} voto${max === 1 ? "" : "s"}. Ganhaste +1 ponto na tabela.`, "/#classificacao");
+    }
+  }
+
   // segunda 08:30: abrem as inscrições
   if (abre && !jogoFechado(quinta)) add("conv-abre", todos, "Inscrições abertas ⚽", `Vais jogar na quinta, ${fdt(quinta)} às 21h? Responde até quarta às 23:59.`, "/#convocatoria");
   if (L.hora === 21) {
@@ -110,16 +136,6 @@ export function planear(now: Date, D: Any) {
       add(L.dow === 2 ? "conv-lembrete" : "conv-ultimo", deJog(P.none),
         L.dow === 2 ? "Ainda não respondeste ⚽" : "Último aviso: convocatória fecha hoje",
         L.dow === 2 ? `Vais ao jogo de quinta, ${fdt(quinta)}? Responde até amanhã às 23:59.` : `Responde até às 23:59 se vais ao jogo de quinta, ${fdt(quinta)}. Vão ${P.go.length} de 14.`, "/#convocatoria");
-    }
-    // MVP (sexta, jogo de ontem)
-    if (L.dow === 5) {
-      const ontem = addDias(L.data, -1), g = houveJogo(ontem);
-      if (g && !g.cancelado) {
-        const gid = `g${ontem.replace(/-/g, "")}`;
-        const jogou = [...g.a, ...g.b].filter((n: string) => n !== "Substituto");
-        const votou = new Set(Object.entries(D.mvpvotos as Record<string, Any>).filter(([, v]) => v.v && v.v[gid]).map(([uid]) => uid));
-        add("mvp", deJog(jogou).filter((u) => !votou.has(u)), "Quem foi o MVP? 🏆", "Vota no melhor jogador de ontem até domingo às 23:59. O eleito ganha +1 ponto.", "/#classificacao");
-      }
     }
     // quotas (dias 1 a 15)
     if (L.dia <= 15) {
