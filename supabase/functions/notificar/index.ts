@@ -68,8 +68,9 @@ export function presenca(D: Any, data: string) {
 export function planear(now: Date, D: Any) {
   const L = lisboa(now), out: Any[] = [];
   const abre = L.dow === 1 && L.hora === 8 && L.min >= 30;
+  const mvpAbre = L.dow === 4 && L.hora === 22 && L.min < 30; // quinta 22h: fim do jogo, abre a votação do MVP
   const manha = L.dow === 5 && L.hora >= 8 && L.hora % 2 === 0 && L.min < 30; // sexta: 8h, 10h, 12h … 22h
-  if (!abre && !manha && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
+  if (!abre && !manha && !mvpAbre && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
   // contas → jogador e perfis
   const contas = Object.entries(D.acessos as Record<string, Any>).map(([uid, a]) => ({
     uid, jogador: a.jogador || "", papeis: Array.isArray(a.papeis) ? a.papeis : a.papel ? [a.papel] : [],
@@ -90,6 +91,15 @@ export function planear(now: Date, D: Any) {
     const pendente = Object.values(D.propostas as Record<string, Any>).some((p) => p.tipo === "jogo" && p.estado === "pendente" && p.alvo === `g${ontem.replace(/-/g, "")}`);
     if (!pendente && ((g && !g.r && !g.cancelado) || (!g && presenca(D, ontem).go.length > 0)))
       add("resultado-" + L.hora, apont, L.hora === 8 ? "Falta o resultado de ontem 📋" : "Ainda falta o resultado de ontem 📋", `Indica quem ganhou o jogo de ${fdt(ontem)} e quem chegou atrasado.`, "/#jogos");
+  }
+
+  // quinta 22:00: abre a votação do MVP para quem jogou
+  if (mvpAbre) {
+    const g = houveJogo(L.data);
+    if (g && !g.cancelado) {
+      const jogou = [...g.a, ...g.b].filter((n: string) => n !== "Substituto");
+      add("mvp-abre", deJog(jogou), "Votação do MVP aberta 🏆", "Quem foi o melhor em campo hoje? Vota até domingo às 23:59. O eleito ganha +1 ponto.", "/#classificacao");
+    }
   }
 
   // segunda 08:30: abrem as inscrições
