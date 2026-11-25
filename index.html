@@ -647,7 +647,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261125151416';
+const BUILD='20261125151435';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -1037,8 +1037,7 @@ function lineupHTML(t,date){
   return `<div class="lu${calm?' calm':''}"><div class="lu-hd"><div><b>Os 7 de cada lado</b><span>${DIA[d.getDay()]}, ${fdt(date)} · 21:00</span></div><div class="lu-tv"><span>F<i>TV</i></span><span class="l">● EM DIRETO</span></div></div>
    <div class="lu-st"><div class="lu-pitch"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="rgba(255,255,255,.85)" stroke-width="1.2" vector-effect="non-scaling-stroke"><rect x="2" y="1.5" width="96" height="97"/><line x1="2" y1="50" x2="98" y2="50"/><ellipse cx="50" cy="50" rx="13" ry="6"/><rect x="27" y="1.5" width="46" height="11"/><rect x="27" y="87.5" width="46" height="11"/><rect x="40" y="1.5" width="20" height="4"/><rect x="40" y="94.5" width="20" height="4"/></g></svg>${dots}</div>
     <div class="lu-splash" aria-hidden="true"><img src="assets/logo.webp" alt=""><b>Já temos o 7 inicial de cada equipa!</b></div></div>
-   <div class="lu-ft"><div class="${teams[0].col===false?'sc':'co'}">${lbl(teams[0])}</div><span>vs</span><div class="${teams[1].col?'co':'sc'}">${lbl(teams[1])}</div></div>
-   <p class="tag" style="margin:8px 2px 0">O capitão (C) joga a avançado; as outras posições foram sorteadas.</p></div>`;
+   <div class="lu-ft"><div class="${teams[0].col===false?'sc':'co'}">${lbl(teams[0])}</div><span>vs</span><div class="${teams[1].col?'co':'sc'}">${lbl(teams[1])}</div></div></div>`;
 }
 function renderConv(){
   if(!cdate)cdate=nextThu(today());
