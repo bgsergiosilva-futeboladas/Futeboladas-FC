@@ -270,8 +270,9 @@ details summary{list-style:none}details summary::-webkit-details-marker{display:
 }
 
 /* ---------- ecrãs de conta (modelo Relvado) ---------- */
-body.au-on{overflow:hidden}
-#auth{position:fixed;inset:0;z-index:100;overflow:auto;font-family:var(--f);color:#1d1214;background:#120d0e;display:flex;flex-direction:column;--sh:clamp(150px,calc(100dvh - 540px),340px);--tb:clamp(66px,calc(var(--sh)*.3),104px)}
+body.au-on{overflow:hidden;position:fixed;inset:0;overscroll-behavior:none}html:has(body.au-on){overflow:hidden;overscroll-behavior:none}
+#auth #au-sheet{touch-action:manipulation}
+#auth{position:fixed;inset:0;z-index:100;overflow:hidden;overscroll-behavior:none;touch-action:none;font-family:var(--f);color:#1d1214;background:#120d0e;display:flex;flex-direction:column;--sh:clamp(150px,calc(100dvh - 540px),340px);--tb:clamp(66px,calc(var(--sh)*.3),104px)}
 #auth.hide{display:none}
 #auth .cf{flex:none;width:min(100%,520px);margin:0 auto;padding-top:env(safe-area-inset-top)}
 #auth .cf-sc{position:relative;height:var(--sh);overflow:hidden}
@@ -622,7 +623,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261125145848';
+const BUILD='20261125150008';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
