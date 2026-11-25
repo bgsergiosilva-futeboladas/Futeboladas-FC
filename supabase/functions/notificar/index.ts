@@ -68,7 +68,8 @@ export function presenca(D: Any, data: string) {
 export function planear(now: Date, D: Any) {
   const L = lisboa(now), out: Any[] = [];
   const abre = L.dow === 1 && L.hora === 8 && L.min >= 30;
-  if (!abre && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
+  const manha = L.dow === 5 && L.hora >= 8 && L.hora % 2 === 0 && L.min < 30; // sexta: 8h, 10h, 12h … 22h
+  if (!abre && !manha && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
   // contas → jogador e perfis
   const contas = Object.entries(D.acessos as Record<string, Any>).map(([uid, a]) => ({
     uid, jogador: a.jogador || "", papeis: Array.isArray(a.papeis) ? a.papeis : a.papel ? [a.papel] : [],
@@ -80,11 +81,21 @@ export function planear(now: Date, D: Any) {
   const add = (chave: string, para: string[], titulo: string, texto: string, url = "/") => { if (para.length) out.push({ chave: chave + "@" + L.data, para: [...new Set(para)], titulo, texto, url }); };
   const quinta = addDias(L.data, (4 - L.dow + 7) % 7);
   const houveJogo = (data: string) => D.jogos[`g${data.replace(/-/g, "")}`];
+  const jogoFechado = (data: string) => { const g = houveJogo(data); return g && (g.r || g.cancelado); };
+  const apont = contas.filter((c) => c.papeis.includes("admin") || c.papeis.includes("apontador")).map((c) => c.uid);
+
+  // sexta a partir das 08:00, de 2 em 2 horas: lembrar admin e apontadores até alguém registar o resultado de ontem
+  if (manha) {
+    const ontem = addDias(L.data, -1), g = houveJogo(ontem);
+    const pendente = Object.values(D.propostas as Record<string, Any>).some((p) => p.tipo === "jogo" && p.estado === "pendente" && p.alvo === `g${ontem.replace(/-/g, "")}`);
+    if (!pendente && ((g && !g.r && !g.cancelado) || (!g && presenca(D, ontem).go.length > 0)))
+      add("resultado-" + L.hora, apont, L.hora === 8 ? "Falta o resultado de ontem 📋" : "Ainda falta o resultado de ontem 📋", `Indica quem ganhou o jogo de ${fdt(ontem)} e quem chegou atrasado.`, "/#jogos");
+  }
 
   // segunda 08:30: abrem as inscrições
-  if (abre && !houveJogo(quinta)) add("conv-abre", todos, "Inscrições abertas ⚽", `Vais jogar na quinta, ${fdt(quinta)} às 21h? Responde até quarta às 23:59.`, "/#convocatoria");
+  if (abre && !jogoFechado(quinta)) add("conv-abre", todos, "Inscrições abertas ⚽", `Vais jogar na quinta, ${fdt(quinta)} às 21h? Responde até quarta às 23:59.`, "/#convocatoria");
   if (L.hora === 21) {
-    if ((L.dow === 2 || L.dow === 3) && !houveJogo(quinta)) {
+    if ((L.dow === 2 || L.dow === 3) && !jogoFechado(quinta)) {
       const P = presenca(D, quinta);
       add(L.dow === 2 ? "conv-lembrete" : "conv-ultimo", deJog(P.none),
         L.dow === 2 ? "Ainda não respondeste ⚽" : "Último aviso: convocatória fecha hoje",
@@ -93,7 +104,7 @@ export function planear(now: Date, D: Any) {
     // MVP (sexta, jogo de ontem)
     if (L.dow === 5) {
       const ontem = addDias(L.data, -1), g = houveJogo(ontem);
-      if (g && !g.cancelado && g.r) {
+      if (g && !g.cancelado) {
         const gid = `g${ontem.replace(/-/g, "")}`;
         const jogou = [...g.a, ...g.b].filter((n: string) => n !== "Substituto");
         const votou = new Set(Object.entries(D.mvpvotos as Record<string, Any>).filter(([, v]) => v.v && v.v[gid]).map(([uid]) => uid));
@@ -201,6 +212,34 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     const { data: u } = await sb.auth.getUser(token);
     if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
     const n = await enviar(sb, [u.user.id], { title: "Notificações ativas ✅", body: "A partir de agora recebes aqui os avisos das Futeboladas.", url: "/" });
+    return json({ enviados: n });
+  }
+
+  // admin/apontador gravou o resultado: avisar os outros
+  if (body.resultado) {
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");
+    const { data: u } = await sb.auth.getUser(token);
+    if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
+    const gid = String(body.resultado);
+    if (!/^g\d{8}$/.test(gid)) return json({ erro: "jogo inválido" }, 400);
+    const D = await carregar(sb);
+    const { data: dn } = await sb.from("donos").select("user_id");
+    const donos = (dn || []).map((d: Any) => d.user_id);
+    const papeis = (uid: string) => { const a = D.acessos[uid] || {}; const p = Array.isArray(a.papeis) ? [...a.papeis] : a.papel ? [a.papel] : []; if (donos.includes(uid)) p.push("admin"); return p; };
+    const eApont = (uid: string) => papeis(uid).some((p: string) => p === "admin" || p === "apontador");
+    if (!eApont(u.user.id)) return json({ erro: "sem permissão" }, 403);
+    const g = D.jogos[gid] && D.jogos[gid].r ? D.jogos[gid]
+      : (Object.values(D.propostas) as Any[]).filter((p) => p.tipo === "jogo" && p.alvo === gid && p.por === u.user.id && p.doc && p.doc.r).map((p) => p.doc)[0];
+    if (!g) return json({ erro: "sem resultado" }, 400);
+    const { error } = await sb.from("notif_log").insert({ chave: `resultado|${gid}` });
+    if (error) return json({ feito: [] }); // já avisado
+    const { data: pf } = await sb.from("perfis").select("nome").eq("user_id", u.user.id).maybeSingle();
+    const quem = (D.acessos[u.user.id] || {}).jogador || (pf && pf.nome) || "um apontador";
+    const ontem = addDias(lisboa(new Date()).data, -1) === g.data;
+    const res = g.r === "E" ? "Empate." : `Ganhou a Equipa ${g.r === "V" ? 1 : 2}.`;
+    const para = [...new Set([...Object.keys(D.acessos), ...donos])].filter((uid) => uid !== u.user.id && eApont(uid));
+    const n = await enviar(sb, para, { title: "📋 Resultado registado", body: `O resultado do jogo ${ontem ? "de ontem" : "de " + fdt(g.data)} foi apontado por: ${quem}. ${res}`, url: "/#jogos" });
+    await sb.from("notif_log").update({ n }).eq("chave", `resultado|${gid}`);
     return json({ enviados: n });
   }
 

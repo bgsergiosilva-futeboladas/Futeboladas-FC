@@ -475,9 +475,12 @@ function standings(games,roster,mvpW){
 }
 /* MVP: votação aberta depois do jogo até domingo às 23:59; quem tiver mais votos ganha 1 ponto (empate: todos os empatados) */
 function mvpCloseAt(data){const[y,m,d]=data.split('-').map(Number);const o=new Date(y,m-1,d,12);const add=(7-o.getDay())%7;return new Date(y,m-1,d+add,23,59,59).getTime()}
+/* jogo já começou (quinta às 21h) — a votação do MVP abre mesmo antes de haver resultado */
+const gameStart=data=>{const[y,m,d]=data.split('-').map(Number);return new Date(y,m-1,d,21,0,0).getTime()};
+const mvpGame=(g,now)=>!g.cancelado&&(g.r||now>=gameStart(g.data));
 function mvpResults(games,roster,mvpvotos,now){
   const names=new Set(roster.map(r=>r.nome)),by={},win={};
-  for(const g of games.filter(played)){
+  for(const g of games.filter(g=>mvpGame(g,now))){
     const cand=[...g.a,...g.b].filter(n=>names.has(n)),closeAt=mvpCloseAt(g.data),counts={};let total=0;
     for(const v of Object.values(mvpvotos||{})){const x=v.v&&v.v[g.id];if(!x||!cand.includes(x.nome)||x.nome===v.jogador||(x.t&&x.t>closeAt))continue;counts[x.nome]=(counts[x.nome]||0)+1;total++}
     const open=now<=closeAt,max=Math.max(0,...Object.values(counts));
@@ -527,7 +530,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261125111721';
+const BUILD='20261125114155';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -633,15 +636,15 @@ function renderGames(){
     rows.map((s,i)=>`<tr><td class="pos">${i+1}</td><td class="l">${esc(s.nome)}</td><td class="pts">${s.pts}</td><td>${s.J}</td><td>${s.V}</td><td>${s.E}</td><td>${s.D}</td><td class="hm">${s.capW}</td><td>${s.atr?'−'+s.atr:'0'}</td></tr>`).join('')+'</tbody></table>':'<p style="margin:0">Sem jogos disputados neste mês.</p>';
   $('mtitle').textContent='Jogos de '+mname(month);
   const resl={V:['Vitória','var(--win)'],E:['Empate','var(--draw)'],D:['Derrota','var(--loss)']};
-  const team=(t,r,lbl,atr)=>`<div class="team"><h4>${lbl} <span class="res" style="background:${resl[r][1]}">${resl[r][0]}</span></h4><ol>${t.map((n,i)=>`<li class="${inRoster(n)?'':'g'}">${esc(n)}${i===0?'<span class="cap">C</span>':''}${atr.includes(n)?'<span class="late">atrasado</span>':''}</li>`).join('')}</ol></div>`;
+  const team=(t,r,lbl,atr)=>`<div class="team"><h4>${lbl} ${r?`<span class="res" style="background:${resl[r][1]}">${resl[r][0]}</span>`:''}</h4><ol>${t.map((n,i)=>`<li class="${inRoster(n)?'':'g'}">${esc(n)}${i===0?'<span class="cap">C</span>':''}${atr.includes(n)?'<span class="late">atrasado</span>':''}</li>`).join('')}</ol></div>`;
   const gameMeta=g=>{const m=MVP.by[g.id],t=[g.modo==='auto'?'Equipas automáticas (sem ponto de capitão)':g.modo==='capitaes'?'Capitães sorteados (+1 ao capitão vencedor)':''];if(m)t.push(m.open?'Votação MVP aberta até '+fdt(iso(new Date(m.closeAt)))+' às 23:59':m.winners.length?'MVP: '+m.winners.join(', ')+' ('+m.max+' voto'+(m.max>1?'s':'')+')':'');const x=t.filter(Boolean);return x.length?`<p class="tag" style="margin:0;grid-column:1/-1">${esc(x.join(' · '))}</p>`:''};
   const pend=id=>Object.values(propostas).some(p=>p.tipo==='jogo'&&p.estado!=='rejeitada'&&(p.alvo===id||p.de===id));
-  const acts=g=>(isAdm()?`<span class="row"><button class="btn" data-e="${g.id}">Editar</button><button class="btn no" data-d="${g.id}">Apagar</button></span>`:isApo()?`<span class="row"><button class="btn" data-e="${g.id}">Propor alteração</button></span>`:'')+(pend(g.id)?'<span class="tag">alteração pendente</span>':'')+(lockedByOther(g.id)?`<span class="tag">🔒 ${esc(lockedByOther(g.id).autor||'')} a editar</span>`:'');
+  const acts=g=>(!g.cancelado&&!g.r&&isApo()?`<span class="row"><button class="btn pri" data-e="${g.id}">Registar resultado</button>${isAdm()?`<button class="btn no" data-d="${g.id}">Apagar</button>`:''}</span>`:isAdm()?`<span class="row"><button class="btn" data-e="${g.id}">Editar</button><button class="btn no" data-d="${g.id}">Apagar</button></span>`:isApo()?`<span class="row"><button class="btn" data-e="${g.id}">Propor alteração</button></span>`:'')+(pend(g.id)?'<span class="tag">alteração pendente</span>':'')+(lockedByOther(g.id)?`<span class="tag">🔒 ${esc(lockedByOther(g.id).autor||'')} a editar</span>`:'');
   if(!mg.some(g=>g.id===gsel))gsel=mg.length?mg[mg.length-1].id:null;
-  $('gsel').innerHTML=[...mg].reverse().map(g=>`<option value="${g.id}"${g.id===gsel?' selected':''}>${fdt(g.data)}${g.cancelado?' · não houve jogo':''}</option>`).join('');
+  $('gsel').innerHTML=[...mg].reverse().map(g=>`<option value="${g.id}"${g.id===gsel?' selected':''}>${fdt(g.data)}${g.cancelado?' · não houve jogo':g.r?'':' · falta o resultado'}</option>`).join('');
   const sg=mg.filter(g=>g.id===gsel);
   $('glist').innerHTML=sg.map(g=>g.cancelado?`<div class="card game"><h3>${fdt(g.data)} · Não houve jogo${acts(g)}</h3>${g.motivo?`<p style="margin:0;grid-column:1/-1" class="tag">${esc(g.motivo)}</p>`:''}</div>`:
-    `<div class="card game"><h3>${fdt(g.data)}${acts(g)}</h3>${gameMeta(g)}${team(g.a,g.r,'Equipa 1'+(g.coletes==='a'?' · coletes':''),g.atr||[])}${team(g.b,INV[g.r],'Equipa 2'+(g.coletes==='b'?' · coletes':''),g.atr||[])}</div>`).join('');
+    `<div class="card game"><h3>${fdt(g.data)}${acts(g)}</h3>${g.r?'':`<p class="tag" style="margin:0;grid-column:1/-1">⏳ Equipas publicadas (automáticas). ${Date.now()<gameStart(g.data)?'Ainda não se jogou.':'Falta registar quem ganhou e quem chegou atrasado.'}</p>`}${gameMeta(g)}${team(g.a,g.r,'Equipa 1'+(g.coletes==='a'?' · coletes':''),g.atr||[])}${team(g.b,INV[g.r],'Equipa 2'+(g.coletes==='b'?' · coletes':''),g.atr||[])}</div>`).join('');
 }
 var gsel=null;
 $('msel').addEventListener('change',e=>{month=e.target.value;gsel=null;renderGames()});
@@ -705,7 +708,7 @@ async function startEdit(id,preset){
 }
 function openForm(id,preset,noLock){
   editId=id;const g=id?games.find(x=>x.id===id):preset||null;fCol=g&&g.coletes||null;openSnap=id&&g?JSON.stringify(g):null;
-  $('ftitle').textContent=(id?'Editar jogo de '+fdt(g.data):'Novo jogo')+(isAdm()?'':' · fica pendente até aprovação');
+  $('ftitle').textContent=(id?(g.r||g.cancelado?'Editar jogo de ':'Registar resultado de ')+fdt(g.data):'Novo jogo')+(isAdm()?'':' · fica pendente até aprovação');
   let d=g&&g.data;
   if(!d){const last=[...games].sort((a,b)=>a.data<b.data?1:-1)[0];d=last?addD(last.data,7):nextThu(today())}
   $('fdate').value=d;
@@ -765,10 +768,12 @@ $('f').addEventListener('submit',async e=>{
     doc={data,r,a,b,atr:[...document.querySelectorAll('#flate input:checked')].map(i=>i.value)};if(fCol)doc.coletes=fCol;if(modo)doc.modo=modo;
   }
   if(!isAdm()){
-    if(await propor({tipo:'jogo',alvo:id,de:editId||null,doc,antigo:editId?(({id,...g})=>g)(games.find(g=>g.id===editId)||{}):null})){month=mkey(data);await dropLock();openForm(null,null,true);location.hash='#jogos';note('Registo enviado. Fica pendente até o administrador aprovar.')}
+    if(await propor({tipo:'jogo',alvo:id,de:editId||null,doc,antigo:editId?(({id,...g})=>g)(games.find(g=>g.id===editId)||{}):null})){if(doc.r)avisaResultado(id);month=mkey(data);await dropLock();openForm(null,null,true);location.hash='#jogos';note('Registo enviado. Fica pendente até o administrador aprovar.')}
     return;
   }
+  const tinhaR=editId&&(games.find(g=>g.id===editId)||{}).r;
   if(await save('jogos/'+id,doc)){
+    if(doc.r&&!tinhaR)avisaResultado(id);
     if(editId&&editId!==id)try{await db.doc('jogos/'+editId).delete()}catch(x){}
     month=mkey(data);gsel=id;await dropLock();openForm(null,null,true);location.hash='#jogos';
   }
@@ -779,7 +784,7 @@ $('f').addEventListener('submit',async e=>{
 function convOpenAt(date){const[y,m,d]=date.split('-').map(Number);return new Date(y,m-1,d-3,8,30,0).getTime()}
 const convNotOpen=date=>Date.now()<convOpenAt(date);
 function convCloseAt(date){const[y,m,d]=date.split('-').map(Number);return new Date(y,m-1,d-1,23,59,59).getTime()}
-const convClosed=date=>Date.now()>convCloseAt(date)||games.some(g=>g.data===date);
+const convClosed=date=>Date.now()>convCloseAt(date)||games.some(g=>g.data===date&&(g.r||g.cancelado));
 function presence(date){
   const lim=convCloseAt(date);
   const c=conv[date]||{},man=c.manual||{};
@@ -841,7 +846,7 @@ function renderConv(){
   const diff=Math.round((d-dobj(today()))/864e5);
   $('cweek').textContent=diff===0?'Hoje':diff>0?'Daqui a '+diff+(diff===1?' dia':' dias'):'Há '+(-diff)+' dias';
   $('ticket').innerHTML=`<div class="day"><span>${DIA[d.getDay()]}</span><b>${d.getDate()}</b><span>${MES[d.getMonth()].slice(0,3)} · 21h00</span></div>
-   <div><h2>${g?g.cancelado?'Não houve jogo':'Jogo disputado':'Próximo jogo'}</h2><p><b>${esc(k.nome||'Campo FUT7')}</b> · Futebol 7 · Palmeira</p><p>${esc(k.morada||'')}</p>
+   <div><h2>${g&&(g.r||g.cancelado)?g.cancelado?'Não houve jogo':'Jogo disputado':'Próximo jogo'}</h2><p><b>${esc(k.nome||'Campo FUT7')}</b> · Futebol 7 · Palmeira</p><p>${esc(k.morada||'')}</p>
    <p>${coords?'Coordenadas: '+esc(coords)+' · ':''}<a href="${esc(maps)}" target="_blank" rel="noopener">Abrir no mapa</a></p>
    <p>Tempo previsto: <a href="${esc(wx)}" target="_blank" rel="noopener">ver previsão para quinta às 21h</a></p></div>`;
   const P=presence(cdate),mp=myPlayer(),mine=mp&&P.map[mp];
@@ -853,7 +858,7 @@ function renderConv(){
   $('ccount').textContent=(P.go.length+P.subs.length)+'/'+MAXJ;
   const ctl=n=>isAdm()?`<span class="mini"><button class="btn" data-m="${esc(n)}" data-x="1" aria-label="${esc(n)} vai">✓</button><button class="btn" data-m="${esc(n)}" data-x="0" aria-label="${esc(n)} não vai">✕</button></span>`:'';
   const pendS=Object.entries(propostas).filter(([,p])=>p.tipo==='substituto'&&p.alvo===cdate&&p.estado==='pendente');
-  const g0=games.some(x=>x.data===cdate),free=MAXJ-P.go.length-P.subs.length-pendS.length;
+  const g0=games.some(x=>x.data===cdate&&(x.r||x.cancelado)),free=MAXJ-P.go.length-P.subs.length-pendS.length;
   const canSub=!g0&&!!myPlayer()&&free>0&&!(notOpen&&!isAdm())&&(P.none.length===0||P.go.length+P.subs.length+P.none.length<MAXJ);
   keepSel($('cyes'),()=>$('cyes').innerHTML=(P.go.map((n,i)=>`<li><span><span class="dot y"></span>${i+1}. ${esc(n)}</span>${ctl(n)}</li>`).join('')
     +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. Substituto · <b>${esc(s.nome)}</b> <span class="tag">trazido por ${esc(s.por||'?')}</span></span>${isAdm()?`<span class="mini"><select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(subSk(cdate,s))}</select><button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
@@ -995,11 +1000,19 @@ function renderCaps(keep){
 }
 $('emode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;emode=b.dataset.em;$('eerr').textContent='';renderTeams(true)});
 $('eother').addEventListener('click',()=>{if(emode==='capitaes'){drawCaps();renderCaps(true)}else buildTeams(tIdx)});
+/* equipas automáticas publicadas → o jogo fica pré-registado (só falta o resultado e os atrasados) */
+async function preRegistar(data,eq){
+  if(!eq||eq.modo!=='auto'||!eq.an||!isAdm())return;
+  const id='g'+data.replace(/-/g,''),g=games.find(x=>x.id===id);
+  if(g&&(g.r||g.cancelado))return;
+  await save('jogos/'+id,{data,a:eq.an,b:eq.bn,modo:'auto',coletes:eq.coletes,atr:[]});
+}
+function avisaResultado(gid){try{window.SB&&window.SB.functions.invoke('notificar',{body:{resultado:gid}}).catch(()=>{})}catch(x){}}
 $('esave').addEventListener('click',async()=>{const c=conv[cdate]||{};const col=Math.random()<.5?'a':'b';
-  const eq=emode==='capitaes'?{modo:'capitaes',capA:caps.a,capB:caps.b,coletes:col}:{modo:'auto',a:teams.a.map(p=>p.label||p.nome),b:teams.b.map(p=>p.label||p.nome),coletes:col};
+  const eq=emode==='capitaes'?{modo:'capitaes',capA:caps.a,capB:caps.b,coletes:col}:{modo:'auto',a:teams.a.map(p=>p.label||p.nome),b:teams.b.map(p=>p.label||p.nome),an:teams.a.map(p=>p.nome),bn:teams.b.map(p=>p.nome),coletes:col};
   if(!isAdm()){if(await propor({tipo:'equipas',alvo:cdate,doc:eq}))$('eerr').textContent='Enviado para aprovação do administrador.';return}
-  if(await save('conv/'+cdate,{...c,equipas:eq}))$('eerr').textContent='Publicado na convocatória. Sorteio: a '+(col==='a'?'Equipa 1':'Equipa 2')+' joga de coletes.'});
-$('egame').addEventListener('click',()=>{const pub=(conv[cdate]||{}).equipas;startEdit(null,emode==='capitaes'?{data:cdate,a:[caps.a],b:[caps.b],modo:'capitaes',coletes:pub&&pub.coletes}:{data:cdate,a:teams.a.map(p=>p.nome),b:teams.b.map(p=>p.nome),modo:'auto',coletes:pub&&pub.coletes})});
+  if(await save('conv/'+cdate,{...c,equipas:eq})){await preRegistar(cdate,eq);$('eerr').textContent='Publicado na convocatória. Sorteio: a '+(col==='a'?'Equipa 1':'Equipa 2')+' joga de coletes.'+(eq.modo==='auto'?' O jogo ficou pré-registado em Jogos: depois só falta indicar quem ganhou e quem chegou atrasado.':'')}});
+$('egame').addEventListener('click',()=>{const pre=games.find(x=>x.data===cdate&&!x.r&&!x.cancelado);if(pre)return startEdit(pre.id);const pub=(conv[cdate]||{}).equipas;startEdit(null,emode==='capitaes'?{data:cdate,a:[caps.a],b:[caps.b],modo:'capitaes',coletes:pub&&pub.coletes}:{data:cdate,a:teams.a.map(p=>p.nome),b:teams.b.map(p=>p.nome),modo:'auto',coletes:pub&&pub.coletes})});
 
 /* ---------- pagamentos ---------- */
 const PSTART='2025-12';
@@ -1313,7 +1326,7 @@ async function aprovarProp(id,sk){const p=propostas[id];if(!p)return;let ok;
   if(p.tipo==='substituto'&&(sk===undefined||sk===null||sk===''))return note('Atribui a skill (0 a 5) ao substituto antes de aprovar.');
   if(p.tipo==='jogo'){ok=await save('jogos/'+p.alvo,p.doc);if(ok&&p.de&&p.de!==p.alvo)try{await db.doc('jogos/'+p.de).delete()}catch(x){}}
   else if(p.tipo==='substituto'){const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,subs:[...(c.subs||[]),{nome:p.doc.nome,por:p.autor||''}]})&&await saveSubSk(p.alvo,p.doc.nome,+sk)}
-  else{const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,equipas:p.doc})}
+  else{const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,equipas:p.doc});if(ok)await preRegistar(p.alvo,p.doc)}
   if(ok)try{await db.doc('propostas/'+id).delete()}catch(x){}}
 $('ppanel').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
