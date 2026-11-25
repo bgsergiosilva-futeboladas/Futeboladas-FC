@@ -118,6 +118,7 @@ tr.top3 td.l{font-weight:600}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
 .stat b{display:block;font-size:28px;font-weight:800;line-height:1.15;margin:2px 0}.stat span{color:var(--mute);font-size:13px}.stat div{font-size:14px}
+.pnote{margin:8px 0 0;font-size:12px;line-height:1.35;color:var(--mute)}
 .prize{background:linear-gradient(135deg,light-dark(rgba(255,246,220,.75),rgba(90,70,30,.45)),var(--glass));border-color:light-dark(rgba(201,160,74,.55),rgba(201,160,74,.35))}
 h2{font-size:22px;margin:26px 0 10px;font-weight:700}
 h2:first-child{margin-top:0}
@@ -461,7 +462,15 @@ function standings(games,roster,mvpW){
   const ext=(arr,f,m)=>{if(!arr.length)return{v:null,n:[]};const v=Math[m](...arr.map(f));return{v,n:arr.filter(s=>f(s)===v).map(s=>s.nome)}};
   cur.stats={maisJogos:ext(L,s=>s.J,'max'),menosJogos:ext(L,s=>s.J,'min'),menosDerr:ext(L,s=>s.D,'min'),maisDerr:ext(L,s=>s.D,'max'),
     maisVit:ext(L,s=>s.V,'max'),maiorPV:ext(L,s=>s.pv,'max'),menorPV:ext(L,s=>s.pv,'min'),maisCap:ext(L,s=>s.cap,'max'),maisMVP:ext(L.filter(s=>s.mvp>0),s=>s.mvp,'max'),subsJogo:T?cur.guests/T:0};
-  cur.prizes={p1:ext(L,s=>s.pts,'max'),p2:ext(L.filter(s=>s.J>=T/2),s=>s.pv,'max'),p3:ext(L,s=>s.J,'max'),p4:(()=>{const x=ext(L,s=>s.D,'max');if(x.n.length<2)return x;const t=L.filter(s=>x.n.includes(s.nome)),y=ext(t,s=>s.J,'max');return{v:x.v,n:y.n}})(),minJ:T/2};
+  /* prémios: cada jogador só pode ganhar um; se já ganhou um anterior, o prémio passa ao seguinte da lista */
+  const won={},award=(no,cands,keys,val)=>{
+    const k=x=>keys.map(f=>f(x)),cmp=(a,b)=>{const A=k(a),B=k(b);for(let i=0;i<A.length;i++)if(A[i]!==B[i])return B[i]-A[i];return 0};
+    const srt=[...cands].sort(cmp),skip=[];
+    for(let i=0;i<srt.length;){const g=srt.filter(x=>cmp(x,srt[i])===0);i+=g.length;
+      const w=g.filter(x=>!won[x.nome]);skip.push(...g.filter(x=>won[x.nome]).map(x=>({nome:x.nome,p:won[x.nome]})));
+      if(w.length){w.forEach(x=>won[x.nome]=no);return{v:val(w[0]),n:w.map(x=>x.nome),skip}}}
+    return{v:null,n:[],skip}};
+  cur.prizes={p1:award(1,L,[s=>s.pts,s=>-s.J,s=>s.pv],s=>s.pts),p2:award(2,L.filter(s=>s.J>=T/2),[s=>s.pv],s=>s.pv),p3:award(3,L,[s=>s.J],s=>s.J),p4:award(4,L,[s=>s.D,s=>s.J],s=>s.D),minJ:T/2};
   return cur;
 }
 /* MVP: votação aberta depois do jogo até domingo às 23:59; quem tiver mais votos ganha 1 ponto (empate: todos os empatados) */
@@ -517,8 +526,8 @@ const $=id=>document.getElementById(id);
 const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
-const APPVER='1.0';
-const BUILD='20261125110924';
+const APPVER='1.1';
+const BUILD='20261125111203';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -607,7 +616,7 @@ function renderTable(){
   $('tabhint').classList.remove('hide');
   const P=S.prizes,st=S.stats;
   $('prizes').innerHTML=[['1.º prémio · mais pontos',P.p1,v=>v+' pts'],['2.º prémio · maior % de vitórias (mín. '+Math.ceil(P.minJ)+' jogos)',P.p2,pct],['3.º prémio · mais jogos',P.p3,v=>v+' jogos'],['4.º prémio · “Loser” · mais derrotas',P.p4,v=>v+' derrota'+(v===1?'':'s')]]
-   .map(([t,x,f])=>`<div class="card stat prize"><span>${t}</span><b>${esc(names(x.n))}</b><div>${x.v==null?'—':f(x.v)}</div></div>`).join('');
+   .map(([t,x,f])=>`<div class="card stat prize"><span>${t}</span><b>${esc(names(x.n))}</b><div>${x.v==null?'—':f(x.v)}</div>${x.skip&&x.skip.length?`<p class="pnote">ⓘ ${x.skip.map(k=>esc(k.nome)+' ficava à frente, mas já ganhou o '+k.p+'.º prémio').join('; ')}. Um jogador só pode ganhar um prémio, por isso passa ao seguinte.</p>`:''}</div>`).join('');
   $('stats').innerHTML=[['Total de jogos',{v:S.total,n:[]},v=>v],['Mais jogos',st.maisJogos,v=>v],['Menos jogos',st.menosJogos,v=>v],['Mais vitórias',st.maisVit,v=>v],['Menos derrotas',st.menosDerr,v=>v],['Mais derrotas',st.maisDerr,v=>v],['Maior % vitórias',st.maiorPV,pct],['Menor % vitórias',st.menorPV,pct],['Mais vezes capitão',st.maisCap,v=>v],['Mais vezes MVP',st.maisMVP,v=>v],['Substitutos por jogo',{v:st.subsJogo,n:[]},v=>v.toFixed(1).replace('.',',')]]
    .map(([t,x,f])=>`<div class="card stat"><span>${t}</span><b>${x.v==null?'—':f(x.v)}</b><div>${esc(x.n.length?names(x.n):'')}</div></div>`).join('');
 }
