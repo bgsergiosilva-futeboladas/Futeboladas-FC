@@ -20,7 +20,7 @@ const ERR = {
 };
 const msgOf = e => { const m = (e && (e.message || e.error_description)) || String(e || ''); for (const k in ERR) if (m.startsWith(k)) return ERR[k]; return m || 'Ocorreu um erro. Tenta outra vez.'; };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const FOOT = '<p class="au-foot">Futeboladas APP™ versão 1.0 · Feito por Sérgio Silva · © 2026</p>';
+const FOOT = '<p class="au-foot">Futeboladas APP™ versão 1.1 · Feito por Sérgio Silva · © 2026</p>';
 
 function show(html) { $('auth').classList.remove('hide'); $('au-sheet').innerHTML = html + FOOT; document.body.classList.add('au-on'); const f = $('au-sheet').querySelector('input'); if (f && matchMedia('(min-width:700px)').matches) f.focus(); }
 function hideAuth() { $('auth').classList.add('hide'); document.body.classList.remove('au-on'); }
