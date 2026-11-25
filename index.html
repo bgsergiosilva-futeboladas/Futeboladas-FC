@@ -119,6 +119,15 @@ tr.top3 td.l{font-weight:600}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
 .stat b{display:block;font-size:28px;font-weight:800;line-height:1.15;margin:2px 0}.stat span{color:var(--mute);font-size:13px}.stat div{font-size:14px}
 .pnote{margin:8px 0 0;font-size:12px;line-height:1.35;color:var(--mute)}
+.pflip{all:unset;box-sizing:border-box;display:block;color:var(--ink);cursor:pointer;perspective:900px;-webkit-tap-highlight-color:transparent}
+.pflip:focus-visible .pff,.pflip:focus-visible .pfb{outline:2px solid var(--gold);outline-offset:2px}
+.pfi{display:grid;transition:transform .6s cubic-bezier(.3,.7,.2,1);transform-style:preserve-3d;-webkit-transform-style:preserve-3d;height:100%}
+.pflip.on .pfi{transform:rotateY(180deg)}
+.pff{min-height:128px}.pff b{display:block;font-size:28px;font-weight:800;line-height:1.15;margin:2px 0}.pff>span,.pfb>span{color:var(--mute);font-size:13px}.pff>div{font-size:14px}.pff,.pfb{grid-area:1/1;display:block;position:relative;-webkit-backface-visibility:hidden;backface-visibility:hidden;border-radius:var(--r);padding:18px;box-shadow:var(--shadow);border:1px solid light-dark(rgba(201,160,74,.55),rgba(201,160,74,.35));background:linear-gradient(135deg,light-dark(#fff6dc,#3d3020),light-dark(#fffdf7,#241a18))}
+.pfb{position:absolute;inset:0;overflow:auto;transform:rotateY(180deg);font-size:13px;line-height:1.4}.pfb p{margin:6px 0 0}.pfb>span{color:var(--mute);font-size:13px}
+.pff .pinfo{position:absolute;top:10px;right:12px;font-style:normal;color:var(--gold);font-size:14px}
+@media(max-width:700px){.pff{min-height:150px}.pff b{font-size:22px}.pff>span,.pfb>span{font-size:12px}.pff,.pfb{padding:14px;border-radius:18px}.pfb{font-size:12px;line-height:1.35}.pfb p{margin:4px 0 0}.pfb .pnote{font-size:11.5px}}
+@media (prefers-reduced-motion:reduce){.pfi{transition:none}}
 .prize{background:linear-gradient(135deg,light-dark(rgba(255,246,220,.75),rgba(90,70,30,.45)),var(--glass));border-color:light-dark(rgba(201,160,74,.55),rgba(201,160,74,.35))}
 h2{font-size:22px;margin:26px 0 10px;font-weight:700}
 h2:first-child{margin-top:0}
@@ -531,7 +540,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261125115054';
+const BUILD='20261125115915';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -619,8 +628,13 @@ function renderTable(){
    S.list.map(s=>{const fm=s.forma.map(r=>`<i class="f${r}">${r}</i>`).join('');return `<tr class="${s.pos<=3?'top3':''}"><td class="pos">${s.pos}</td><td class="l nm"><button type="button" class="pname pn2" data-card="${esc(s.nome)}">${avatar(s.nome)}<span class="pnt"><span class="pnl"><span class="pnn">${esc(s.nome)}</span>${mv(s)}${s.ativo?'':'<span class="tag">saiu</span>'}</span>${fm?`<span class="form mini-f mb">${fm}</span>`:''}</span></button></td><td class="pts">${s.pts}</td><td>${s.J}</td><td class="dk">${s.V}</td><td class="dk">${s.E}</td><td class="dk">${s.D}</td><td class="mb ved">${s.V}-${s.E}-${s.D}</td><td>${s.J?pct(s.pv):'—'}</td><td class="dk">${s.media.toFixed(2).replace('.',',')}</td><td class="l dk"><span class="form">${fm||'<span class="tag">sem jogos</span>'}</span></td><td class="dk">${pct(s.comp)}</td><td class="dk">${s.cap}</td><td class="dk">${s.capW}</td><td class="dk">${s.mvp||'0'}</td><td class="dk">${s.atr?'−'+s.atr:'0'}</td></tr>`}).join('')+'</tbody>';
   $('tabhint').classList.remove('hide');
   const P=S.prizes,st=S.stats;
-  $('prizes').innerHTML=[['1.º prémio · “Campeão” · mais pontos',P.p1,v=>v+' pts'],['2.º prémio · “Vitorioso” · maior % de vitórias (mín. '+Math.ceil(P.minJ)+' jogos)',P.p2,pct],['3.º prémio · “Assíduo” · mais jogos',P.p3,v=>v+' jogos'],['4.º prémio · “Loser” · mais derrotas',P.p4,v=>v+' derrota'+(v===1?'':'s')]]
-   .map(([t,x,f])=>`<div class="card stat prize"><span>${t}</span><b>${esc(names(x.n))}</b><div>${x.v==null?'—':f(x.v)}</div>${x.skip&&x.skip.length?`<p class="pnote">ⓘ ${x.skip.map(k=>esc(k.nome)+' ficava à frente, mas já ganhou o '+k.p+'.º prémio').join('; ')}. Um jogador só pode ganhar um prémio, por isso passa ao seguinte.</p>`:''}</div>`).join('');
+  const PZ=[['1.º prémio','Campeão',P.p1,v=>v+' pts','Mais pontos na tabela. Em empate, ganha quem tem menos jogos.'],
+    ['2.º prémio','Vitorioso',P.p2,pct,'Maior % de vitórias, entre quem fez pelo menos metade dos jogos (mín. '+Math.ceil(P.minJ)+').'],
+    ['3.º prémio','Assíduo',P.p3,v=>v+' jogos','Mais jogos disputados na época.'],
+    ['4.º prémio','Loser',P.p4,v=>v+' derrota'+(v===1?'':'s'),'Mais derrotas. Em empate, ganha quem tem mais jogos.']];
+  $('prizes').innerHTML=PZ.map(([o,t,x,f,how])=>`<button type="button" class="pflip${x.skip&&x.skip.length?' has':''}" aria-label="${o} ${t}: ver como é atribuído"><span class="pfi">
+    <span class="pff"><span>${o} · “${t}”</span><b>${esc(names(x.n))||'—'}</b><div>${x.v==null?'—':f(x.v)}</div>${x.skip&&x.skip.length?'<i class="pinfo">ⓘ</i>':''}</span>
+    <span class="pfb"><span>${o} · “${t}”</span><p>${how}</p>${x.skip&&x.skip.length?`<p class="pnote">${x.skip.map(k=>esc(k.nome)+' ficava à frente, mas já ganhou o '+k.p+'.º (só se ganha um prémio).').join(' ')}</p>`:''}</span></span></button>`).join('');
   $('stats').innerHTML=[['Total de jogos',{v:S.total,n:[]},v=>v],['Mais jogos',st.maisJogos,v=>v],['Menos jogos',st.menosJogos,v=>v],['Mais vitórias',st.maisVit,v=>v],['Menos derrotas',st.menosDerr,v=>v],['Mais derrotas',st.maisDerr,v=>v],['Maior % vitórias',st.maiorPV,pct],['Menor % vitórias',st.menorPV,pct],['Mais vezes capitão',st.maisCap,v=>v],['Mais vezes MVP',st.maisMVP,v=>v],['Substitutos por jogo',{v:st.subsJogo,n:[]},v=>v.toFixed(1).replace('.',',')]]
    .map(([t,x,f])=>`<div class="card stat"><span>${t}</span><b>${x.v==null?'—':f(x.v)}</b><div>${esc(x.n.length?names(x.n):'')}</div></div>`).join('');
 }
@@ -648,6 +662,7 @@ function renderGames(){
     `<div class="card game"><h3>${fdt(g.data)}${acts(g)}</h3>${g.r?'':`<p class="tag" style="margin:0;grid-column:1/-1">⏳ Equipas publicadas (automáticas). ${Date.now()<gameStart(g.data)?'Ainda não se jogou.':'Falta registar quem ganhou e quem chegou atrasado.'}</p>`}${gameMeta(g)}${team(g.a,g.r,'Equipa 1'+(g.coletes==='a'?' · coletes':''),g.atr||[])}${team(g.b,INV[g.r],'Equipa 2'+(g.coletes==='b'?' · coletes':''),g.atr||[])}</div>`).join('');
 }
 var gsel=null;
+$('prizes').addEventListener('click',e=>{const b=e.target.closest('.pflip');if(b)b.classList.toggle('on')});
 $('msel').addEventListener('change',e=>{month=e.target.value;gsel=null;renderGames()});
 $('gsel').addEventListener('change',e=>{gsel=e.target.value;renderGames()});
 $('newGame').addEventListener('click',()=>startEdit(null));
