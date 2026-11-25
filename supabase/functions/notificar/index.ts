@@ -272,10 +272,7 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     }
     // 2) a todos, quando o resultado é oficial (gravado pelo admin ou aprovado): a equipa que venceu
     if (oficial && !(await sb.from("notif_log").insert({ chave: `resultado-todos|${gid}` })).error) {
-      const NICK: Record<string, string> = { "Kevin Silva": "Kevin", "Kevin Azevedo": "Kevin Az", "Gonçalo Brás": "Gonçalo", "Gonçalo Lage": "Lage", "Tiago Félix": "Félix", "Tiago Costa": "Costa", "Miguel Menezes": "Miguel" };
-      const curto = (n: string) => NICK[n] || n.split(" ")[0];
-      const quemGanhou = venc ? (g[venc] as string[]).filter((n) => n !== "Substituto").map(curto).join(", ") : "";
-      const corpo = venc ? `🏆 Ganhou a ${nomeEq(venc)}${quemGanhou ? ": " + quemGanhou : ""}.` : `🤝 O jogo ${ontem ? "de ontem" : "de " + fdt(g.data)} acabou empatado.`;
+      const corpo = venc ? `🏆 Ganhou a ${nomeEq(venc)}.` : `🤝 O jogo ${ontem ? "de ontem" : "de " + fdt(g.data)} acabou empatado.`;
       const todos = [...new Set([...Object.keys(D.acessos), ...donos])];
       out.todos = await enviar(sb, todos, { title: "Resultado do último jogo disponível", body: corpo, url: "/#jogos" });
       await sb.from("notif_log").update({ n: out.todos }).eq("chave", `resultado-todos|${gid}`);
