@@ -397,8 +397,8 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
  $('cfbd').innerHTML=Array.from({length:6},(_,r)=>`<div class="r">${Array.from({length:7},(_,i)=>IT[(i+r*2)%IT.length]).join('')}</div>`).join('');
  $('cfrun').innerHTML=[`<img src="${L}" alt="">`,'<span class="w">FUTEBOLADAS</span>','<span class="f7">FUT7</span>','<span class="tv">F<i>TV</i></span>'].join('').repeat(4);
  const h=new Date().getHours();$('cfgr').textContent=h>=6&&h<12?'Bom dia, Craque':h>=12&&h<20?'Boa tarde, Craque':'Boa noite, Craque';
- const F=['Quinta às 21h no FUT7 Palmeira','A convocatória já abriu?','Já disseste se vais a jogo?','Os 14 não se juntam sozinhos','Atrasado é menos um ponto','Já votaste no MVP?','A quota deste mês está em dia?','Hoje jogas de coletes?','Aquece bem antes do jogo','Passa a bola, Craque','Golo é golo, até de canela','O balneário está à tua espera','Rumo ao 1.º lugar','Vê como vai a tabela','Fut7 entre amigos desde 2021',
-  '“O balneário está unido.”','“Vamos jogo a jogo.”','“Quinta é para ganhar.”','“Respeitamos o adversário, mas queremos os 3 pontos.”','“O prémio Campeão? Pensamos nisso no fim da época.”','“Não comento arbitragens.”','“O mais importante é o grupo.”','“Chegar a horas também conta.”','“A quota está paga, a cabeça está no jogo.”','“Estou a 100% para quinta.”','“O MVP é de toda a equipa.”','“São 7 contra 7 e no fim ganha quem marca mais.”','“O Loser? Este ano não é para mim.”','“Próxima pergunta, por favor.”','“Sem comentários. Vemo-nos no relvado.”'];
+ const F=['Golo é golo, até de canela','Hoje não falhas nenhuma… pelo menos no aquecimento','Aquece bem, que os gémeos já não são o que eram','Chegar atrasado custa 1 ponto. E a dignidade','A quota não se paga sozinha. Infelizmente','Quem não vota no MVP não se pode queixar no grupo','O guarda-redes também conta. Às vezes','Passa a bola, que o golo vale o mesmo','Os coletes cheiram mal, mas dão sorte','Hoje é dia de fintar o adversário e o fisioterapeuta','A lista de espera é o banco de quem respondeu tarde','Ficar à espera da bola lá à frente não é posição. Tu sabes quem és','Fut7 entre amigos desde 2021. Amigos até ao primeiro penálti','Se marcares de calcanhar, pagas o jantar','O Cristiano também começou no Fut7. Acho eu',
+  '“O balneário está unido. Menos quando é para pagar a quota.”','“Vamos jogo a jogo. E bifana a bifana.”','“Não comento arbitragens. Até porque não há árbitro.”','“O MVP? Votei em mim, mas a app não deixou.”','“O Loser? Este ano não é para mim.”','“Estou a 100%. Bem, a 70%. Pronto, vou na mesma.”','“O mister? Aqui somos todos o mister.”','“Perdemos porque o relvado estava muito sintético.”','“Fiz uma exibição de Champions… de veteranos.”','“Só falhei aquele golo para dar emoção ao jogo.”','“A bola é redonda e o adversário teve sorte.”','“Ganhámos graças aos coletes. Não perguntem como.”','“Na quinta somos rivais, na sexta voltamos a ser amigos.”','“Próxima pergunta, por favor.”','“Sem comentários. Vemo-nos no relvado.”'];
  for(let i=F.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[F[i],F[j]]=[F[j],F[i]]}
  const ph=$('cfph'),A=$('auth'),on=()=>!A.classList.contains('hide');let k=0;ph.textContent=F[0];
  const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -647,7 +647,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261125151435';
+const BUILD='20261125151840';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
