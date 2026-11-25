@@ -527,7 +527,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261125111203';
+const BUILD='20261125111721';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -615,7 +615,7 @@ function renderTable(){
    S.list.map(s=>{const fm=s.forma.map(r=>`<i class="f${r}">${r}</i>`).join('');return `<tr class="${s.pos<=3?'top3':''}"><td class="pos">${s.pos}</td><td class="l nm"><button type="button" class="pname pn2" data-card="${esc(s.nome)}">${avatar(s.nome)}<span class="pnt"><span class="pnl"><span class="pnn">${esc(s.nome)}</span>${mv(s)}${s.ativo?'':'<span class="tag">saiu</span>'}</span>${fm?`<span class="form mini-f mb">${fm}</span>`:''}</span></button></td><td class="pts">${s.pts}</td><td>${s.J}</td><td class="dk">${s.V}</td><td class="dk">${s.E}</td><td class="dk">${s.D}</td><td class="mb ved">${s.V}-${s.E}-${s.D}</td><td>${s.J?pct(s.pv):'—'}</td><td class="dk">${s.media.toFixed(2).replace('.',',')}</td><td class="l dk"><span class="form">${fm||'<span class="tag">sem jogos</span>'}</span></td><td class="dk">${pct(s.comp)}</td><td class="dk">${s.cap}</td><td class="dk">${s.capW}</td><td class="dk">${s.mvp||'0'}</td><td class="dk">${s.atr?'−'+s.atr:'0'}</td></tr>`}).join('')+'</tbody>';
   $('tabhint').classList.remove('hide');
   const P=S.prizes,st=S.stats;
-  $('prizes').innerHTML=[['1.º prémio · mais pontos',P.p1,v=>v+' pts'],['2.º prémio · maior % de vitórias (mín. '+Math.ceil(P.minJ)+' jogos)',P.p2,pct],['3.º prémio · mais jogos',P.p3,v=>v+' jogos'],['4.º prémio · “Loser” · mais derrotas',P.p4,v=>v+' derrota'+(v===1?'':'s')]]
+  $('prizes').innerHTML=[['1.º prémio · “Campeão” · mais pontos',P.p1,v=>v+' pts'],['2.º prémio · “Vitorioso” · maior % de vitórias (mín. '+Math.ceil(P.minJ)+' jogos)',P.p2,pct],['3.º prémio · “Assíduo” · mais jogos',P.p3,v=>v+' jogos'],['4.º prémio · “Loser” · mais derrotas',P.p4,v=>v+' derrota'+(v===1?'':'s')]]
    .map(([t,x,f])=>`<div class="card stat prize"><span>${t}</span><b>${esc(names(x.n))}</b><div>${x.v==null?'—':f(x.v)}</div>${x.skip&&x.skip.length?`<p class="pnote">ⓘ ${x.skip.map(k=>esc(k.nome)+' ficava à frente, mas já ganhou o '+k.p+'.º prémio').join('; ')}. Um jogador só pode ganhar um prémio, por isso passa ao seguinte.</p>`:''}</div>`).join('');
   $('stats').innerHTML=[['Total de jogos',{v:S.total,n:[]},v=>v],['Mais jogos',st.maisJogos,v=>v],['Menos jogos',st.menosJogos,v=>v],['Mais vitórias',st.maisVit,v=>v],['Menos derrotas',st.menosDerr,v=>v],['Mais derrotas',st.maisDerr,v=>v],['Maior % vitórias',st.maiorPV,pct],['Menor % vitórias',st.menorPV,pct],['Mais vezes capitão',st.maisCap,v=>v],['Mais vezes MVP',st.maisMVP,v=>v],['Substitutos por jogo',{v:st.subsJogo,n:[]},v=>v.toFixed(1).replace('.',',')]]
    .map(([t,x,f])=>`<div class="card stat"><span>${t}</span><b>${x.v==null?'—':f(x.v)}</b><div>${esc(x.n.length?names(x.n):'')}</div></div>`).join('');
