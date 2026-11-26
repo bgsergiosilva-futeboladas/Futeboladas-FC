@@ -335,5 +335,40 @@ create table if not exists public.notif_log (
 );
 alter table public.notif_log enable row level security;
 
+-- Registo de alterações aos pagamentos (quotas, movimentos de caixa, saldo e MB WAY).
+-- Escrito pela própria base de dados (trigger), só o administrador lê, ninguém altera nem apaga.
+create table if not exists public.registo_pagamentos (
+  id       bigserial primary key,
+  quando   timestamptz not null default now(),
+  quem     uuid,
+  quem_nome text,
+  doc      text not null,
+  acao     text not null,
+  antes    jsonb,
+  depois   jsonb
+);
+alter table public.registo_pagamentos enable row level security;
+drop policy if exists "admin le registo" on public.registo_pagamentos;
+create policy "admin le registo" on public.registo_pagamentos for select to authenticated using (public.tem_papel('admin'));
+grant select on public.registo_pagamentos to authenticated;
+
+create or replace function public.regista_pagamentos() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare r record; n text;
+begin
+  if tg_op = 'DELETE' then r := old; else r := new; end if;
+  if not (r.col = 'pagamentos' or (r.col = 'config' and r.id = 'caixa')) then return null; end if;
+  if tg_op = 'UPDATE' and old.data = new.data then return null; end if;
+  select coalesce(nullif(public.meu_acesso()->>'jogador', ''), (select p.nome from perfis p where p.user_id = auth.uid()),
+                  (select p.email from perfis p where p.user_id = auth.uid())) into n;
+  insert into registo_pagamentos (quem, quem_nome, doc, acao, antes, depois)
+  values (auth.uid(), n, r.col || '/' || r.id, lower(tg_op),
+          case when tg_op <> 'INSERT' then old.data end, case when tg_op <> 'DELETE' then new.data end);
+  return null;
+end $$;
+drop trigger if exists regista_pagamentos on public.docs;
+create trigger regista_pagamentos after insert or update or delete on public.docs
+  for each row execute function public.regista_pagamentos();
+
 -- Avisar a API de que há tabelas novas
 notify pgrst, 'reload schema';

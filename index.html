@@ -503,6 +503,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="row" style="margin-top:10px"><button class="btn pri" id="xadd" type="button">Registar</button><span class="tag" id="xmsg"></span></div></div>
 <div class="card"><h2>Movimentos registados</h2><ul class="plist" id="xlist"></ul></div>
 </div>
+<div class="card adm" id="rlog" style="margin-top:14px"><div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">Registo de alterações</h2><button class="btn" id="rlogb" type="button">Ver registo</button></div>
+<p class="tag" style="margin:4px 0 0">Quem mexeu nas quotas, nos movimentos de caixa, no saldo e no MB WAY. Só o administrador vê; ninguém o consegue alterar.</p>
+<div class="row hide" id="rlogf" style="margin-top:10px;gap:8px"><select id="rlogq" aria-label="Filtrar por pessoa" style="flex:1 1 10em;width:auto"></select></div><ul class="plist" id="rlogl"></ul></div>
 </div>
 </section>
 
@@ -1377,6 +1380,41 @@ $('xcok').addEventListener('click',async()=>{
   const ok=await save('config/caixa',{...caixa,cats:[...xcats(),{id,nome,ent}]});$('xcok').disabled=false;
   if(ok){caixa={...caixa,cats:[...xcats(),{id,nome,ent}]};$('xnew').classList.add('hide');$('xt').blur();renderXt();$('xt').value=id;$('xmsg').textContent='Categoria "'+nome+'" criada.'}
 });
+
+/* ---------- registo de alterações aos pagamentos (só admin) ---------- */
+let rlog=null;
+function rlogLines(r){
+  const A=r.antes||{},D=r.depois||{},out=[],e=x=>esc(String(x));
+  if(r.doc.startsWith('pagamentos/')){const k=r.doc.slice(11),m=MES[+k.slice(5)-1]+' '+k.slice(0,4);
+    const pa=A.pagos||{},pd=D.pagos||{};
+    for(const n of Object.keys(pd))if(!pa[n])out.push(`Quota de ${m}: marcou <b>${e(n)}</b> como pago (${euro(pd[n].valor??feeOf(k))})`);
+    for(const n of Object.keys(pa))if(!pd[n])out.push(`Quota de ${m}: anulou o pagamento de <b>${e(n)}</b>`);
+    const ia=A.isentos||[],id=D.isentos||[];
+    for(const n of id)if(!ia.includes(n))out.push(`Quota de ${m}: dispensou <b>${e(n)}</b>`);
+    for(const n of ia)if(!id.includes(n))out.push(`Quota de ${m}: voltou a cobrar <b>${e(n)}</b>`);
+    const ma=A.mov||[],md=D.mov||[],sig=x=>JSON.stringify(x),sa=ma.map(sig),sd=md.map(sig);
+    const mv=x=>`${e(xLabel(x.tipo))}${x.desc?' · '+e(x.desc):''} ${isEnt(x.tipo)?'+':'−'}${euro(x.valor)} (${fdt(x.data)})`;
+    md.forEach((x,i)=>{if(!sa.includes(sd[i]))out.push('Caixa: registou o movimento '+mv(x))});
+    ma.forEach((x,i)=>{if(!sd.includes(sa[i]))out.push('Caixa: apagou o movimento '+mv(x))});
+    if(A.valor!==D.valor&&(A.valor!=null||D.valor!=null))out.push(`Quota de ${m}: valor ${A.valor!=null?euro(A.valor):'automático'} → ${D.valor!=null?euro(D.valor):'automático'}`);
+    if(r.acao==='delete')out.push(`Apagou todos os registos de ${m}`);
+  }else{
+    if(A.saldoInicial!==D.saldoInicial)out.push(`Caixa: saldo inicial ${euro(+(A.saldoInicial||0))} → ${euro(+(D.saldoInicial||0))}`);
+    if((A.mbway||'')!==(D.mbway||''))out.push(`MB WAY: número ${e(A.mbway||'—')} → ${e(D.mbway||'—')}`);
+    if((A.mbwayNome||'')!==(D.mbwayNome||''))out.push(`MB WAY: titular ${e(A.mbwayNome||'—')} → ${e(D.mbwayNome||'—')}`);
+    const ca=(A.cats||[]).map(c=>c.nome),cd=(D.cats||[]).map(c=>c.nome);
+    for(const c of cd)if(!ca.includes(c))out.push('Caixa: criou a categoria “'+e(c)+'”');
+  }
+  return out}
+function renderRlog(){if(!rlog)return;const q=$('rlogq').value;
+  const rows=rlog.filter(r=>!q||(r.quem_nome||'?')===q).flatMap(r=>rlogLines(r).map(t=>({r,t})));
+  $('rlogl').innerHTML=rows.map(({r,t})=>`<li style="flex-wrap:wrap"><span style="flex:1 1 16em">${t}</span><span class="tag" style="margin:0">${esc(r.quem_nome||'?')} · ${new Date(r.quando).toLocaleString('pt-PT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></li>`).join('')||'<li class="tag">Sem alterações registadas.</li>'}
+$('rlogb').addEventListener('click',async()=>{if(!isAdm()||!window.SB)return;const b=$('rlogb');b.disabled=true;b.textContent='A carregar…';
+  const {data,error}=await window.SB.from('registo_pagamentos').select('quando,quem_nome,doc,acao,antes,depois').order('quando',{ascending:false}).limit(400);
+  b.disabled=false;b.textContent='Atualizar';if(error)return note('Não foi possível ler o registo ('+error.message+').');
+  rlog=data||[];const ppl=[...new Set(rlog.map(r=>r.quem_nome||'?'))].sort((a,b)=>a.localeCompare(b,'pt'));
+  $('rlogq').innerHTML='<option value="">Todas as pessoas</option>'+ppl.map(n=>`<option>${esc(n)}</option>`).join('');$('rlogf').classList.remove('hide');renderRlog()});
+$('rlogq').addEventListener('change',renderRlog);
 $('xadd').addEventListener('click',async()=>{
   const data=$('xd').value,valor=Math.round(+$('xv').value*100)/100,tipo=$('xt').value;
   if(tipo==='__nova')return $('xmsg').textContent='Cria primeiro a categoria.';
