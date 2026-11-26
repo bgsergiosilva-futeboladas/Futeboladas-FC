@@ -1070,7 +1070,7 @@ function luResult(t,date){const g=games.find(x=>x.data===date);if(!g)return null
   let k=gk;if(t.coletes&&g.coletes)k=(gk===g.coletes)?t.coletes:(t.coletes==='a'?'b':'a');/* alinha pelos coletes */
   return{k}}
 function lineupHTML(t,date){
-  LU_DATE=date;const res=luResult(t,date);const calm=!!res||matchMedia('(prefers-reduced-motion:reduce)').matches;
+  LU_DATE=date;const res=luResult(t,date);const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const teams=[['a',t.a||[]],['b',t.b||[]]].map(([k,L])=>({k,L,col:t.coletes?t.coletes===k:null,win:res&&res.k?res.k===k:null}));
   teams.sort((x,y)=>(y.col?1:0)-(x.col?1:0));
   const lbl=tm=>tm.col===null?(tm.k==='a'?'Equipa 1':'Equipa 2'):tm.col?'Equipa Coletes':'Equipa S/ Coletes';
@@ -1089,7 +1089,7 @@ function lineupHTML(t,date){
     :`<div class="lu-ft res ${wt.col===false?'sc':'co'}"><div><small>RESULTADO FINAL</small>🏆 Ganhou a ${lbl(wt)}</div></div>`;
   return `<div class="lu${calm?' calm':''}"><div class="lu-hd"><div><b>Os 7 de cada lado</b><span>${DIA[d.getDay()]}, ${fdt(date)} · 21:00</span></div><div class="lu-tv"><span>F<i>TV</i></span>${res?'<span class="l fim">FINAL</span>':'<span class="l">● EM DIRETO</span>'}</div></div>
    <div class="lu-st">${luPitchSVG()}${dots}${banner}
-    ${res?'':'<div class="lu-splash" aria-hidden="true"><img src="assets/logo.webp" alt=""><b>Já temos o 7 inicial de cada equipa!</b></div>'}</div>
+    <div class="lu-splash" aria-hidden="true"><img src="assets/logo.webp" alt=""><b>${res?'Já temos o resultado final!':'Já temos o 7 inicial de cada equipa!'}</b></div></div>
    ${ft}</div>`;
 }
 function renderConv(){
