@@ -282,6 +282,29 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     return json(out);
   }
 
+  // o tesoureiro confirmou (ou não) um "Já paguei": avisar quem pagou
+  if (body.pagamento) {
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");
+    const { data: u } = await sb.auth.getUser(token);
+    if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
+    const D = await carregar(sb);
+    const { data: dn } = await sb.from("donos").select("user_id");
+    const donos = (dn || []).map((d: Any) => d.user_id);
+    const a = D.acessos[u.user.id] || {}, pp = Array.isArray(a.papeis) ? a.papeis : a.papel ? [a.papel] : [];
+    if (!donos.includes(u.user.id) && !pp.includes("tesoureiro") && !pp.includes("admin")) return json({ erro: "sem permissão" }, 403);
+    const id = String(body.pagamento), p = D.propostas[id];
+    if (!p || p.tipo !== "pagamento" || !p.por) return json({ erro: "aviso inválido" }, 400);
+    const ok = !!body.ok, chave = `pag|${id}|${ok ? "ok" : "nao"}`;
+    if ((await sb.from("notif_log").insert({ chave })).error) return json({ feito: [] });
+    const meses = ((p.doc && p.doc.meses) || []).map(mname).join(", "), valor = euro(+((p.doc && p.doc.valor) || 0));
+    const msg = ok
+      ? { title: "✅ Pagamento confirmado", body: `O tesoureiro confirmou o teu pagamento de ${valor}${meses ? " (" + meses + ")" : ""}. Obrigado!`, url: "/#pagamentos" }
+      : { title: "⚠️ Pagamento não validado", body: `O tesoureiro não encontrou o teu pagamento de ${valor}${meses ? " (" + meses + ")" : ""}${p.nota ? ": " + p.nota : ""}. Confirma no MB WAY e volta a avisar.`, url: "/#pagamentos" };
+    const n = await enviar(sb, [p.por], msg);
+    await sb.from("notif_log").update({ n }).eq("chave", chave);
+    return json({ enviados: n });
+  }
+
   // um jogador mudou de "Vou" para "Não vou": avisar o admin e os apontadores
   if (body.desistencia) {
     const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");

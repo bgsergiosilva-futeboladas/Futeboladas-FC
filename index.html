@@ -1349,8 +1349,10 @@ $('pavisos').addEventListener('click',async e=>{const b=e.target.closest('button
   if(b.dataset.mba){const id=b.dataset.mba,p=propostas[id];if(!p)return;b.disabled=true;let ok=true;
     for(const k of p.doc.meses){const c=pags[k]||{},pg={...(c.pagos||{})};if(pg[p.autor])continue;pg[p.autor]={valor:feeOf(k),data:today(),via:'mbway'};
       ok=await save('pagamentos/'+k,{...c,pagos:pg,isentos:(c.isentos||[]).filter(x=>x!==p.autor)})&&ok}
-    if(ok)try{await db.doc('propostas/'+id).delete()}catch(x){}}
-  if(b.dataset.mbr){const id=b.dataset.mbr,nota=(document.querySelector(`[data-mbnota="${id}"]`)||{}).value||'';await save('propostas/'+id,{...propostas[id],estado:'rejeitada',nota:nota.trim()})}});
+    if(ok){await avisaPagamento(id,true);try{await db.doc('propostas/'+id).delete()}catch(x){}}}
+  if(b.dataset.mbr){const id=b.dataset.mbr,nota=(document.querySelector(`[data-mbnota="${id}"]`)||{}).value||'';if(await save('propostas/'+id,{...propostas[id],estado:'rejeitada',nota:nota.trim()}))avisaPagamento(id,false)}});
+/* avisa o jogador: pagamento confirmado ou não validado pelo tesoureiro */
+async function avisaPagamento(id,ok){try{if(window.SB)await window.SB.functions.invoke('notificar',{body:{pagamento:id,ok}})}catch(x){}}
 $('mbsave').addEventListener('click',async()=>{const n=$('mbn').value.trim(),t=$('mbt').value.trim();
   if(!n&&t)return $('mbmsg').textContent='Escreve o número de telemóvel do MB WAY.';
   if(n&&!/^\+?[\d\s]{9,15}$/.test(n))return $('mbmsg').textContent='Número inválido: escreve os 9 algarismos, por exemplo 912 345 678.';
