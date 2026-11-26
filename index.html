@@ -505,6 +505,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="pay">
 <div class="card"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:10px"><h2 style="margin:0">Quotas</h2><select id="pgm" aria-label="Mês" style="width:auto;flex:0 1 13em"></select></div>
 <p class="tag" id="pgsum" style="margin:6px 0 4px"></p>
+<div id="pgwarn" class="hide" role="alert" style="margin:8px 0;padding:12px;border-radius:14px;border:1px solid #e0a030;background:color-mix(in srgb,#e0a030 14%,transparent)"></div>
 <ul class="qlist" id="pgrid"></ul>
 <p class="tag" style="margin:10px 0 0">Liga o interruptor de quem pagou. Toca no nome para dispensar alguém nesse mês.</p></div>
 <div class="two" style="margin-top:14px">
@@ -1439,6 +1440,7 @@ function renderPay(){
     .map(([t,v,c])=>`<div class="card stat"><span>${t}</span><b class="${c}">${v}</b></div>`).join('');
   /* registo de quotas do mês */
   const nxt=mkAdd(cur,1),pmonths=[...L.ms,nxt];if(!pgFrom||pgAuto||!pmonths.includes(pgFrom))pgFrom=cur;/* no dia 1 passa sozinho para o mês novo */const K=pgFrom,fee=feeOf(K);
+  renderPgWarn();
   $('pgm').innerHTML=[...pmonths].reverse().map(k=>`<option value="${k}"${k===K?' selected':''}>${mname(k)}</option>`).join('');
   const ord={falta:0,pago:1,isento:2};
   const rq=roster.filter(r=>cellState(r,K)!=='fora').sort((a,b)=>ord[cellState(a,K)]-ord[cellState(b,K)]||a.nome.localeCompare(b.nome,'pt'));
@@ -1477,7 +1479,7 @@ $('pavisos').addEventListener('click',async e=>{const b=e.target.closest('button
   if(b.dataset.mba){const id=b.dataset.mba,p=propostas[id];if(!p)return;b.disabled=true;let ok=true;
     for(const k of p.doc.meses){const c=pags[k]||{},pg={...(c.pagos||{})};if(pg[p.autor])continue;pg[p.autor]={valor:feeOf(k),data:today(),via:'mbway'};
       ok=await save('pagamentos/'+k,{...c,pagos:pg,isentos:(c.isentos||[]).filter(x=>x!==p.autor)})&&ok}
-    if(ok){await avisaPagamento(id,true);try{await db.doc('propostas/'+id).delete()}catch(x){}}}
+    if(ok){await avisaPagamento(id,true);try{await db.doc('propostas/'+id).delete()}catch(x){}avisoAtraso(p.autor,p.doc.meses.reduce((a,m)=>m>a?m:a,''))}}
   if(b.dataset.mbr){const id=b.dataset.mbr,nota=(document.querySelector(`[data-mbnota="${id}"]`)||{}).value||'';if(await save('propostas/'+id,{...propostas[id],estado:'rejeitada',nota:nota.trim()}))avisaPagamento(id,false)}});
 /* avisa o jogador: pagamento confirmado ou não validado pelo tesoureiro */
 async function avisaPagamento(id,ok){try{if(window.SB)await window.SB.functions.invoke('notificar',{body:{pagamento:id,ok}})}catch(x){}}
@@ -1487,6 +1489,24 @@ $('mbsave').addEventListener('click',async()=>{const n=$('mbn').value.trim(),t=$
   if(await save('config/caixa',{...caixa,mbway:n,mbwayNome:t}))$('mbmsg').textContent=n?'Guardado: os jogadores já podem pagar por MB WAY para '+n+'.':'MB WAY desligado (sem número).'});
 var pgFrom=null,pgUndo=null,pgAuto=true;
 $('pgm').addEventListener('change',e=>{pgFrom=e.target.value;pgAuto=e.target.value===mkey(today());pgUndo=null;renderPay()});
+/* ao registar um pagamento: avisar o tesoureiro se o jogador ainda deve meses anteriores */
+let pgWarn=null;
+function atrasosDe(n,k){const r=roster.find(x=>x.nome===n);if(!r)return[];return monthsList().filter(m=>m<k&&cellState(r,m)==='falta')}
+function avisoAtraso(n,k){const ms=atrasosDe(n,k);pgWarn=ms.length?{n,k,ms}:null;renderPgWarn()}
+function renderPgWarn(){const w=$('pgwarn');if(!w)return;
+  if(pgWarn)pgWarn.ms=atrasosDe(pgWarn.n,pgWarn.k);/* atualiza: pode já ter pago entretanto */
+  if(pgWarn&&!pgWarn.ms.length)pgWarn=null;
+  w.classList.toggle('hide',!pgWarn);if(!pgWarn)return w.innerHTML='';
+  const tot=pgWarn.ms.reduce((s2,m)=>s2+feeOf(m),0);
+  w.innerHTML=`<p style="margin:0 0 8px"><b>⚠️ ${esc(pgWarn.n)} ainda deve ${pgWarn.ms.length>1?'meses anteriores':'um mês anterior'}:</b> ${pgWarn.ms.map(mname).join(', ')} (${euro(tot)}).</p><div class="row" style="gap:8px"><button class="btn pri" type="button" id="pgwall">Registar também como pago${pgWarn.ms.length>1?'s':''}</button><button class="btn" type="button" id="pgwx">Fechar</button></div>`}
+document.addEventListener('click',async e=>{
+  if(e.target.closest('#pgwx')){pgWarn=null;renderPgWarn();return}
+  const b=e.target.closest('#pgwall');if(!b||!pgWarn||!isTes())return;
+  const {n,ms}=pgWarn;if(!confirm('Registar '+ms.map(mname).join(', ')+' como pago'+(ms.length>1?'s':'')+' por '+n+'?'))return;
+  b.disabled=true;let ok=true;
+  for(const m of ms){const c=pags[m]||{},pg={...(c.pagos||{})};if(pg[n])continue;pg[n]={valor:feeOf(m),data:today()};ok=await save('pagamentos/'+m,{...c,pagos:pg,isentos:(c.isentos||[]).filter(x=>x!==n)})&&ok}
+  if(ok){note('Registado: '+n+' tem tudo pago até '+mname(ms[ms.length-1]).toLowerCase()+'.');pgWarn=null}
+  renderPgWarn()});
 $('pgrid').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-q],button[data-qi],button[data-qa],button[data-qk]');if(!b||!isTes())return;
   if(b.dataset.qk){pgUndo=null;return renderPay()}
@@ -1496,7 +1516,8 @@ $('pgrid').addEventListener('click',async e=>{
   if(b.dataset.qa){pgUndo=null;delete p[n]}
   else if(b.dataset.q){p[n]={valor:feeOf(k),data:today()};b.classList.add('on')}
   else{if(st==='isento')isen=isen.filter(x=>x!==n);else{isen.push(n);delete p[n]}}
-  b.disabled=true;await save('pagamentos/'+k,{...c,pagos:p,isentos:isen});b.disabled=false;
+  b.disabled=true;const okS=await save('pagamentos/'+k,{...c,pagos:p,isentos:isen});b.disabled=false;
+  if(okS&&b.dataset.q&&p[n])avisoAtraso(n,k);
 });
 $('xt').addEventListener('change',e=>{const n=e.target.value==='__nova';$('xnew').classList.toggle('hide',!n);if(n){$('xcn').value='';$('xmsg').textContent='';$('xcn').focus()}});
 $('xcno').addEventListener('click',()=>{$('xnew').classList.add('hide');$('xt').value='campo'});

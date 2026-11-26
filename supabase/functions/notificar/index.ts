@@ -7,7 +7,7 @@
 //   Quinta 18h   · convocados         · equipas publicadas / capitães sorteados
 //   Sexta 21h    · quem jogou e ainda não votou · votar no MVP até domingo
 //   Dia 1 10h    · quem tem quotas de meses anteriores por pagar · alerta de atraso (+ resumo ao tesoureiro)
-//   Dias 1–15 21h· quem não pagou a quota do mês
+//   Dias 1, 5, 10 21h · quem não pagou a quota do mês
 //   Todos os dias 21h · admin: registos por aprovar · tesoureiro: pagamentos MB WAY por confirmar
 //
 // Também envia uma notificação de teste a quem a pede na app (botão "Enviar teste").
@@ -163,8 +163,8 @@ export function planear(now: Date, D: Any) {
         L.dow === 2 ? "Ainda não respondeste ⚽" : "Último aviso: convocatória fecha hoje",
         L.dow === 2 ? `Vais ao jogo de quinta, ${fdt(quinta)}? Responde até amanhã às 23:59.` : `Responde até às 23:59 se vais ao jogo de quinta, ${fdt(quinta)}. Vão ${P.go.length} de 14.`, "/#convocatoria");
     }
-    // quotas (dias 1 a 15); no dia 1 quem tem meses em atraso já recebeu o alerta das 10h
-    if (L.dia <= 15) {
+    // quotas: lembrete nos dias 1, 5 e 10; no dia 1 quem tem meses em atraso já recebeu o alerta das 10h
+    if ([1, 5, 10].includes(L.dia)) {
       const k = L.data.slice(0, 7), ms: string[] = [];
       for (let m = PSTART; m <= k; m = mkAdd(m, 1)) ms.push(m);
       const fee = (m: string) => (D.pags[m] && D.pags[m].valor != null ? D.pags[m].valor : feeDefault(m));
