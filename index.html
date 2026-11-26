@@ -1087,7 +1087,7 @@ function lineupHTML(t,date){
     :res.canc?`<div class="lu-ft res dr"><div><small>FIM</small>Jogo cancelado</div></div>`
     :res.empate?`<div class="lu-ft res dr"><div><small>RESULTADO FINAL</small>🤝 Empate entre as duas equipas</div></div>`
     :`<div class="lu-ft res ${wt.col===false?'sc':'co'}"><div><small>RESULTADO FINAL</small>🏆 Ganhou a ${lbl(wt)}</div></div>`;
-  return `<div class="lu${calm?' calm':''}"><div class="lu-hd"><div><b>Os 7 de cada lado</b><span>${DIA[d.getDay()]}, ${fdt(date)} · 21:00</span></div><div class="lu-tv"><span>F<i>TV</i></span>${res?'<span class="l fim">FINAL</span>':'<span class="l">● EM DIRETO</span>'}</div></div>
+  return `<div class="lu${calm?' calm':''}"><div class="lu-hd"><div><b>${!res?'Os 7 de cada lado':res.canc?'Jogo cancelado':'Fim do jogo'}</b><span>${DIA[d.getDay()]}, ${fdt(date)} · 21:00</span></div><div class="lu-tv"><span>F<i>TV</i></span>${res?'<span class="l fim">FINAL</span>':'<span class="l">● EM DIRETO</span>'}</div></div>
    <div class="lu-st">${luPitchSVG()}${dots}${banner}
     <div class="lu-splash" aria-hidden="true"><img src="assets/logo.webp" alt=""><b>${res?'Já temos o resultado final!':'Já temos o 7 inicial de cada equipa!'}</b></div></div>
    ${ft}</div>`;
