@@ -87,6 +87,15 @@ h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 .lu-ft div{flex:1;padding:9px 10px}.lu-ft .co{background:#f2c200;color:#2a2000}.lu-ft .sc{background:#c81d24;color:#fff}.lu-ft div:last-child{text-align:right}
 .lu-ft span{display:grid;place-items:center;padding:0 10px;background:#1d1214;color:#fff;font:400 16px Anton,Impact,sans-serif}
 
+.lu-p.win .lu-d{box-shadow:0 0 0 3px #ffd84a,0 0 14px 4px rgba(255,216,74,.75),0 3px 5px rgba(0,0,0,.4)}
+.lu-p.win .lu-n::before{content:"🏆 ";font-size:11px}
+.lu-p.lose{filter:saturate(.55) brightness(.85)}
+.lu-win{position:absolute;left:8px;z-index:4;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:linear-gradient(180deg,#ffe27a,#c9a04a);color:#2a1a00;font:400 13px/1 Anton,Impact,sans-serif;letter-spacing:.04em;box-shadow:0 4px 12px rgba(0,0,0,.45);white-space:nowrap;pointer-events:none}
+.lu-win.t{top:8px}.lu-win.b{bottom:8px}
+.lu-ft.res{justify-content:center;align-items:center;gap:10px;padding:10px 12px;font:400 19px/1.1 Anton,Impact,sans-serif;letter-spacing:.02em;text-align:center}
+.lu-ft.res div{flex:1;text-align:center!important;padding:0}.lu-ft.res small{display:block;font:700 11px var(--f);letter-spacing:.08em;opacity:.8;margin-bottom:2px}
+.lu-ft.res.co{background:#f2c200;color:#2a2000}.lu-ft.res.sc{background:#c81d24;color:#fff}.lu-ft.res.dr{background:#1d1214;color:#fff}
+.lu-tv .l.fim{background:#1d1214}
 #cfold>summary{display:none}
 #cfold.fold>summary{display:flex;align-items:center;justify-content:space-between;margin-top:14px;cursor:pointer;font-weight:700;list-style:none;min-height:30px}
 #cfold.fold>summary::-webkit-details-marker{display:none}
@@ -1054,9 +1063,15 @@ function luPitchSVG(){
    <polygon points="${poly([[0,0],[1,0],[1,1],[0,1]])}" ${L}/><polyline points="${poly([[0,.5],[1,.5]])}" ${L}/><polygon points="${circ}" ${L}/>
    <polyline points="${poly([[.26,0],[.26,.12],[.74,.12],[.74,0]])}" ${L}/><polyline points="${poly([[.26,1],[.26,.88],[.74,.88],[.74,1]])}" ${L}/>
    <polyline points="${poly([[.4,0],[.4,.04],[.6,.04],[.6,0]])}" ${L}/><polyline points="${poly([[.4,1],[.4,.96],[.6,.96],[.6,1]])}" ${L}/></svg>`}
+/* resultado do jogo para o campo da convocatória: que lado ('a'/'b' das equipas publicadas) ganhou */
+function luResult(t,date){const g=games.find(x=>x.data===date);if(!g)return null;
+  if(g.cancelado)return{canc:true};if(!g.r)return null;if(g.r==='E')return{empate:true};
+  const gk=g.r==='V'?'a':'b';/* lado vencedor no registo do jogo */
+  let k=gk;if(t.coletes&&g.coletes)k=(gk===g.coletes)?t.coletes:(t.coletes==='a'?'b':'a');/* alinha pelos coletes */
+  return{k}}
 function lineupHTML(t,date){
-  LU_DATE=date;const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  const teams=[['a',t.a||[]],['b',t.b||[]]].map(([k,L])=>({k,L,col:t.coletes?t.coletes===k:null}));
+  LU_DATE=date;const res=luResult(t,date);const calm=!!res||matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const teams=[['a',t.a||[]],['b',t.b||[]]].map(([k,L])=>({k,L,col:t.coletes?t.coletes===k:null,win:res&&res.k?res.k===k:null}));
   teams.sort((x,y)=>(y.col?1:0)-(x.col?1:0));
   const lbl=tm=>tm.col===null?(tm.k==='a'?'Equipa 1':'Equipa 2'):tm.col?'Equipa Coletes':'Equipa S/ Coletes';
   let j=0;const dots=teams.map((tm,ti)=>{const n=tm.L.length,rnd=seeded(date+tm.k+tm.L.join());
@@ -1064,12 +1079,18 @@ function lineupHTML(t,date){
     const order=[slots[0],...rest];
     return tm.L.map((nm,i)=>{const [,x,y]=order[i]||[0,.5,.5],top=ti===0;
       const fx=top?1-x:x,fy=top?y*.47+.02:1-(y*.47+.02),[px,py,sc]=luPt(fx,fy);
-      return `<div class="lu-p ${tm.col?'co':'sc'}" style="left:${px.toFixed(2)}%;top:${py.toFixed(2)}%;z-index:${Math.round(py)};--s:${sc.toFixed(3)}"><div class="lu-b" style="animation-delay:${calm?0:(1.9+(j++)*.09).toFixed(2)}s"><span class="lu-d">${i===0?'C':''}</span><span class="lu-n">${esc(shortName(nm))}</span></div></div>`}).join('')}).join('');
+      return `<div class="lu-p ${tm.col?'co':'sc'}${tm.win===true?' win':tm.win===false?' lose':''}" style="left:${px.toFixed(2)}%;top:${py.toFixed(2)}%;z-index:${Math.round(py)};--s:${sc.toFixed(3)}"><div class="lu-b" style="animation-delay:${calm?0:(1.9+(j++)*.09).toFixed(2)}s"><span class="lu-d">${i===0?'C':''}</span><span class="lu-n">${esc(shortName(nm))}</span></div></div>`}).join('')}).join('');
   const d=dobj(date);
-  return `<div class="lu${calm?' calm':''}"><div class="lu-hd"><div><b>Os 7 de cada lado</b><span>${DIA[d.getDay()]}, ${fdt(date)} · 21:00</span></div><div class="lu-tv"><span>F<i>TV</i></span><span class="l">● EM DIRETO</span></div></div>
-   <div class="lu-st">${luPitchSVG()}${dots}
-    <div class="lu-splash" aria-hidden="true"><img src="assets/logo.webp" alt=""><b>Já temos o 7 inicial de cada equipa!</b></div></div>
-   <div class="lu-ft"><div class="${teams[0].col===false?'sc':'co'}">${lbl(teams[0])}</div><span>vs</span><div class="${teams[1].col?'co':'sc'}">${lbl(teams[1])}</div></div></div>`;
+  const wi=res&&res.k?teams.findIndex(tm=>tm.win):-1,wt=wi>=0?teams[wi]:null;
+  const banner=wt?`<div class="lu-win ${wi===0?'t':'b'}">🏆 VENCEDORES</div>`:'';
+  const ft=!res?`<div class="lu-ft"><div class="${teams[0].col===false?'sc':'co'}">${lbl(teams[0])}</div><span>vs</span><div class="${teams[1].col?'co':'sc'}">${lbl(teams[1])}</div></div>`
+    :res.canc?`<div class="lu-ft res dr"><div><small>FIM</small>Jogo cancelado</div></div>`
+    :res.empate?`<div class="lu-ft res dr"><div><small>RESULTADO FINAL</small>🤝 Empate entre as duas equipas</div></div>`
+    :`<div class="lu-ft res ${wt.col===false?'sc':'co'}"><div><small>RESULTADO FINAL</small>🏆 Ganhou a ${lbl(wt)}</div></div>`;
+  return `<div class="lu${calm?' calm':''}"><div class="lu-hd"><div><b>Os 7 de cada lado</b><span>${DIA[d.getDay()]}, ${fdt(date)} · 21:00</span></div><div class="lu-tv"><span>F<i>TV</i></span>${res?'<span class="l fim">FINAL</span>':'<span class="l">● EM DIRETO</span>'}</div></div>
+   <div class="lu-st">${luPitchSVG()}${dots}${banner}
+    ${res?'':'<div class="lu-splash" aria-hidden="true"><img src="assets/logo.webp" alt=""><b>Já temos o 7 inicial de cada equipa!</b></div>'}</div>
+   ${ft}</div>`;
 }
 function renderConv(){
   if(!cdate)cdate=nextThu(today());
@@ -1120,7 +1141,7 @@ function renderConv(){
   if($('cfold').dataset.k!==fk){$('cfold').dataset.k=fk;$('cfold').open=!fold}$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm());$('crec').classList.toggle('hide',!(t&&isAdm()));if($('crec').dataset.d!==cdate){$('crec').dataset.d=cdate;$('crec').open=false}
   if(!t||t.modo==='capitaes')delete $('cteams').dataset.k;
   if(t&&t.modo==='capitaes'){$('cteams').innerHTML=`<h2 style="margin-top:0">Capitães sorteados</h2><p class="tag" style="margin:0 0 8px">Os dois capitães escolhem as equipas. O capitão da equipa vencedora ganha 1 ponto extra.</p><div class="pitch">${[['Equipa 1',t.capA,'a'],['Equipa 2',t.capB,'b']].map(([l,c,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes===k?'De coletes':'Sem coletes'}</span></h3><p class="big" style="margin:0">${esc(c)}<span class="cap">C</span></p></div>`).join('')}</div>`}
-  else if(t){const k=cdate+'|'+JSON.stringify(t);if($('cteams').dataset.k!==k){$('cteams').dataset.k=k;$('cteams').innerHTML=lineupHTML(t,cdate)}}
+  else if(t){const g0=games.find(x=>x.data===cdate)||{},k=cdate+'|'+JSON.stringify(t)+'|'+(g0.r||'')+(g0.cancelado?'c':'')+(g0.coletes||'');if($('cteams').dataset.k!==k){$('cteams').dataset.k=k;$('cteams').innerHTML=lineupHTML(t,cdate)}}
 }
 /* ---------- admin: quem recebeu os avisos das equipas (notif_log.det, só o admin lê) ---------- */
 const REC_TIPO={pub:'Equipas publicadas',man:'Avisar convocados',lem:'Lembrete no dia do jogo'};
