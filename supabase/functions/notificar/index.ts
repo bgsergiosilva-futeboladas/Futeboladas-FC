@@ -165,9 +165,7 @@ export function planear(now: Date, D: Any) {
     const e = (D.conv[L.data] || {}).equipas;
     if (e) {
       const P = presenca(D, L.data);
-      const txt = e.modo === "capitaes" ? `Capitães sorteados: ${e.capA} e ${e.capB}. Eles escolhem as equipas no campo.`
-        : `Equipas feitas! ${e.coletes ? `A Equipa ${e.coletes === "a" ? 1 : 2} joga de coletes.` : ""} Vê na app quem joga contigo.`;
-      add("equipas", deJog(P.go), "Hoje há jogo às 21h ⚽", txt, "/#convocatoria");
+      add("equipas", deJog(P.go), "Já viste a convocatória de hoje? ⚽", "Hoje há jogo às 21h no FUT7 Palmeira. Vê na app em que equipa jogas.", "/#convocatoria");
     }
   }
   return out;
@@ -280,6 +278,36 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
       await sb.from("notif_log").update({ n: out.todos }).eq("chave", `resultado-todos|${gid}`);
     }
     return json(out);
+  }
+
+  // equipas publicadas na convocatória: avisar logo os convocados
+  if (body.equipas) {
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");
+    const { data: u } = await sb.auth.getUser(token);
+    if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
+    const data = String(body.equipas);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return json({ erro: "data inválida" }, 400);
+    const D = await carregar(sb);
+    const { data: dn } = await sb.from("donos").select("user_id");
+    const donos = (dn || []).map((d: Any) => d.user_id);
+    const a = D.acessos[u.user.id] || {}, pp = Array.isArray(a.papeis) ? a.papeis : a.papel ? [a.papel] : [];
+    if (!donos.includes(u.user.id) && !pp.includes("admin") && !pp.includes("apontador")) return json({ erro: "sem permissão" }, 403);
+    const e = (D.conv[data] || {}).equipas;
+    if (!e) return json({ erro: "sem equipas" }, 400);
+    // uma vez por cada versão das equipas (se forem republicadas diferentes, avisa que mudaram)
+    const assin = JSON.stringify([e.a, e.b, e.capA, e.capB, e.coletes]);
+    let h = 0; for (let i = 0; i < assin.length; i++) h = (h * 31 + assin.charCodeAt(i)) | 0;
+    const { data: ant } = await sb.from("notif_log").select("chave").like("chave", `equipas-pub|${data}|%`);
+    if ((await sb.from("notif_log").insert({ chave: `equipas-pub|${data}|${h}` })).error) return json({ feito: [] });
+    const P = presenca(D, data);
+    const para = Object.entries(D.acessos as Record<string, Any>).filter(([, x]) => x && x.jogador && P.go.includes(x.jogador)).map(([uid]) => uid);
+    const dia = data === lisboa(new Date()).data ? "de hoje" : `de quinta, ${fdt(data)}`;
+    const corpo = e.modo === "capitaes"
+      ? `Capitães sorteados: ${e.capA} e ${e.capB}. Eles escolhem as equipas no campo.`
+      : `Já temos o 7 inicial de cada equipa! Vê em que equipa jogas e quem leva coletes.`;
+    const n = await enviar(sb, para, { title: (ant && ant.length ? "Equipas atualizadas para o jogo " : "Equipas para o jogo ") + dia + " ⚽", body: corpo, url: "/#convocatoria" });
+    await sb.from("notif_log").update({ n }).eq("chave", `equipas-pub|${data}|${h}`);
+    return json({ enviados: n });
   }
 
   // o tesoureiro confirmou (ou não) um "Já paguei": avisar quem pagou

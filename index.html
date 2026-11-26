@@ -1283,11 +1283,12 @@ async function preRegistar(data,eq){
   /* sorteio de capitães: fica o registo da quinta só com os capitães; o resto escolhe-se ao registar o resultado */
   if(eq.modo==='capitaes'&&eq.capA&&eq.capB)await save('jogos/'+id,{data,a:[eq.capA],b:[eq.capB],modo:'capitaes',coletes:eq.coletes,atr:[]});
 }
+function avisaEquipas(d){try{window.SB&&window.SB.functions.invoke('notificar',{body:{equipas:d}}).catch(()=>{})}catch(x){}}
 function avisaResultado(gid){try{window.SB&&window.SB.functions.invoke('notificar',{body:{resultado:gid}}).catch(()=>{})}catch(x){}}
 $('esave').addEventListener('click',async()=>{const c=conv[cdate]||{};const col=Math.random()<.5?'a':'b';
   const eq=emode==='capitaes'?{modo:'capitaes',capA:caps.a,capB:caps.b,coletes:col}:{modo:'auto',a:teams.a.map(p=>p.label||p.nome),b:teams.b.map(p=>p.label||p.nome),an:teams.a.map(p=>p.nome),bn:teams.b.map(p=>p.nome),coletes:col};
   if(!isAdm()){if(await propor({tipo:'equipas',alvo:cdate,doc:eq}))$('eerr').textContent='Enviado para aprovação do administrador.';return}
-  if(await save('conv/'+cdate,{...c,equipas:eq})){await preRegistar(cdate,eq);$('eerr').textContent='Publicado na convocatória. Sorteio: a '+(col==='a'?'Equipa 1':'Equipa 2')+' joga de coletes.'+(eq.modo==='auto'?' O jogo ficou pré-registado em Jogos: depois só falta indicar quem ganhou e quem chegou atrasado.':' O jogo ficou pré-registado em Jogos com os dois capitães: no fim escolhem-se os restantes jogadores e o resultado.')}});
+  if(await save('conv/'+cdate,{...c,equipas:eq})){await preRegistar(cdate,eq);avisaEquipas(cdate);$('eerr').textContent='Publicado na convocatória. Sorteio: a '+(col==='a'?'Equipa 1':'Equipa 2')+' joga de coletes.'+(eq.modo==='auto'?' O jogo ficou pré-registado em Jogos: depois só falta indicar quem ganhou e quem chegou atrasado.':' O jogo ficou pré-registado em Jogos com os dois capitães: no fim escolhem-se os restantes jogadores e o resultado.')}});
 
 /* ---------- pagamentos ---------- */
 const PSTART='2025-12';
@@ -1639,7 +1640,7 @@ async function aprovarProp(id,sk){const p=propostas[id];if(!p)return;let ok;
   if(p.tipo==='jogo'){ok=await save('jogos/'+p.alvo,p.doc);if(ok&&p.de&&p.de!==p.alvo)try{await db.doc('jogos/'+p.de).delete()}catch(x){}
     if(ok&&p.doc&&p.doc.r)avisaResultado(p.alvo)}   /* resultado aprovado: aviso a todos */
   else if(p.tipo==='substituto'){const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,subs:[...(c.subs||[]),{nome:p.doc.nome,por:p.autor||''}]})&&await saveSubSk(p.alvo,p.doc.nome,+sk)}
-  else{const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,equipas:p.doc});if(ok)await preRegistar(p.alvo,p.doc)}
+  else{const c=conv[p.alvo]||{};ok=await save('conv/'+p.alvo,{...c,equipas:p.doc});if(ok){await preRegistar(p.alvo,p.doc);avisaEquipas(p.alvo)}}
   if(ok)try{await db.doc('propostas/'+id).delete()}catch(x){}}
 $('ppanel').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
