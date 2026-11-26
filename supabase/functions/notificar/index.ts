@@ -6,6 +6,7 @@
 //   Quarta 21h   · quem não respondeu · último aviso (fecha às 23:59)
 //   Quinta 18h   · convocados         · equipas publicadas / capitães sorteados
 //   Sexta 21h    · quem jogou e ainda não votou · votar no MVP até domingo
+//   Dia 1 10h    · quem tem quotas de meses anteriores por pagar · alerta de atraso (+ resumo ao tesoureiro)
 //   Dias 1–15 21h· quem não pagou a quota do mês
 //   Todos os dias 21h · admin: registos por aprovar · tesoureiro: pagamentos MB WAY por confirmar
 //
@@ -72,7 +73,8 @@ export function planear(now: Date, D: Any) {
   const manha = L.dow === 5 && L.hora >= 8 && L.hora % 2 === 0 && L.min < 30; // sexta: 8h, 10h, 12h … 22h
   const mvpLembra = (L.dow === 5 || L.dow === 6 || L.dow === 0) && [10, 15, 20].includes(L.hora) && L.min < 30; // sex/sáb/dom: 3 lembretes por dia
   const mvpVencedor = L.dow === 1 && L.hora === 9 && L.min < 30; // segunda 09:00: parabéns ao MVP
-  if (!abre && !manha && !mvpAbre && !mvpLembra && !mvpVencedor && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
+  const atraso = L.dia === 1 && L.hora === 10 && L.min < 30; // dia 1, 10:00: alerta a quem ficou com quotas de meses anteriores por pagar
+  if (!abre && !manha && !mvpAbre && !mvpLembra && !mvpVencedor && !atraso && !((L.hora === 21 || L.hora === 18) && L.min < 30)) return out;
   // contas → jogador e perfis
   const contas = Object.entries(D.acessos as Record<string, Any>).map(([uid, a]) => ({
     uid, jogador: a.jogador || "", papeis: Array.isArray(a.papeis) ? a.papeis : a.papel ? [a.papel] : [],
@@ -132,6 +134,28 @@ export function planear(now: Date, D: Any) {
 
   // segunda 08:30: abrem as inscrições
   if (abre && !jogoFechado(quinta)) add("conv-abre", todos, "Inscrições abertas ⚽", `Vais jogar na quinta, ${fdt(quinta)} às 21h? Responde até quarta às 23:59.`, "/#convocatoria");
+  // dia 1, 10:00: começa o mês novo — alerta de falta de pagamento a quem deixou meses anteriores por pagar
+  if (atraso) {
+    const k = L.data.slice(0, 7), ms: string[] = [];
+    for (let m = PSTART; m < k; m = mkAdd(m, 1)) ms.push(m);
+    const fee = (m: string) => (D.pags[m] && D.pags[m].valor != null ? D.pags[m].valor : feeDefault(m));
+    let totDev = 0; const quem: string[] = [];
+    for (const r of D.roster) {
+      const st = (m: string) => { const p = D.pags[m] || {}; if (!charged(r, m)) return "fora"; if ((p.isentos || []).includes(r.nome)) return "isento"; return p.pagos && p.pagos[r.nome] ? "pago" : "falta"; };
+      const deve = ms.filter((m) => st(m) === "falta");
+      if (!deve.length) continue;
+      const tot = deve.reduce((s, m) => s + fee(m), 0);
+      quem.push(r.nome); totDev += tot;
+      const novo = charged(r, k) ? ` A quota de ${mname(k)} (${euro(fee(k))}) já pode ser paga.` : "";
+      add("atraso-" + r.nome, deJog([r.nome]), "⚠️ Quota em atraso",
+        `Ficou por pagar ${deve.length > 1 ? "as quotas de " + deve.map(mname).join(", ") : "a quota de " + mname(deve[0])}: ${euro(tot)}.${novo} Paga por MB WAY na app.`, "/#pagamentos");
+    }
+    if (quem.length) {
+      const admins = contas.filter((c) => c.papeis.includes("admin")).map((c) => c.uid);
+      const tes = contas.filter((c) => c.papeis.includes("tesoureiro")).map((c) => c.uid);
+      add("atraso-resumo", tes.length ? tes : admins, "Quotas em atraso", `${quem.length} jogador${quem.length > 1 ? "es têm" : " tem"} quotas de meses anteriores por pagar (${euro(totDev)}): ${quem.join(", ")}.`, "/#pagamentos");
+    }
+  }
   if (L.hora === 21) {
     if ((L.dow === 2 || L.dow === 3) && !jogoFechado(quinta)) {
       const P = presenca(D, quinta);
@@ -139,7 +163,7 @@ export function planear(now: Date, D: Any) {
         L.dow === 2 ? "Ainda não respondeste ⚽" : "Último aviso: convocatória fecha hoje",
         L.dow === 2 ? `Vais ao jogo de quinta, ${fdt(quinta)}? Responde até amanhã às 23:59.` : `Responde até às 23:59 se vais ao jogo de quinta, ${fdt(quinta)}. Vão ${P.go.length} de 14.`, "/#convocatoria");
     }
-    // quotas (dias 1 a 15)
+    // quotas (dias 1 a 15); no dia 1 quem tem meses em atraso já recebeu o alerta das 10h
     if (L.dia <= 15) {
       const k = L.data.slice(0, 7), ms: string[] = [];
       for (let m = PSTART; m <= k; m = mkAdd(m, 1)) ms.push(m);
@@ -147,6 +171,7 @@ export function planear(now: Date, D: Any) {
       for (const r of D.roster) {
         const st = (m: string) => { const p = D.pags[m] || {}; if (!charged(r, m)) return "fora"; if ((p.isentos || []).includes(r.nome)) return "isento"; return p.pagos && p.pagos[r.nome] ? "pago" : "falta"; };
         if (st(k) !== "falta") continue;
+        if (L.dia === 1 && ms.some((m) => m < k && st(m) === "falta")) continue;
         const deve = ms.filter((m) => st(m) === "falta"), tot = deve.reduce((s, m) => s + fee(m), 0);
         add("quota-" + r.nome, deJog([r.nome]), `Quota de ${mname(k)} por pagar`,
           deve.length > 1 ? `Deves ${euro(tot)} (${deve.map(mname).join(", ")}). Podes pagar por MB WAY na app.` : `A quota de ${mname(k)} é ${euro(fee(k))}. Podes pagar por MB WAY na app.`, "/#pagamentos");

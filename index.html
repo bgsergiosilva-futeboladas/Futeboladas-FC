@@ -1438,7 +1438,7 @@ function renderPay(){
   $('psum').innerHTML=[['Saldo em caixa',euro(L.saldo),L.saldo<0?'owe':''],['Quotas em dívida',euro(L.owe),'owe'],[mname(cur),paidN+'/'+due.length+' pagaram',''],['Recebido em '+MES[+cur.slice(5)-1].toLowerCase(),euro(cc.rec),'']]
     .map(([t,v,c])=>`<div class="card stat"><span>${t}</span><b class="${c}">${v}</b></div>`).join('');
   /* registo de quotas do mês */
-  const nxt=mkAdd(cur,1),pmonths=[...L.ms,nxt];if(!pgFrom||!pmonths.includes(pgFrom))pgFrom=cur;const K=pgFrom,fee=feeOf(K);
+  const nxt=mkAdd(cur,1),pmonths=[...L.ms,nxt];if(!pgFrom||pgAuto||!pmonths.includes(pgFrom))pgFrom=cur;/* no dia 1 passa sozinho para o mês novo */const K=pgFrom,fee=feeOf(K);
   $('pgm').innerHTML=[...pmonths].reverse().map(k=>`<option value="${k}"${k===K?' selected':''}>${mname(k)}</option>`).join('');
   const ord={falta:0,pago:1,isento:2};
   const rq=roster.filter(r=>cellState(r,K)!=='fora').sort((a,b)=>ord[cellState(a,K)]-ord[cellState(b,K)]||a.nome.localeCompare(b.nome,'pt'));
@@ -1485,8 +1485,8 @@ $('mbsave').addEventListener('click',async()=>{const n=$('mbn').value.trim(),t=$
   if(!n&&t)return $('mbmsg').textContent='Escreve o número de telemóvel do MB WAY.';
   if(n&&!/^\+?[\d\s]{9,15}$/.test(n))return $('mbmsg').textContent='Número inválido: escreve os 9 algarismos, por exemplo 912 345 678.';
   if(await save('config/caixa',{...caixa,mbway:n,mbwayNome:t}))$('mbmsg').textContent=n?'Guardado: os jogadores já podem pagar por MB WAY para '+n+'.':'MB WAY desligado (sem número).'});
-var pgFrom=null,pgUndo=null;
-$('pgm').addEventListener('change',e=>{pgFrom=e.target.value;pgUndo=null;renderPay()});
+var pgFrom=null,pgUndo=null,pgAuto=true;
+$('pgm').addEventListener('change',e=>{pgFrom=e.target.value;pgAuto=e.target.value===mkey(today());pgUndo=null;renderPay()});
 $('pgrid').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-q],button[data-qi],button[data-qa],button[data-qk]');if(!b||!isTes())return;
   if(b.dataset.qk){pgUndo=null;return renderPay()}
