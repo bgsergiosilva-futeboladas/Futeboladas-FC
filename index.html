@@ -650,7 +650,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261126111934';
+const BUILD='20261126113204';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -1019,11 +1019,11 @@ function renderFTV(d,g){
 setInterval(()=>{if(curView!=='convocatoria'||!cdate||!$('ftvcd'))return;const T=ftvTime(cdate,games.find(x=>x.data===cdate));$('ftvcd').textContent='⏱ '+T.cd;const l=$('ftvlv');l.textContent=T.lv;l.classList.toggle('off',!!T.off)},30000);
 
 /* ---------- convocatória: os 7 iniciais em campo (equipas automáticas publicadas) ---------- */
-const NICK={'Kevin Silva':'Kevin','Kevin Azevedo':'Kevin Az','Gonçalo Brás':'Gonçalo','Gonçalo Lage':'Lage','Tiago Félix':'Félix','Tiago Costa':'Costa','Miguel Menezes':'Miguel'};
+const NICK={'Kevin Silva':'Kevin','Kevin Azevedo':'Kevin Az','Gonçalo Brás':'Gonçalo','Gonçalo Lage':'Lage','Tiago Félix':'Félix','Tiago Costa':'Costa','Miguel Menezes':'Miguel','Rui Monteiro':'Monteiro'};
 let LU_DATE=null;
 /* nome curto de um substituto: o que foi definido ao juntá-lo; senão o primeiro nome, com a inicial do apelido
    (ou "(S)") se já houver um jogador do plantel com o mesmo primeiro nome */
-function subShort(full,curto){if(curto)return curto;const w=full.trim().split(/\s+/),f=w[0];
+function subShort(full,curto){if(curto)return curto;if(NICK[full])return NICK[full];const w=full.trim().split(/\s+/),f=w[0];
   const clash=roster.some(r=>r.ativo!==false&&r.nome.split(/\s+/)[0].toLowerCase()===f.toLowerCase());
   return clash?(w[1]?f+' '+w[1][0]+'.':f+' (S)'):f}
 function shortName(n){if(NICK[n])return NICK[n];if(/^Substituto · /.test(n)){const full=n.slice(13).trim(),e=((conv[LU_DATE]||{}).subs||[]).find(x=>x.nome===full);return subShort(full,e&&e.curto)}const w=String(n).trim().split(/\s+/),f=w[0];
@@ -1084,7 +1084,7 @@ function renderConv(){
   const g0=games.some(x=>x.data===cdate&&(x.r||x.cancelado)),free=MAXJ-P.go.length-P.subs.length-pendS.length;
   const canSub=!g0&&!!myPlayer()&&free>0&&!(notOpen&&!isAdm())&&(P.none.length===0||P.go.length+P.subs.length+P.none.length<MAXJ);
   keepSel($('cyes'),()=>$('cyes').innerHTML=(P.go.map((n,i)=>`<li><span><span class="dot y"></span>${i+1}. ${esc(n)}</span>${ctl(n)}</li>`).join('')
-    +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. ${s.nome===SUB?'<b>Substituto</b>':'Substituto · <b>'+esc(s.nome)+'</b>'+(s.curto?' <span class="tag">nas equipas: '+esc(s.curto)+'</span>':'')} <span class="tag">${s.nome===SUB?'vaga preenchida por':'trazido por'} ${esc(s.por||'?')}</span></span>${isApo()?`<span class="mini">${isAdm()?`<select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(subSk(cdate,s))}</select>`:''}<button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
+    +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. ${s.nome===SUB?'<b>Substituto</b>':'Substituto · <b>'+esc(s.nome)+'</b>'+(s.curto?' <span class="tag">nas equipas: '+esc(s.curto)+'</span>':'')} <span class="tag">${s.nome===SUB?'vaga preenchida por':'trazido por'} ${esc(s.por||'?')}</span></span>${isApo()?`<span class="mini">${isAdm()?`<select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(subSk(cdate,s))}</select>`:''}${s.nome!==SUB?`<button class="btn" data-rn="${i}" aria-label="Nome nas equipas" title="Nome nas equipas">✎</button>`:''}<button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
     +pendS.map(([id,p])=>`<li><span><span class="dot"></span>Substituto · ${esc(p.doc.nome)} <span class="tag">pendente · proposto por ${esc(p.autor||'?')}</span></span>${isAdm()?`<span class="mini"><select data-sk2="${id}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(null)}</select><button class="btn ok" data-sa="${id}">Aprovar</button><button class="btn no" data-sr="${id}">Rejeitar</button></span>`:''}</li>`).join(''))||'<li class="tag">Ainda ninguém confirmou.</li>');
   $('csub').classList.toggle('hide',!canSub||isApo());
   /* admin e apontadores: preencher as vagas que faltam com um jogador (sem repetir) ou com "Substituto" (pode repetir) */
@@ -1130,6 +1130,10 @@ $('csubb').addEventListener('click',async()=>{const n=$('csubn').value.trim().re
   if(await propor({tipo:'substituto',alvo:cdate,doc:{nome:n}})){$('csubn').value='';note('Substituto enviado para aprovação do administrador.')}});
 $('cyes').addEventListener('change',async e=>{const s=e.target;if(!s.dataset.ss||!isAdm()||s.value==='')return;const x=((conv[cdate]||{}).subs||[])[+s.dataset.ss];if(x)await saveSubSk(cdate,x.nome,+s.value)});
 $('cyes').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!isApo())return;
+  if(b.dataset.rn){const c=conv[cdate]||{},sb=[...(c.subs||[])],x=sb[+b.dataset.rn];if(!x)return;
+    const v=prompt('Como queres que '+x.nome+' apareça nas equipas?',subShort(x.nome,x.curto));if(v===null)return;
+    sb[+b.dataset.rn]={...x,curto:v.trim().replace(/\s+/g,' ')||undefined};if(!sb[+b.dataset.rn].curto)delete sb[+b.dataset.rn].curto;
+    await save('conv/'+cdate,{...c,subs:sb});return}
   if(b.dataset.rs){const c=conv[cdate]||{},s=[...(c.subs||[])];s.splice(+b.dataset.rs,1);await save('conv/'+cdate,{...c,subs:s})}
   if(!isAdm())return;
   if(b.dataset.sa)await aprovarProp(b.dataset.sa,(document.querySelector(`[data-sk2="${b.dataset.sa}"]`)||{}).value);
