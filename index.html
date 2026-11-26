@@ -1498,7 +1498,7 @@ function renderPgWarn(){const w=$('pgwarn');if(!w)return;
   if(pgWarn&&!pgWarn.ms.length)pgWarn=null;
   w.classList.toggle('hide',!pgWarn);if(!pgWarn)return w.innerHTML='';
   const tot=pgWarn.ms.reduce((s2,m)=>s2+feeOf(m),0);
-  w.innerHTML=`<p style="margin:0 0 8px"><b>⚠️ ${esc(pgWarn.n)} ainda deve ${pgWarn.ms.length>1?'meses anteriores':'um mês anterior'}:</b> ${pgWarn.ms.map(mname).join(', ')} (${euro(tot)}).</p><div class="row" style="gap:8px"><button class="btn pri" type="button" id="pgwall">Registar também como pago${pgWarn.ms.length>1?'s':''}</button><button class="btn" type="button" id="pgwx">Fechar</button></div>`}
+  w.innerHTML=`<p style="margin:0 0 8px"><b>⚠️ ${esc(pgWarn.n)} ainda deve ${pgWarn.ms.length>1?'meses anteriores':'um mês anterior'}:</b> ${pgWarn.ms.map(pgWarn.ms.length>3?mshort:mname).join(', ')} (${euro(tot)}).</p><div class="row" style="gap:8px"><button class="btn pri" type="button" id="pgwall">Registar também como pago${pgWarn.ms.length>1?'s':''}</button><button class="btn" type="button" id="pgwx">Fechar</button></div>`}
 document.addEventListener('click',async e=>{
   if(e.target.closest('#pgwx')){pgWarn=null;renderPgWarn();return}
   const b=e.target.closest('#pgwall');if(!b||!pgWarn||!isTes())return;
