@@ -220,15 +220,9 @@ async function resync() {
   } catch (e) { console.warn(e); }
 }
 
-/* ------------------------------------------------------------------ sessão: máximo 1 hora */
-const MAX_SESSAO = 60 * 60 * 1000;
-const loginAt = () => { try { return +localStorage.getItem('fbLoginAt') || 0; } catch (e) { return 0; } };
-const marcaLogin = () => { try { localStorage.setItem('fbLoginAt', String(Date.now())); } catch (e) {} };
-const expirada = () => loginAt() > 0 && Date.now() - loginAt() > MAX_SESSAO;
-async function terminaPorTempo() {
-  try { localStorage.removeItem('fbLoginAt'); } catch (e) {}
-  await sb.auth.signOut({ scope: 'local' }); location.replace(location.pathname + '?expirou=1');
-}
+/* ------------------------------------------------------------------ sessão: fica sempre iniciada
+   (sem limite de tempo; só sai com "Terminar sessão" ou se o administrador retirar o acesso) */
+const marcaLogin = () => { try { localStorage.removeItem('fbLoginAt'); } catch (e) {} };
 
 /* ------------------------------------------------------------------ arranque */
 let user = null, started = false, owner = false;
@@ -257,8 +251,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
 
 async function enter(session) {
   user = session.user;
-  if (!loginAt()) marcaLogin();
-  if (expirada()) return terminaPorTempo();
+  marcaLogin();
   let acc;
   try { acc = await access(); } catch (e) { return show(`<h2>Sem ligação</h2><p class="au-txt">Não foi possível contactar o servidor. Verifica a internet e volta a abrir a app.</p>`); }
   if (!acc.member && !acc.pending) return blockedScreen();
@@ -269,8 +262,8 @@ async function enter(session) {
   resolveReady({ db, U, me: { id: user.id, owner } });
   // o administrador pode retirar o acesso a qualquer momento (ex.: jogador "Saiu")
   const recheck = async () => { try { const a = await access(); if (!a.member && !a.pending) { await sb.auth.signOut({ scope: 'local' }); location.replace(location.pathname + '?saiu=1'); } } catch (e) {} };
-  setInterval(() => { if (expirada()) terminaPorTempo(); else recheck(); }, 60000);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { if (expirada()) return terminaPorTempo(); recheck(); resync(); } });
+  setInterval(recheck, 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { recheck(); resync(); } });
 }
 
 (async () => {
@@ -285,5 +278,5 @@ async function enter(session) {
   if (recovering) return newPasswordScreen();
   if (code && !session) return inviteScreen(code);
   if (session) return enter(session);
-  loginScreen(q.get('saiu') ? 'O teu acesso à app foi cancelado pelo administrador.' : q.get('expirou') ? 'A sessão terminou ao fim de 1 hora. Entra de novo.' : '');
+  loginScreen(q.get('saiu') ? 'O teu acesso à app foi cancelado pelo administrador.' : '');
 })();
