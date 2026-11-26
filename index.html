@@ -87,6 +87,11 @@ h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 .lu-ft div{flex:1;padding:9px 10px}.lu-ft .co{background:#f2c200;color:#2a2000}.lu-ft .sc{background:#c81d24;color:#fff}.lu-ft div:last-child{text-align:right}
 .lu-ft span{display:grid;place-items:center;padding:0 10px;background:#1d1214;color:#fff;font:400 16px Anton,Impact,sans-serif}
 
+#cfold>summary{display:none}
+#cfold.fold>summary{display:flex;align-items:center;justify-content:space-between;margin-top:14px;cursor:pointer;font-weight:700;list-style:none;min-height:30px}
+#cfold.fold>summary::-webkit-details-marker{display:none}
+#cfold.fold>summary:after{content:"▾";font-size:18px;transition:transform .2s}#cfold.fold[open]>summary:after{transform:rotate(180deg)}
+
 /* header */
 /* ---------- bonecos animados ao lado do título ---------- */
 .ttl{display:flex;align-items:center;gap:10px;min-width:0}.ttl h1{min-width:0}
@@ -457,15 +462,17 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <section id="v-convocatoria" class="hide">
 <div class="row" style="margin-bottom:12px"><button class="btn" id="cprev" type="button" aria-label="Semana anterior">‹</button><button class="btn" id="cnext" type="button" aria-label="Semana seguinte">›</button><span class="tag" id="cweek"></span></div>
 <div class="ftv" id="ticket"></div>
-<a class="card wa" style="margin-top:14px" href="https://chat.whatsapp.com/C3UwZLZBEwv7y59yhtY8II" target="_blank" rel="noopener"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></i><span><b>Grupo do WhatsApp</b>Conversa da malta, avisos e combinações</span><em>Abrir ›</em></a>
 <div class="card hide" id="cteams" style="margin-top:14px"></div>
+<div class="row hide" id="cadmnote" style="margin:14px 2px 0;gap:10px;align-items:center;flex-wrap:nowrap"><p class="tag" style="margin:0;flex:1">As equipas já estão publicadas: os jogadores só veem as equipas. A convocatória abaixo só tu e os apontadores veem.</p><button class="btn pri" id="cavisar" type="button" style="flex:none">Avisar convocados</button></div>
+<details id="cfold" open><summary class="card" id="cfoldh">📋 Ver convocatória e desistências</summary>
 <div class="card" id="mine" style="margin-top:14px"></div>
-<div class="row hide" id="cadmnote" style="margin:14px 2px 0;gap:10px;align-items:center;flex-wrap:nowrap"><p class="tag" style="margin:0;flex:1">As equipas já estão publicadas: os jogadores só veem as equipas. A lista abaixo só tu e os apontadores veem.</p><button class="btn pri" id="cavisar" type="button" style="flex:none">Avisar convocados</button></div>
 <div class="two" id="clists" style="margin-top:14px">
 <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Vão jogar</h2><span class="count" id="ccount"></span></div><ul class="plist" id="cyes"></ul><div id="cfill" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="cfillinfo" style="margin:0 0 8px"></p><div class="row"><select id="cfillsel" aria-label="Jogador para a vaga" style="flex:1 1 12em;width:auto"></select><input type="text" id="cfilln" class="hide" placeholder="Nome do substituto" autocomplete="off" aria-label="Nome do substituto" style="flex:1 1 12em;width:auto"><button class="btn pri" id="cfillb" type="button">Adicionar</button></div></div><div id="csub" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="csubinfo" style="margin:0 0 8px"></p><div class="row"><input type="text" id="csubn" placeholder="Nome do substituto" autocomplete="off" style="flex:1 1 12em;width:auto"><select id="csubsk" class="adm" aria-label="Skill do substituto" style="width:6em"></select><button class="btn pri" id="csubb" type="button">Adicionar substituto</button></div></div><h3 id="cwaitH" class="hide" style="margin:14px 0 4px">Suplentes</h3><ul class="plist" id="cwait"></ul></div>
 <div class="card hide" id="cdesist" style="margin-bottom:14px;border-color:#e0a030"></div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Não vão</h2><span class="count" id="cnon"></span></div><ul class="plist" id="cno"></ul>
 <div class="row" style="justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><h2 style="margin:0">Ainda não responderam</h2><span class="count" id="cnonen"></span></div><ul class="plist" id="cnone"></ul></div>
 </div>
+</details>
+<a class="card wa" style="margin-top:14px" href="https://chat.whatsapp.com/C3UwZLZBEwv7y59yhtY8II" target="_blank" rel="noopener"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></i><span><b>Grupo do WhatsApp</b>Conversa da malta, avisos e combinações</span><em>Abrir ›</em></a>
 <details class="card adm" style="margin-top:14px"><summary style="cursor:pointer;font-weight:600;min-height:32px">Dados do campo</summary>
 <div class="two"><div><label for="kn">Nome</label><input type="text" id="kn"></div><div><label for="km">Morada</label><input type="text" id="km"></div><div><label for="kla">Latitude</label><input type="text" id="kla" inputmode="decimal" placeholder="41.xxxx"></div><div><label for="klo">Longitude</label><input type="text" id="klo" inputmode="decimal" placeholder="-8.xxxx"></div></div>
 <div class="row" style="margin-top:10px"><button class="btn pri" id="ksave" type="button">Guardar campo</button><span class="tag" id="kmsg"></span></div></details>
@@ -1019,7 +1026,7 @@ function renderFTV(d,g){
 setInterval(()=>{if(curView!=='convocatoria'||!cdate||!$('ftvcd'))return;const T=ftvTime(cdate,games.find(x=>x.data===cdate));$('ftvcd').textContent='⏱ '+T.cd;const l=$('ftvlv');l.textContent=T.lv;l.classList.toggle('off',!!T.off)},30000);
 
 /* ---------- convocatória: os 7 iniciais em campo (equipas automáticas publicadas) ---------- */
-const NICK={'Kevin Silva':'Kevin','Kevin Azevedo':'Kevin Az','Gonçalo Brás':'Gonçalo','Gonçalo Lage':'Lage','Tiago Félix':'Félix','Tiago Costa':'Costa','Miguel Menezes':'Miguel','Rui Monteiro':'Monteiro'};
+const NICK={'Kevin Silva':'Kevin','Kevin Azevedo':'Kevin Az','Gonçalo Brás':'Gonçalo','Gonçalo Lage':'Lage','Tiago Félix':'Félix','Tiago Costa':'Costa','Miguel Menezes':'Miguel','Rui Monteiro':'Monteiro','Ricardo Peixoto':'Peixoto'};
 let LU_DATE=null;
 /* nome curto de um substituto: o que foi definido ao juntá-lo; senão o primeiro nome, com a inicial do apelido
    (ou "(S)") se já houver um jogador do plantel com o mesmo primeiro nome */
@@ -1106,7 +1113,10 @@ function renderConv(){
   const t=(conv[cdate]||{}).equipas;
   $('cteams').classList.toggle('hide',!t);
   /* equipas publicadas: os jogadores deixam de ver quem disse que vai e veem só as equipas */
-  const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);$('clists').classList.toggle('hide',pub);$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm());
+  const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);$('clists').classList.toggle('hide',pub);
+  /* admin e apontadores: com equipas publicadas, a convocatória fica numa secção fechada (abre-se ao tocar) */
+  const fold=!!t&&isApo(),fk=fold?cdate:'';$('cfold').classList.toggle('fold',fold);$('cfold').classList.toggle('hide',pub);
+  if($('cfold').dataset.k!==fk){$('cfold').dataset.k=fk;$('cfold').open=!fold}$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm());
   if(!t||t.modo==='capitaes')delete $('cteams').dataset.k;
   if(t&&t.modo==='capitaes'){$('cteams').innerHTML=`<h2 style="margin-top:0">Capitães sorteados</h2><p class="tag" style="margin:0 0 8px">Os dois capitães escolhem as equipas. O capitão da equipa vencedora ganha 1 ponto extra.</p><div class="pitch">${[['Equipa 1',t.capA,'a'],['Equipa 2',t.capB,'b']].map(([l,c,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes===k?'De coletes':'Sem coletes'}</span></h3><p class="big" style="margin:0">${esc(c)}<span class="cap">C</span></p></div>`).join('')}</div>`}
   else if(t){const k=cdate+'|'+JSON.stringify(t);if($('cteams').dataset.k!==k){$('cteams').dataset.k=k;$('cteams').innerHTML=lineupHTML(t,cdate)}}
