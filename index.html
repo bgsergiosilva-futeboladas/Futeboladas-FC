@@ -1335,12 +1335,14 @@ $('epitch').addEventListener('click',e=>{
 });
 function drawCaps(force){const P=presence(cdate),pool=P.go.filter(inRoster);if(pool.length<2){caps=null;return}
   const pub=(conv[cdate]||{}).equipas;if(!force&&pub&&pub.modo==='capitaes'&&pool.includes(pub.capA)&&pool.includes(pub.capB)){caps={a:pub.capA,b:pub.capB,d:cdate,n:P.go.join('|')};return}
-  const i=Math.floor(Math.random()*pool.length);let j;do{j=Math.floor(Math.random()*pool.length)}while(j===i);caps={a:pool[i],b:pool[j],d:cdate,n:P.go.join('|')}}
+  /* rotação: saem os que foram capitães menos vezes; entre empatados, à sorte */
+  const cc=capCounts(),sh=[...pool];for(let i=sh.length-1;i>0;i--){const r=Math.floor(Math.random()*(i+1));[sh[i],sh[r]]=[sh[r],sh[i]]}
+  sh.sort((x,y)=>(cc[x]||0)-(cc[y]||0));caps={a:sh[0],b:sh[1],d:cdate,n:P.go.join('|')}}
 function renderCaps(keep){
   const P=presence(cdate),pool=P.go.filter(inRoster);
   $('etitle').textContent='Sorteio de capitães · '+fdt(cdate);$('esave').textContent=isAdm()?'Publicar na convocatória':'Enviar para aprovação';
   $('eother').textContent='Sortear de novo';
-  $('ehelp').textContent='Os dois sorteados escolhem as equipas. Depois o apontador regista o jogo com as equipas e o resultado; o capitão da equipa vencedora ganha 1 ponto extra.';
+  $('ehelp').textContent='Saem sempre, à sorte, dois dos que foram capitães menos vezes, para todos serem capitães o mesmo número de vezes. Os dois sorteados escolhem as equipas. Depois o apontador regista o jogo com as equipas e o resultado; o capitão da equipa vencedora ganha 1 ponto extra.';
   for(const id of ['eother','esave'])$(id).disabled=pool.length<2;
   if(pool.length<2){caps=null;$('einfo').textContent='';$('epitch').innerHTML='<div class="card" style="grid-column:1/-1"><p style="margin:0">São precisos pelo menos 2 jogadores confirmados na <a href="#convocatoria">Convocatória</a> para sortear os capitães.</p></div>';return}
   if(!keep||!caps||caps.d!==cdate||caps.n!==P.go.join('|')||!pool.includes(caps.a)||!pool.includes(caps.b))drawCaps();
