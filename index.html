@@ -650,7 +650,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.1';
-const BUILD='20261126113657';
+const BUILD='20261126113740';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -1106,12 +1106,12 @@ function renderConv(){
   const t=(conv[cdate]||{}).equipas;
   $('cteams').classList.toggle('hide',!t);
   /* equipas publicadas: os jogadores deixam de ver quem disse que vai e veem só as equipas */
-  const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);$('clists').classList.toggle('hide',pub);$('cadmnote').classList.toggle('hide',!(t&&isApo()));
+  const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);$('clists').classList.toggle('hide',pub);$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm());
   if(!t||t.modo==='capitaes')delete $('cteams').dataset.k;
   if(t&&t.modo==='capitaes'){$('cteams').innerHTML=`<h2 style="margin-top:0">Capitães sorteados</h2><p class="tag" style="margin:0 0 8px">Os dois capitães escolhem as equipas. O capitão da equipa vencedora ganha 1 ponto extra.</p><div class="pitch">${[['Equipa 1',t.capA,'a'],['Equipa 2',t.capB,'b']].map(([l,c,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes===k?'De coletes':'Sem coletes'}</span></h3><p class="big" style="margin:0">${esc(c)}<span class="cap">C</span></p></div>`).join('')}</div>`}
   else if(t){const k=cdate+'|'+JSON.stringify(t);if($('cteams').dataset.k!==k){$('cteams').dataset.k=k;$('cteams').innerHTML=lineupHTML(t,cdate)}}
 }
-$('cavisar').addEventListener('click',async()=>{if(!isApo()||!window.SB)return;const P=presence(cdate);
+$('cavisar').addEventListener('click',async()=>{if(!isAdm()||!window.SB)return;const P=presence(cdate);
   if(!confirm('Enviar agora o aviso das equipas aos '+P.go.length+' convocados?'))return;const b=$('cavisar');b.disabled=true;
   try{const {data,error}=await window.SB.functions.invoke('notificar',{body:{equipas:cdate,forcar:true}});
     note(error?'Não foi possível enviar o aviso ('+error.message+').':'Aviso enviado'+(data&&data.enviados!=null?' para '+data.enviados+' telemóve'+(data.enviados===1?'l':'is'):'')+'.')}catch(x){note('Não foi possível enviar o aviso.')}
