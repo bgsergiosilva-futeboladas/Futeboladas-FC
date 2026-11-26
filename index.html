@@ -509,7 +509,14 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <ul class="qlist" id="pgrid"></ul>
 <p class="tag" style="margin:10px 0 0">Liga o interruptor de quem pagou. Toca no nome para dispensar alguém nesse mês.</p></div>
 <div class="two" style="margin-top:14px">
-<div class="card"><h2>Caixa</h2><div class="scroll"><table id="pcash"></table></div><div class="row" style="margin-top:10px"><label for="psi" style="margin:0">Saldo inicial (€)</label><input type="number" id="psi" step="0.01" style="width:8em"><button class="btn" id="psisave" type="button">Guardar</button></div>
+<div class="card"><h2>Caixa</h2><div class="scroll"><table id="pcash"></table></div><div class="row" style="margin-top:10px"><button class="btn" id="psfix" type="button">Corrigir saldo</button><span class="tag" style="margin:0">Só para acertar com o valor real da conta.</span></div>
+<div id="psform" class="hide" style="margin-top:10px;padding:12px;border-radius:14px;border:1px solid #e0a030;background:color-mix(in srgb,#e0a030 10%,transparent)">
+<p style="margin:0 0 6px"><b>Acerto de saldo</b><br><span class="tag" style="margin:0" id="psnow"></span></p>
+<label for="psreal">Saldo real da conta (€)</label><input type="number" id="psreal" step="0.01" inputmode="decimal">
+<label for="psjus">Justificação (obrigatória)</label><textarea id="psjus" rows="2" maxlength="200" placeholder="Ex.: comissão do banco de novembro; dinheiro do jantar que não foi registado" style="width:100%;box-sizing:border-box"></textarea>
+<p class="tag" id="psdif" style="margin:6px 0 0"></p><p class="err" id="psmsg" style="margin:4px 0 0"></p>
+<div class="row" style="margin-top:8px;gap:8px"><button class="btn pri" id="psok" type="button">Registar acerto</button><button class="btn" id="psno" type="button">Cancelar</button></div>
+<p class="tag" style="margin:8px 0 0">O acerto fica como um movimento na caixa deste mês, com a justificação, e no registo de alterações com o teu nome.</p></div>
 <h3 style="margin:16px 0 4px">MB WAY para receber quotas</h3><p class="tag" style="margin:0 0 6px">Aparece aos jogadores em "As minhas quotas" para pagarem diretamente.</p><div class="row" style="align-items:end"><div style="flex:1 1 9em"><label for="mbn">Telemóvel MB WAY</label><input type="tel" id="mbn" inputmode="tel" placeholder="9xx xxx xxx"></div><div style="flex:1 1 9em"><label for="mbt">Titular</label><input type="text" id="mbt" placeholder="Nome do tesoureiro"></div><button class="btn" id="mbsave" type="button">Guardar</button></div><p class="tag" id="mbmsg"></p></div>
 <div class="card pay hide" id="pavisos"></div>
 <div class="card"><h2>Quem deve</h2><ul class="plist" id="pdebt"></ul></div>
@@ -522,7 +529,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="row" style="margin-top:8px;gap:14px"><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="radio" name="xcd" value="s" checked> Saída (despesa)</label><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="radio" name="xcd" value="e"> Entrada de dinheiro</label></div>
 <div class="row" style="margin-top:8px"><button class="btn pri" id="xcok" type="button">Criar categoria</button><button class="btn" id="xcno" type="button">Cancelar</button></div></div>
 <div class="row" style="margin-top:10px"><button class="btn pri" id="xadd" type="button">Registar</button><span class="tag" id="xmsg"></span></div></div>
-<div class="card"><h2>Movimentos registados</h2><ul class="plist" id="xlist"></ul></div>
+<details class="card" id="xbox"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Movimentos registados</h2><span class="tag" style="margin:0" id="xsum"></span></summary><ul class="plist" id="xlist" style="margin-top:8px"></ul><button class="btn hide" id="xmore" type="button" style="margin-top:8px">Ver mais</button></details>
 </div>
 <div class="card adm" id="rlog" style="margin-top:14px"><div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">Registo de alterações</h2><button class="btn" id="rlogb" type="button">Ver registo</button></div>
 <p class="tag" style="margin:4px 0 0">Quem mexeu nas quotas, nos movimentos de caixa, no saldo e no MB WAY. Só o administrador vê; ninguém o consegue alterar.</p>
@@ -1387,9 +1394,9 @@ $('esave').addEventListener('click',async()=>{if(games.some(x=>x.data===cdate&&(
 const PSTART='2025-12';
 function monthsList(){const out=[];let k=PSTART;const now=mkey(today());while(k<=now){out.push(k);k=mkAdd(k,1)}return out}
 const feeOf=k=>pags[k]&&pags[k].valor!=null?pags[k].valor:feeDefault(k);
-const XT={campo:'Pagamento do campo',jantar:'Jantar',bola:'Bola / material',outra:'Outra despesa',entrada:'Outra entrada'};
+const XT={campo:'Pagamento do campo',jantar:'Jantar',bola:'Bola / material',outra:'Outra despesa',entrada:'Outra entrada','acerto+':'Acerto de saldo','acerto-':'Acerto de saldo'};
 const xcats=()=>caixa.cats||[],xLabel=t=>XT[t]||(xcats().find(c=>c.id===t)||{}).nome||'Despesa';
-const isEnt=t=>t==='entrada'||!!(xcats().find(c=>c.id===t)||{}).ent;
+const isEnt=t=>t==='entrada'||t==='acerto+'||!!(xcats().find(c=>c.id===t)||{}).ent;
 function renderXt(){const sel=$('xt');if(document.activeElement===sel)return;const v=sel.value||'campo';
   const fixS=['campo','jantar','bola','outra'],cs=xcats();
   sel.innerHTML='<optgroup label="Saídas">'+fixS.map(k=>`<option value="${k}">${XT[k]}</option>`).join('')+cs.filter(c=>!c.ent).map(c=>`<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('')+'</optgroup>'+
@@ -1454,16 +1461,35 @@ function renderPay(){
   $('pcash').innerHTML=`<thead><tr><th class="l">Mês</th><th>Quotas</th><th>Outras entradas</th><th>Campo</th><th>Despesas</th><th>Diferença</th></tr></thead><tbody>`+
     [...L.cash].reverse().map(c=>`<tr><td class="l">${mshort(c.k)}</td><td>${euro(c.rec)}</td><td>${c.ent?euro(c.ent):'–'}</td><td>${c.campo?'−'+euro(c.campo):'–'}</td><td>${c.out?'−'+euro(c.out):'–'}</td><td class="${c.dif<0?'owe':'paid'}">${euro(c.dif)}</td></tr>`).join('')+
     `<tr><td class="l">Saldo inicial</td><td colspan="4" class="tag" style="text-align:left">antes de ${mname(PSTART).toLowerCase()}</td><td>${euro(+(caixa.saldoInicial||0))}</td></tr></tbody><tfoot><tr><th class="l">Saldo</th><th colspan="4"></th><th class="${L.saldo<0?'owe':'paid'}">${euro(L.saldo)}</th></tr></tfoot>`;
-  if(document.activeElement!==$('psi'))$('psi').value=+(caixa.saldoInicial||0);
+  psSaldo=L.saldo;if(!$('psform').classList.contains('hide'))psDif();
   /* devedores */
   const dl=Object.entries(L.deb).sort((a,b)=>b[1].reduce((s,k)=>s+feeOf(k),0)-a[1].reduce((s,k)=>s+feeOf(k),0)||a[0].localeCompare(b[0],'pt'));
   $('pdebt').innerHTML=dl.map(([n,ks])=>`<li><span>${esc(n)}<br><span class="tag" style="margin:0">${ks.map(mshort).join(', ')}</span></span><span class="owe">${euro(ks.reduce((s,k)=>s+feeOf(k),0))}</span></li>`).join('')||'<li class="paid">Ninguém deve nada.</li>';
   /* saídas */
   const xs=L.ms.flatMap(k=>((pags[k]||{}).mov||[]).map((x,i)=>({...x,k,i}))).sort((a,b)=>a.data<b.data?1:-1);
-  $('xlist').innerHTML=xs.map(x=>`<li><span>${esc(xLabel(x.tipo))}${x.desc?' · '+esc(x.desc):''}<br><span class="tag" style="margin:0">${fdt(x.data)}</span></span><span class="mini"><span class="${isEnt(x.tipo)?'paid':'owe'}">${isEnt(x.tipo)?'+':'−'}${euro(x.valor)}</span><button class="btn no" data-xk="${x.k}" data-xi="${x.i}" aria-label="Apagar">✕</button></span></li>`).join('')||'<li class="tag">Sem movimentos registados.</li>';
+  $('xsum').textContent=xs.length?xs.length+' movimento'+(xs.length>1?'s':'')+' · último a '+fdt(xs[0].data):'nenhum';
+  $('xmore').classList.toggle('hide',xs.length<=xShow);$('xmore').textContent='Ver mais ('+(xs.length-xShow)+')';
+  $('xlist').innerHTML=xs.slice(0,xShow).map(x=>`<li><span>${esc(xLabel(x.tipo))}${x.desc?' · '+esc(x.desc):''}<br><span class="tag" style="margin:0">${fdt(x.data)}</span></span><span class="mini"><span class="${isEnt(x.tipo)?'paid':'owe'}">${isEnt(x.tipo)?'+':'−'}${euro(x.valor)}</span><button class="btn no" data-xk="${x.k}" data-xi="${x.i}" aria-label="Apagar">✕</button></span></li>`).join('')||'<li class="tag">Sem movimentos registados.</li>';
   renderXt();if(!$('xd').value)$('xd').value=today();
 }
-$('psisave').addEventListener('click',async()=>{const v=Math.round(+$('psi').value*100)/100;if(isNaN(v))return;await save('config/caixa',{...caixa,saldoInicial:v})});
+/* acerto de saldo: em vez de mexer no saldo inicial, regista um movimento "Acerto de saldo" com justificação obrigatória */
+let psSaldo=0,xShow=10;
+$('xmore').addEventListener('click',()=>{xShow+=20;renderPay()});
+const r2=v=>Math.round(v*100)/100;
+function psDif(){$('psnow').textContent='Saldo na app: '+euro(psSaldo);const v=$('psreal').value;
+  if(v===''||isNaN(+v))return $('psdif').textContent='';const d=r2(+v-psSaldo);
+  $('psdif').innerHTML=d===0?'Não há diferença: não é preciso acerto.':`Vai ser registado um acerto de <b class="${d>0?'paid':'owe'}">${d>0?'+':'−'}${euro(Math.abs(d))}</b>.`}
+$('psfix').addEventListener('click',()=>{if(!isTes())return;$('psform').classList.remove('hide');$('psreal').value='';$('psjus').value='';$('psmsg').textContent='';psDif();$('psreal').focus()});
+$('psno').addEventListener('click',()=>$('psform').classList.add('hide'));
+$('psreal').addEventListener('input',psDif);
+$('psok').addEventListener('click',async()=>{if(!isTes())return;const v=$('psreal').value,j=$('psjus').value.trim().replace(/\s+/g,' ');
+  if(v===''||isNaN(+v))return $('psmsg').textContent='Escreve o saldo real da conta.';
+  const d=r2(+v-psSaldo);if(d===0)return $('psmsg').textContent='O saldo já está certo.';
+  if(j.length<10)return $('psmsg').textContent='Explica o motivo do acerto (pelo menos 10 caracteres).';
+  if(!confirm('Registar um acerto de '+(d>0?'+':'−')+euro(Math.abs(d))+'?\n\nSaldo: '+euro(psSaldo)+' → '+euro(r2(+v))+'\nMotivo: '+j))return;
+  const k=mkey(today()),c=pags[k]||{};const mov=[...(c.mov||[]),{tipo:d>0?'acerto+':'acerto-',valor:Math.abs(d),desc:j,data:today(),antes:psSaldo,depois:r2(+v)}];
+  const b=$('psok');b.disabled=true;const ok=await save('pagamentos/'+k,{...c,mov});b.disabled=false;
+  if(ok){$('psform').classList.add('hide');note('Acerto registado: saldo '+euro(r2(+v))+'.')}else $('psmsg').textContent='Não foi possível gravar.'});
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);note('Copiado: '+t)}catch(x){prompt('Copia:',t)}}
 const MBW_AND='intent://#Intent;package=pt.sibs.android.mbway;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=pt.sibs.android.mbway')+';end';
 const MBW_IOS='https://apps.apple.com/pt/app/mb-way/id918126133';
@@ -1545,7 +1571,7 @@ function rlogLines(r){
     for(const n of ia)if(!id.includes(n))out.push(`Quota de ${m}: voltou a cobrar <b>${e(n)}</b>`);
     const ma=A.mov||[],md=D.mov||[],sig=x=>JSON.stringify(x),sa=ma.map(sig),sd=md.map(sig);
     const mv=x=>`${e(xLabel(x.tipo))}${x.desc?' · '+e(x.desc):''} ${isEnt(x.tipo)?'+':'−'}${euro(x.valor)} (${fdt(x.data)})`;
-    md.forEach((x,i)=>{if(!sa.includes(sd[i]))out.push('Caixa: registou o movimento '+mv(x))});
+    md.forEach((x,i)=>{if(!sa.includes(sd[i]))out.push(/^acerto/.test(x.tipo)?`⚖️ Caixa: <b>acerto de saldo</b> ${x.tipo==='acerto+'?'+':'−'}${euro(x.valor)}${x.antes!=null?' ('+euro(x.antes)+' → '+euro(x.depois)+')':''} · motivo: “${e(x.desc||'')}”`:'Caixa: registou o movimento '+mv(x))});
     ma.forEach((x,i)=>{if(!sd.includes(sa[i]))out.push('Caixa: apagou o movimento '+mv(x))});
     if(A.valor!==D.valor&&(A.valor!=null||D.valor!=null))out.push(`Quota de ${m}: valor ${A.valor!=null?euro(A.valor):'automático'} → ${D.valor!=null?euro(D.valor):'automático'}`);
     if(r.acao==='delete')out.push(`Apagou todos os registos de ${m}`);
