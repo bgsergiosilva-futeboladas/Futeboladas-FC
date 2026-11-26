@@ -298,15 +298,17 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     const assin = JSON.stringify([e.a, e.b, e.capA, e.capB, e.coletes]);
     let h = 0; for (let i = 0; i < assin.length; i++) h = (h * 31 + assin.charCodeAt(i)) | 0;
     const { data: ant } = await sb.from("notif_log").select("chave").like("chave", `equipas-pub|${data}|%`);
-    if ((await sb.from("notif_log").insert({ chave: `equipas-pub|${data}|${h}` })).error) return json({ feito: [] });
+    const forcar = !!body.forcar; // botão "Avisar convocados": envia sempre, sem mexer nas equipas
+    const chave = forcar ? `equipas-man|${data}|${Date.now()}` : `equipas-pub|${data}|${h}`;
+    if ((await sb.from("notif_log").insert({ chave })).error) return json({ feito: [] });
     const P = presenca(D, data);
     const para = Object.entries(D.acessos as Record<string, Any>).filter(([, x]) => x && x.jogador && P.go.includes(x.jogador)).map(([uid]) => uid);
     const dia = data === lisboa(new Date()).data ? "de hoje" : `de quinta, ${fdt(data)}`;
     const corpo = e.modo === "capitaes"
       ? `Capitães sorteados: ${e.capA} e ${e.capB}. Eles escolhem as equipas no campo.`
       : `Já temos o 7 inicial de cada equipa! Vê em que equipa jogas e quem leva coletes.`;
-    const n = await enviar(sb, para, { title: (ant && ant.length ? "Equipas atualizadas para o jogo " : "Equipas para o jogo ") + dia + " ⚽", body: corpo, url: "/#convocatoria" });
-    await sb.from("notif_log").update({ n }).eq("chave", `equipas-pub|${data}|${h}`);
+    const n = await enviar(sb, para, { title: (!forcar && ant && ant.length ? "Equipas atualizadas para o jogo " : "Equipas para o jogo ") + dia + " ⚽", body: corpo, url: "/#convocatoria" });
+    await sb.from("notif_log").update({ n }).eq("chave", chave);
     return json({ enviados: n });
   }
 
