@@ -674,6 +674,8 @@ async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
 setInterval(checkVersion,5*60*1000);setTimeout(checkVersion,3000);
 const SUB='Substituto',OUT='__outro__',MAXJ=14;
+/* o jogo já começou (ou já tem resultado / foi cancelado): acabam as ações de antes do jogo */
+const jogoComecou=d=>Date.now()>=gameStart(d)||games.some(g=>g.data===d&&(g.r||g.cancelado));
 const ICONS={classificacao:'M4 20h16M6 16V10M12 16V4M18 16v-8',jogos:'M4 5h16v14H4zM4 10h16M9 5v14',convocatoria:'M8 4h8v3H8zM6 6h12v14H6zM9 12l2 2 4-4',equipas:'M8 8a2.5 2.5 0 1 0 0-.1M16 8a2.5 2.5 0 1 0 0-.1M3 19c0-3 2.5-5 5-5s5 2 5 5M11 19c0-3 2.5-5 5-5s5 2 5 5',pagamentos:'M3 7h18v10H3zM3 11h18M7 15h3',jogadores:'M12 8a3 3 0 1 0 0-.1M5 20c0-4 3-6 7-6s7 2 7 6'};
 const TABS=[['classificacao','Tabela','all'],['jogos','Jogos','all'],['convocatoria','Convocatória','all'],['equipas','Equipas','apo'],['pagamentos','Quotas','all'],['jogadores','Jogadores','all']];
 const PAPEL={admin:'Administrador',tesoureiro:'Tesoureiro',apontador:'Apontador',jogador:'Jogador'};
@@ -1138,7 +1140,7 @@ function renderConv(){
   const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);$('clists').classList.toggle('hide',pub);
   /* admin e apontadores: com equipas publicadas, a convocatória fica numa secção fechada (abre-se ao tocar) */
   const fold=!!t&&isApo(),fk=fold?cdate:'';$('cfold').classList.toggle('fold',fold);$('cfold').classList.toggle('hide',pub);
-  if($('cfold').dataset.k!==fk){$('cfold').dataset.k=fk;$('cfold').open=!fold}$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm());$('crec').classList.toggle('hide',!(t&&isAdm()));if($('crec').dataset.d!==cdate){$('crec').dataset.d=cdate;$('crec').open=false}
+  if($('cfold').dataset.k!==fk){$('cfold').dataset.k=fk;$('cfold').open=!fold}$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm()||jogoComecou(cdate));$('crec').classList.toggle('hide',!(t&&isAdm()));if($('crec').dataset.d!==cdate){$('crec').dataset.d=cdate;$('crec').open=false}
   if(!t||t.modo==='capitaes')delete $('cteams').dataset.k;
   if(t&&t.modo==='capitaes'){$('cteams').innerHTML=`<h2 style="margin-top:0">Capitães sorteados</h2><p class="tag" style="margin:0 0 8px">Os dois capitães escolhem as equipas. O capitão da equipa vencedora ganha 1 ponto extra.</p><div class="pitch">${[['Equipa 1',t.capA,'a'],['Equipa 2',t.capB,'b']].map(([l,c,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes===k?'De coletes':'Sem coletes'}</span></h3><p class="big" style="margin:0">${esc(c)}<span class="cap">C</span></p></div>`).join('')}</div>`}
   else if(t){const g0=games.find(x=>x.data===cdate)||{},k=cdate+'|'+JSON.stringify(t)+'|'+(g0.r||'')+(g0.cancelado?'c':'')+(g0.coletes||'');if($('cteams').dataset.k!==k){$('cteams').dataset.k=k;$('cteams').innerHTML=lineupHTML(t,cdate)}}
@@ -1181,7 +1183,7 @@ async function loadRec(){const box=$('crecb');if(!box||!isAdm()||!window.SB)retu
     box.innerHTML=h;
   }catch(x){box.innerHTML='<p class="tag">Não foi possível ler o registo dos avisos'+(x&&x.message?' ('+esc(x.message)+')':'')+'. Confirma que a base de dados já tem a atualização.</p>'}}
 $('crec').addEventListener('toggle',()=>{if($('crec').open)loadRec()});
-$('cavisar').addEventListener('click',async()=>{if(!isAdm()||!window.SB)return;const P=presence(cdate);
+$('cavisar').addEventListener('click',async()=>{if(!isAdm()||!window.SB||jogoComecou(cdate))return;const P=presence(cdate);
   if(!confirm('Enviar agora o aviso das equipas aos '+P.go.length+' convocados?'))return;const b=$('cavisar');b.disabled=true;
   try{const {data,error}=await window.SB.functions.invoke('notificar',{body:{equipas:cdate,forcar:true}});
     note(error?'Não foi possível enviar o aviso ('+error.message+').':'Aviso enviado'+(data&&data.enviados!=null?' para '+data.enviados+' telemóve'+(data.enviados===1?'l':'is'):'')+'. Vê quem recebeu em “📬 Quem recebeu”.');if(!error){$('crec').open=true;loadRec()}}catch(x){note('Não foi possível enviar o aviso.')}
