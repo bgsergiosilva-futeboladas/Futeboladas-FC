@@ -610,7 +610,7 @@ function mvpResults(games,roster,mvpvotos,now,extra){
   const names=new Set(roster.map(r=>r.nome)),by={},win={};
   for(const g of games.filter(g=>mvpGame(g,now))){
     const base=[...g.a,...g.b];const cand=[...new Set(base.length<10&&extra?[...base,...extra(g)]:base)].filter(n=>names.has(n)),closeAt=mvpCloseAt(g.data),counts={};let total=0;
-    for(const v of Object.values(mvpvotos||{})){const x=v.v&&v.v[g.id];if(!x||!cand.includes(x.nome)||x.nome===v.jogador||(x.t&&x.t>closeAt))continue;counts[x.nome]=(counts[x.nome]||0)+1;total++}
+    for(const v of Object.values(mvpvotos||{})){const x=v.v&&v.v[g.id];if(!x||!cand.includes(x.nome)||!cand.includes(v.jogador)||x.nome===v.jogador||(x.t&&x.t>closeAt))continue;/* só conta o voto de quem jogou */counts[x.nome]=(counts[x.nome]||0)+1;total++}
     const open=now<=closeAt,max=Math.max(0,...Object.values(counts));
     const winners=!open&&max>0?Object.keys(counts).filter(n=>counts[n]===max):[];
     by[g.id]={open,closeAt,counts,total,winners,cand,max};if(winners.length)win[g.id]=winners;
@@ -1647,7 +1647,7 @@ function renderMVP(){
   let h='';
   for(const g of open){const m=MVP.by[g.id],mine=((mvpvotos[me.id]||{}).v||{})[g.id];
     h+=`<div class="card mvp" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><div><h2 style="margin:0">Vota no MVP</h2><span class="tag" style="margin:0">Jogo de ${fdt(g.data)} · fecha ${fdt(iso(new Date(m.closeAt)))} às 23:59 · ${m.total} voto${m.total===1?'':'s'}</span></div>${mine?`<span class="tag">O teu voto: <b>${esc(mine.nome)}</b></span>`:''}</div>
-    ${!me.id?'<p class="tag" style="margin:8px 0 0">Inicia sessão para votar.</p>':!mp?'<p class="tag" style="margin:8px 0 0">A tua conta tem de estar associada a um jogador para votar.</p>':
+    ${!me.id?'<p class="tag" style="margin:8px 0 0">Inicia sessão para votar.</p>':!mp?'<p class="tag" style="margin:8px 0 0">A tua conta tem de estar associada a um jogador para votar.</p>':!m.cand.includes(mp)?'<p class="tag" style="margin:8px 0 0">Só vota quem jogou neste jogo.</p>':
     (()=>{const sv=mvpSel[g.id]??(mine?mine.nome:'');return `<div class="row" style="margin:10px 0 0;gap:8px;flex-wrap:nowrap"><select data-mvs="${g.id}" aria-label="Escolhe o MVP" style="flex:1 1 auto;min-width:0"><option value="">— escolhe o jogador —</option>${m.cand.filter(n=>n!==mp).sort((a,b)=>a.localeCompare(b,'pt')).map(n=>`<option${n===sv?' selected':''}>${esc(n)}</option>`).join('')}</select><button type="button" class="btn pri" style="white-space:nowrap;flex:none" data-mv="${g.id}" ${!sv||(mine&&mine.nome===sv)?'disabled':''}>${mine?'Mudar voto':'Confirmar'}</button></div><p class="tag" style="margin:6px 0 0">Podes mudar o voto até fechar. Os resultados só aparecem no fim. Não podes votar em ti.</p>`})()}</div>`}
   if(lastClosed&&MVP.by[lastClosed.id].total){const m=MVP.by[lastClosed.id];h+=`<div class="card mvp" style="margin-bottom:14px"><span class="tag" style="margin:0">MVP do jogo de ${fdt(lastClosed.data)}</span><p class="big" style="margin:2px 0 0">${m.winners.length?esc(m.winners.join(' e '))+' <span class="tag">+1 ponto · '+m.max+' voto'+(m.max>1?'s':'')+'</span>':'Sem votos'}</p></div>`}
   $('mvpA').innerHTML=h;$('mvpB').innerHTML=h;
@@ -1656,6 +1656,7 @@ var mvpSel={};
 document.addEventListener('change',e=>{const s=e.target;if(!s.dataset||!s.dataset.mvs)return;mvpSel[s.dataset.mvs]=s.value;renderMVP()});
 document.addEventListener('click',async e=>{const b=e.target.closest('button[data-mv]');if(!b||!me.id||!myPlayer())return;
   const nome=mvpSel[b.dataset.mv]||(b.parentElement.querySelector('select')||{}).value;if(!nome)return note('Escolhe primeiro o jogador.');
+  if(!(MVP.by[b.dataset.mv]||{cand:[]}).cand.includes(myPlayer()))return note('Só vota quem jogou neste jogo.');
   const cur=mvpvotos[me.id]||{},v={...(cur.v||{})};v[b.dataset.mv]={nome,t:Date.now()};
   if(Date.now()>mvpCloseAt(games.find(g=>g.id===b.dataset.mv).data))return note('A votação já fechou.');
   b.disabled=true;if(await save('mvpvotos/'+me.id,{jogador:myPlayer(),v})){delete mvpSel[b.dataset.mv];note('Voto registado: '+nome+'.')}else b.disabled=false});
@@ -1736,8 +1737,27 @@ async function renderAccess(){
   list.sort((x,y)=>(y===me.id)-(x===me.id)||nmo(x).localeCompare(nmo(y),'pt'));
   keepOpen($('alist'),()=>$('alist').innerHTML=list.map(id=>{const a=acessos[id]||{},own=id===me.id&&me.owner,rs=own?[...new Set(['admin',...rolesOf(a)])]:rolesOf(a);
     return `<li class="acc"><details data-acc="${id}"><summary>${avatar(a.jogador||'?')}<span class="acc-n"><b>${esc(nmo(id))}</b>${id===me.id?' <span class="tag">(tu)</span>':''}<br><span class="tag" style="margin:0">${esc(nm(id))}</span></span><span class="acc-r">${rs.map(r=>`<i style="--c:${(R[r]||R.jogador)[1]}">${(R[r]||[r])[0]}</i>`).join('')}</span></summary>
-    <div class="acc-b"><label>Jogador</label><select data-aj="${id}" aria-label="Jogador">${plOpts(a.jogador)}</select><label>Perfis</label>${roleChecks(id,rs,'data-ar')}${own?'':`<button class="btn no" data-ax="${id}" style="align-self:flex-start">Remover acesso</button>`}</div></details></li>`}).join(''));
+    <div class="acc-b"><label>Jogador</label><select data-aj="${id}" aria-label="Jogador">${plOpts(a.jogador)}</select><label>Perfis</label>${roleChecks(id,rs,'data-ar')}${id===me.id?'':`<div class="pwr"><button class="btn" type="button" data-apw="${id}" style="align-self:flex-start">🔑 Repor password</button>${pwBox(id)}</div>`}${own?'':`<button class="btn no" data-ax="${id}" style="align-self:flex-start">Remover acesso</button>`}</div></details></li>`}).join(''));
 }
+/* ---------- admin: repor password (gera uma temporária; a pessoa é obrigada a mudar ao entrar) ---------- */
+const pwRes={};
+const pwMsg=(r)=>'Olá! A tua password da app Futeboladas FC foi reposta.\n\nEmail: '+r.email+'\nPassword temporária: '+r.pass+'\n\nEntra em '+location.origin+' e vais ter de escolher uma password nova.';
+function pwBox(id){const r=pwRes[id];if(!r)return'';
+  if(r.erro)return`<p class="err" style="margin:6px 0 0">${esc(r.erro)}</p>`;
+  return`<div class="card" style="margin-top:8px;padding:12px;border-color:var(--gold)"><p class="tag" style="margin:0 0 4px">Password temporária para ${esc(r.email||'esta conta')}:</p><p style="margin:0 0 8px;font:800 22px/1.2 ui-monospace,monospace;letter-spacing:.04em;user-select:all">${esc(r.pass)}</p><div class="row" style="gap:8px"><button class="btn pri" type="button" data-apwc="${id}">Copiar mensagem</button><button class="btn" type="button" data-apwx="${id}">Esconder</button></div><p class="tag" style="margin:8px 0 0">Envia-a só à própria pessoa. Ao entrar, a app obriga-a a escolher uma password nova. Some daqui em 10 minutos.</p></div>`}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-apw],button[data-apwc],button[data-apwx]');if(!b||!isAdm())return;
+  if(b.dataset.apwx){delete pwRes[b.dataset.apwx];renderAccess();return}
+  if(b.dataset.apwc){const r=pwRes[b.dataset.apwc];if(!r)return;try{await navigator.clipboard.writeText(pwMsg(r));note('Mensagem copiada. Cola-a no WhatsApp da pessoa.')}catch(x){note('Não deu para copiar: seleciona a password e copia à mão.')}return}
+  const id=b.dataset.apw,quem=(acessos[id]||{}).jogador||'esta conta';
+  if(!confirm('Repor a password de '+quem+'?\n\nA password atual deixa de funcionar. Vais receber uma temporária para lhe enviares.'))return;
+  if(!window.SB)return;b.disabled=true;b.textContent='A gerar…';
+  try{const {data,error}=await window.SB.functions.invoke('notificar',{body:{resetpass:id}});
+    let msg=data&&data.erro;if(error&&!msg){try{msg=(await error.context.json()).erro}catch(x){}}
+    pwRes[id]=data&&data.pass?{pass:data.pass,email:data.email}:{erro:msg||'Não foi possível repor a password.'}}
+  catch(x){pwRes[id]={erro:'Não foi possível repor a password.'}}
+  const keep=id;setTimeout(()=>{if(pwRes[keep]&&pwRes[keep].pass){delete pwRes[keep];renderAccess()}},10*60e3);
+  await renderAccess();const d=document.querySelector(`#alist details[data-acc="${id}"]`);if(d)d.open=true});
 $('rtab').addEventListener('change',async e=>{const s=e.target;if(!s.dataset.sk)return;await saveJogSk(s.dataset.sk,+s.value)});
 $('rtab').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!b.dataset.n)return;const mk=mkey(today());
   const n=b.dataset.n,r0=roster.find(r=>r.nome===n),sai=r0&&r0.ativo!==false;

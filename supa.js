@@ -93,6 +93,31 @@ function newPasswordScreen() {
   };
 }
 
+// depois de o administrador repor a password: é obrigatório escolher uma nova antes de entrar
+function forcedPasswordScreen() {
+  show(`<h2>Escolhe uma password nova</h2>
+  <p class="au-txt">O administrador repôs a tua password. Antes de continuar, escolhe uma password só tua.</p>
+  <form id="au-f" novalidate>
+    <label for="au-p">Password nova</label><input id="au-p" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="au-p2">Repete a password</label><input id="au-p2" type="password" autocomplete="new-password" minlength="8" required>
+    <p class="au-err" id="au-err" role="alert"></p>
+    <button class="au-btn" id="au-go">Guardar e entrar</button>
+  </form>
+  <button class="au-link" id="au-out" type="button">Terminar sessão</button>`);
+  $('au-out').onclick = () => window.FB.sair();
+  $('au-f').onsubmit = async e => {
+    e.preventDefault(); const p = $('au-p').value;
+    if (p.length < 8) return out('A password tem de ter pelo menos 8 caracteres.');
+    if (p !== $('au-p2').value) return out('As passwords não são iguais.');
+    if (/^[A-Za-z0-9]{4}-[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$/.test(p)) return out('Escolhe uma password diferente da temporária.');
+    const b = $('au-go'); busy(b, true, 'A guardar…');
+    const { data, error } = await sb.functions.invoke('notificar', { body: { novapass: p } });
+    if (error || !data || !data.ok) { busy(b, false, 'Guardar e entrar'); return out((data && data.erro) || 'Não foi possível guardar a password. Tenta outra vez.'); }
+    await sb.auth.refreshSession();
+    location.replace(location.pathname);
+  };
+}
+
 async function inviteScreen(code) {
   show('<h2>Convite</h2><p class="au-txt">A verificar o link…</p>');
   const { data, error } = await sb.rpc('info_convite', { c: code });
@@ -252,6 +277,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').cat
 async function enter(session) {
   user = session.user;
   marcaLogin();
+  if (session.user.app_metadata && session.user.app_metadata.mudar_pass) return forcedPasswordScreen();
   let acc;
   try { acc = await access(); } catch (e) { return show(`<h2>Sem ligação</h2><p class="au-txt">Não foi possível contactar o servidor. Verifica a internet e volta a abrir a app.</p>`); }
   if (!acc.member && !acc.pending) return blockedScreen();

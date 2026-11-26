@@ -124,7 +124,7 @@ export function planear(now: Date, D: Any) {
       const gid = `g${qui.replace(/-/g, "")}`, fecho = lisEpoch(addDias(qui, 3), 23, 59, 59);
       const nomes = new Set(D.roster.map((r: Any) => r.nome)), cand = jogaram(g).filter((n: string) => nomes.has(n));
       const cont: Record<string, number> = {};
-      for (const v of Object.values(D.mvpvotos) as Any[]) { const x = v.v && v.v[gid]; if (!x || !cand.includes(x.nome) || x.nome === v.jogador || (x.t && x.t > fecho)) continue; cont[x.nome] = (cont[x.nome] || 0) + 1; }
+      for (const v of Object.values(D.mvpvotos) as Any[]) { const x = v.v && v.v[gid]; if (!x || !cand.includes(x.nome) || !cand.includes(v.jogador) || x.nome === v.jogador || (x.t && x.t > fecho)) continue; cont[x.nome] = (cont[x.nome] || 0) + 1; }
       const max = Math.max(0, ...Object.values(cont)), venc = max > 0 ? Object.keys(cont).filter((n) => cont[n] === max) : [];
       add("mvp-venc", deJog(venc), "🏆 Foste eleito MVP!", `Parabéns! Foste o MVP do jogo de quinta (${fdt(qui)}) com ${max} voto${max === 1 ? "" : "s"}. Ganhaste +1 ponto na tabela.`, "/#classificacao");
     }
@@ -247,6 +247,51 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
     const n = await enviar(sb, [u.user.id], { title: "Notificações ativas ✅", body: "A partir de agora recebes aqui os avisos das Futeboladas.", url: "/" });
     return json({ enviados: n });
+  }
+
+  // administrador repõe a password de uma conta: gera uma temporária e obriga a mudar no próximo login
+  if (body.resetpass) {
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");
+    const { data: u } = await sb.auth.getUser(token);
+    if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
+    const alvo = String(body.resetpass);
+    if (!/^[0-9a-f-]{36}$/i.test(alvo)) return json({ erro: "conta inválida" }, 400);
+    if (alvo === u.user.id) return json({ erro: "Não podes repor a tua própria password aqui." }, 400);
+    const D = await carregar(sb);
+    const { data: dn } = await sb.from("donos").select("user_id");
+    const donos = (dn || []).map((d: Any) => d.user_id);
+    const papeis = (uid: string) => { const a = D.acessos[uid] || {}; return Array.isArray(a.papeis) ? a.papeis : a.papel ? [a.papel] : []; };
+    const eDono = donos.includes(u.user.id);
+    if (!eDono && !papeis(u.user.id).includes("admin")) return json({ erro: "sem permissão" }, 403);
+    // o dono da app nunca pode ser reposto por aqui; outros administradores só pelo dono
+    if (donos.includes(alvo)) return json({ erro: "A password do dono da app não pode ser reposta aqui." }, 403);
+    if (papeis(alvo).includes("admin") && !eDono) return json({ erro: "Só o dono da app pode repor a password de outro administrador." }, 403);
+    if (!D.acessos[alvo]) return json({ erro: "Esta conta não tem acesso à app." }, 400);
+    const ALF = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    const rnd = crypto.getRandomValues(new Uint32Array(12));
+    const chars = Array.from(rnd, (x) => ALF[x % ALF.length]).join("");
+    const pass = `${chars.slice(0, 4)}-${chars.slice(4, 8)}-${chars.slice(8, 12)}`;
+    const { data: alvoU, error: e1 } = await sb.auth.admin.getUserById(alvo);
+    if (e1 || !alvoU || !alvoU.user) return json({ erro: "conta não encontrada" }, 404);
+    const { error } = await sb.auth.admin.updateUserById(alvo, { password: pass, app_metadata: { ...(alvoU.user.app_metadata || {}), mudar_pass: true } });
+    if (error) return json({ erro: "Não foi possível repor a password." }, 500);
+    console.log("resetpass", { por: u.user.id, alvo });
+    return json({ pass, email: alvoU.user.email || "" });
+  }
+
+  // o próprio utilizador escolhe a password nova depois de uma reposição pelo administrador
+  if (body.novapass) {
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer /i, "");
+    const { data: u } = await sb.auth.getUser(token);
+    if (!u || !u.user) return json({ erro: "sessão inválida" }, 401);
+    const { data: cur } = await sb.auth.admin.getUserById(u.user.id);
+    const md = (cur && cur.user && cur.user.app_metadata) || {};
+    if (!md.mudar_pass) return json({ erro: "Não há nenhuma mudança de password pendente." }, 400);
+    const p = String(body.novapass);
+    if (p.length < 8 || p.length > 72) return json({ erro: "A password tem de ter entre 8 e 72 caracteres." }, 400);
+    const { error } = await sb.auth.admin.updateUserById(u.user.id, { password: p, app_metadata: { ...md, mudar_pass: false } });
+    if (error) return json({ erro: "Não foi possível guardar a password." }, 500);
+    return json({ ok: true });
   }
 
   // admin/apontador gravou o resultado: avisar os outros
