@@ -334,6 +334,19 @@ create table if not exists public.notif_log (
   n      int
 );
 alter table public.notif_log enable row level security;
+-- quem recebeu cada aviso (por conta: e = recebeu, f = falhou, x = caducado, s = telemóveis); só o administrador lê
+alter table public.notif_log add column if not exists det jsonb;
+drop policy if exists "admin le avisos" on public.notif_log;
+create policy "admin le avisos" on public.notif_log for select to authenticated using (public.tem_papel('admin'));
+revoke insert, update, delete on public.notif_log from anon, authenticated;
+grant select on public.notif_log to authenticated;
+-- que contas têm notificações ativas (quantos telemóveis) — só responde ao administrador
+create or replace function public.notif_ativas() returns table(user_id uuid, n int)
+language sql stable security definer set search_path = public as $$
+  select p.user_id, count(*)::int from public.push_subs p where public.tem_papel('admin') group by p.user_id
+$$;
+revoke all on function public.notif_ativas() from public, anon;
+grant execute on function public.notif_ativas() to authenticated;
 
 -- Registo de alterações aos pagamentos (quotas, movimentos de caixa, saldo e MB WAY).
 -- Escrito pela própria base de dados (trigger), só o administrador lê, ninguém altera nem apaga.

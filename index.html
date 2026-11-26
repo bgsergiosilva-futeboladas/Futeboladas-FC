@@ -464,6 +464,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="ftv" id="ticket"></div>
 <div class="card hide" id="cteams" style="margin-top:14px"></div>
 <div class="row hide" id="cadmnote" style="margin:14px 2px 0;gap:10px;align-items:center;flex-wrap:nowrap"><p class="tag" style="margin:0;flex:1">As equipas já estão publicadas: os jogadores só veem as equipas. A convocatória abaixo só tu e os apontadores veem.</p><button class="btn pri" id="cavisar" type="button" style="flex:none">Avisar convocados</button></div>
+<details class="card hide" id="crec" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600;min-height:32px">📬 Quem recebeu o aviso das equipas</summary><div id="crecb" style="margin-top:8px"><p class="tag">A carregar…</p></div></details>
 <details id="cfold" open><summary class="card" id="cfoldh">📋 Ver convocatória e desistências</summary>
 <div class="card" id="mine" style="margin-top:14px"></div>
 <div class="two" id="clists" style="margin-top:14px">
@@ -1116,15 +1117,53 @@ function renderConv(){
   const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);$('clists').classList.toggle('hide',pub);
   /* admin e apontadores: com equipas publicadas, a convocatória fica numa secção fechada (abre-se ao tocar) */
   const fold=!!t&&isApo(),fk=fold?cdate:'';$('cfold').classList.toggle('fold',fold);$('cfold').classList.toggle('hide',pub);
-  if($('cfold').dataset.k!==fk){$('cfold').dataset.k=fk;$('cfold').open=!fold}$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm());
+  if($('cfold').dataset.k!==fk){$('cfold').dataset.k=fk;$('cfold').open=!fold}$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm());$('crec').classList.toggle('hide',!(t&&isAdm()));if($('crec').dataset.d!==cdate){$('crec').dataset.d=cdate;$('crec').open=false}
   if(!t||t.modo==='capitaes')delete $('cteams').dataset.k;
   if(t&&t.modo==='capitaes'){$('cteams').innerHTML=`<h2 style="margin-top:0">Capitães sorteados</h2><p class="tag" style="margin:0 0 8px">Os dois capitães escolhem as equipas. O capitão da equipa vencedora ganha 1 ponto extra.</p><div class="pitch">${[['Equipa 1',t.capA,'a'],['Equipa 2',t.capB,'b']].map(([l,c,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes===k?'De coletes':'Sem coletes'}</span></h3><p class="big" style="margin:0">${esc(c)}<span class="cap">C</span></p></div>`).join('')}</div>`}
   else if(t){const k=cdate+'|'+JSON.stringify(t);if($('cteams').dataset.k!==k){$('cteams').dataset.k=k;$('cteams').innerHTML=lineupHTML(t,cdate)}}
 }
+/* ---------- admin: quem recebeu os avisos das equipas (notif_log.det, só o admin lê) ---------- */
+const REC_TIPO={pub:'Equipas publicadas',man:'Avisar convocados',lem:'Lembrete no dia do jogo'};
+async function loadRec(){const box=$('crecb');if(!box||!isAdm()||!window.SB)return;const d=cdate;
+  box.innerHTML='<p class="tag">A carregar…</p>';
+  try{
+    const [lg,at]=await Promise.all([window.SB.from('notif_log').select('chave,enviado,n,det').like('chave','%'+d+'%'),window.SB.rpc('notif_ativas')]);
+    if(d!==cdate)return;
+    if(lg.error)throw lg.error;
+    const rows=(lg.data||[]).map(r=>({...r,tipo:r.chave.startsWith('equipas-pub|')?'pub':r.chave.startsWith('equipas-man|')?'man':r.chave==='equipas@'+d?'lem':null})).filter(r=>r.tipo).sort((a,b)=>a.enviado<b.enviado?-1:1);
+    const ativ=Object.fromEntries(((at&&at.data)||[]).map(x=>[x.user_id,x.n]));
+    const P=presence(d),conv=[...P.go];
+    const contas=n=>Object.entries(acessos).filter(([,a])=>a&&a.jogador===n).map(([u])=>u);
+    const hora=t=>{const o=new Date(t);return fdt(iso(o))+' às '+String(o.getHours()).padStart(2,'0')+':'+String(o.getMinutes()).padStart(2,'0')};
+    const estado=(n,det)=>{const us=contas(n);if(!us.length)return['👤','Sem conta na app','var(--mute)'];
+      if(!det)return null;const k={e:0,f:0,x:0,s:0,dentro:false};for(const u of us){const x=det[u];if(x){k.dentro=true;k.e+=x.e;k.f+=x.f;k.x+=x.x;k.s+=x.s}}
+      if(!k.dentro)return['—','Não estava na lista deste envio','var(--mute)'];
+      if(k.e)return['✅','Recebeu'+(k.e>1?' ('+k.e+' telemóveis)':''),'var(--win)'];
+      if(!k.s)return['🔕','Notificações não ativadas','var(--loss)'];
+      if(k.x)return['⚠️','Ativação caducou: tem de voltar a ativar','var(--loss)'];
+      return['⚠️','O envio falhou','var(--loss)']};
+    const linha=(n,e)=>`<li style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)"><span style="flex:none;width:22px;text-align:center">${e[0]}</span><b style="flex:1;min-width:0;font-weight:600">${esc(n)}</b><span style="flex:0 1 52%;font-size:13px;line-height:1.3;color:${e[2]};text-align:right">${e[1]}</span></li>`;
+    let h='';
+    if(!rows.length)h+='<p class="tag" style="margin:0 0 10px">Ainda não foi enviado nenhum aviso das equipas para este jogo.</p>';
+    for(const r of rows){
+      const est=conv.map(n=>[n,estado(n,r.det)]);
+      const ok=est.filter(([,e])=>e&&e[0]==='✅').length;
+      h+=`<h3 style="margin:14px 0 4px;font-size:15px">${REC_TIPO[r.tipo]} · ${hora(r.enviado)}</h3>`;
+      if(!r.det){h+=`<p class="tag" style="margin:0">Enviado para ${r.n??0} telemóve${r.n===1?'l':'is'}. Este envio foi antes do registo por pessoa, por isso não há detalhe.</p>`;continue}
+      h+=`<p class="tag" style="margin:0 0 4px">Recebido por <b>${ok} de ${conv.length}</b> convocados · ${r.n??0} telemóve${r.n===1?'l':'is'}.</p><ul style="list-style:none;margin:0;padding:0">`+
+        est.sort((a,b)=>(a[1][0]==='✅')-(b[1][0]==='✅')||a[0].localeCompare(b[0],'pt')).map(([n,e])=>linha(n,e)).join('')+'</ul>'}
+    /* estado atual: quem tem as notificações ativas neste momento */
+    const agora=conv.map(n=>{const us=contas(n);if(!us.length)return[n,['👤','Sem conta na app','var(--mute)']];const k=us.reduce((s,u)=>s+(ativ[u]||0),0);return[n,k?['🔔','Ativas'+(k>1?' ('+k+' telemóveis)':''),'var(--win)']:['🔕','Não ativadas','var(--loss)']]});
+    const sem=agora.filter(([,e])=>e[0]!=='🔔').sort((a,b)=>a[0].localeCompare(b[0],'pt'));
+    h+=`<h3 style="margin:16px 0 4px;font-size:15px">Notificações agora</h3><p class="tag" style="margin:0 0 4px">${sem.length?sem.length+' dos convocados não recebem avisos. No iPhone, a app tem de estar no ecrã principal e as notificações ativadas dentro dela.':'Todos os convocados têm as notificações ativas.'}</p>`+
+      (sem.length?'<ul style="list-style:none;margin:0;padding:0">'+sem.map(([n,e])=>linha(n,e)).join('')+'</ul>':'');
+    box.innerHTML=h;
+  }catch(x){box.innerHTML='<p class="tag">Não foi possível ler o registo dos avisos'+(x&&x.message?' ('+esc(x.message)+')':'')+'. Confirma que a base de dados já tem a atualização.</p>'}}
+$('crec').addEventListener('toggle',()=>{if($('crec').open)loadRec()});
 $('cavisar').addEventListener('click',async()=>{if(!isAdm()||!window.SB)return;const P=presence(cdate);
   if(!confirm('Enviar agora o aviso das equipas aos '+P.go.length+' convocados?'))return;const b=$('cavisar');b.disabled=true;
   try{const {data,error}=await window.SB.functions.invoke('notificar',{body:{equipas:cdate,forcar:true}});
-    note(error?'Não foi possível enviar o aviso ('+error.message+').':'Aviso enviado'+(data&&data.enviados!=null?' para '+data.enviados+' telemóve'+(data.enviados===1?'l':'is'):'')+'.')}catch(x){note('Não foi possível enviar o aviso.')}
+    note(error?'Não foi possível enviar o aviso ('+error.message+').':'Aviso enviado'+(data&&data.enviados!=null?' para '+data.enviados+' telemóve'+(data.enviados===1?'l':'is'):'')+'. Vê quem recebeu em “📬 Quem recebeu”.');if(!error){$('crec').open=true;loadRec()}}catch(x){note('Não foi possível enviar o aviso.')}
   b.disabled=false});
 $('cfillsel').addEventListener('change',e=>{const s=e.target.value===SUB;$('cfilln').classList.toggle('hide',!s);if(s)$('cfilln').focus()});
 $('cfillb').addEventListener('click',async()=>{const n=$('cfillsel').value;if(!n)return note('Escolhe primeiro o jogador ou “Substituto”.');

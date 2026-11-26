@@ -174,12 +174,20 @@ export function planear(now: Date, D: Any) {
 /* ------------------------------------------------------------------ servidor */
 const json = (o: Any, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type, x-cron-secret, apikey, x-client-info" } });
 
-async function enviar(sb: Any, para: string[], msg: Any) {
-  const { data: subs } = await sb.from("push_subs").select("endpoint,sub").in("user_id", para);
+// Envia a cada telemóvel das contas indicadas. Se "det" vier, regista por conta:
+//   e = telemóveis que receberam · f = falharam · x = subscrições caducadas (apagadas) · s = telemóveis registados
+async function enviar(sb: Any, para: string[], msg: Any, det?: Record<string, Any>) {
+  const { data: subs } = await sb.from("push_subs").select("endpoint,sub,user_id").in("user_id", para);
   let ok = 0;
+  if (det) for (const u of para) det[u] = { e: 0, f: 0, x: 0, s: 0 };
   for (const s of subs || []) {
-    try { await webpush.sendNotification(s.sub, JSON.stringify(msg), { TTL: 6 * 3600 }); ok++; }
-    catch (e: Any) { if (e && (e.statusCode === 404 || e.statusCode === 410)) await sb.from("push_subs").delete().eq("endpoint", s.endpoint); else console.error("push", e && e.statusCode, e && e.body); }
+    const d = det && det[s.user_id];
+    if (d) d.s++;
+    try { await webpush.sendNotification(s.sub, JSON.stringify(msg), { TTL: 6 * 3600 }); ok++; if (d) d.e++; }
+    catch (e: Any) {
+      if (e && (e.statusCode === 404 || e.statusCode === 410)) { await sb.from("push_subs").delete().eq("endpoint", s.endpoint); if (d) d.x++; }
+      else { console.error("push", e && e.statusCode, e && e.body); if (d) d.f++; }
+    }
   }
   return ok;
 }
@@ -307,9 +315,10 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
     const corpo = e.modo === "capitaes"
       ? `Capitães sorteados: ${e.capA} e ${e.capB}. Eles escolhem as equipas no campo.`
       : `Já temos o 7 inicial de cada equipa! Vê em que equipa jogas e quem leva coletes.`;
-    const n = await enviar(sb, para, { title: (!forcar && ant && ant.length ? "Equipas atualizadas para o jogo " : "Equipas para o jogo ") + dia + " ⚽", body: corpo, url: "/#convocatoria" });
-    await sb.from("notif_log").update({ n }).eq("chave", chave);
-    return json({ enviados: n });
+    const det: Record<string, Any> = {};
+    const n = await enviar(sb, para, { title: (!forcar && ant && ant.length ? "Equipas atualizadas para o jogo " : "Equipas para o jogo ") + dia + " ⚽", body: corpo, url: "/#convocatoria" }, det);
+    await sb.from("notif_log").update({ n, det }).eq("chave", chave);
+    return json({ enviados: n, det });
   }
 
   // o tesoureiro confirmou (ou não) um "Já paguei": avisar quem pagou
@@ -375,8 +384,9 @@ if (typeof Deno !== "undefined" && Deno.serve) Deno.serve(async (req) => {
   for (const p of plano) {
     const { error } = await sb.from("notif_log").insert({ chave: p.chave });
     if (error) continue; // já enviado
-    const n = await enviar(sb, p.para, { title: p.titulo, body: p.texto, url: p.url });
-    await sb.from("notif_log").update({ n }).eq("chave", p.chave);
+    const det: Record<string, Any> = {};
+    const n = await enviar(sb, p.para, { title: p.titulo, body: p.texto, url: p.url }, det);
+    await sb.from("notif_log").update({ n, det }).eq("chave", p.chave);
     feito.push({ chave: p.chave, pessoas: p.para.length, enviados: n });
   }
   const agora = body.agora ? new Date(body.agora) : new Date(), Lh = lisboa(agora);
