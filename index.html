@@ -96,6 +96,7 @@ h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 .lu-ft.res div{flex:1;text-align:center!important;padding:0}.lu-ft.res small{display:block;font:700 11px var(--f);letter-spacing:.08em;opacity:.8;margin-bottom:2px}
 .lu-ft.res.co{background:#f2c200;color:#2a2000}.lu-ft.res.sc{background:#c81d24;color:#fff}.lu-ft.res.dr{background:#1d1214;color:#fff}
 .lu-tv .l.fim{background:#1d1214}
+.stand tr.me td{background:light-dark(rgba(201,160,74,.18),rgba(201,160,74,.16))}.stand tr.me td.nm b,.stand tr.me td.nm{font-weight:800}
 .roast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 92px);z-index:90;transform:translateX(-50%);width:min(92vw,420px);padding:14px 16px 14px 52px;border-radius:16px;background:#1d1214;color:#fff;font:600 15px/1.35 var(--f);box-shadow:0 14px 40px rgba(0,0,0,.45);border:2px solid var(--gold);animation:roastIn .35s cubic-bezier(.3,1.5,.5,1) both;cursor:pointer}
 .roast::before{content:"🔥";position:absolute;left:14px;top:12px;font-size:24px}
 .roast.out{animation:roastOut .3s ease forwards}
@@ -432,6 +433,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 
 <section id="v-classificacao">
 <div id="mvpA"></div>
+<div class="card hide" id="mypos" style="margin-bottom:12px;display:flex;align-items:center;gap:14px"></div>
 <div class="card stand-w"><table id="tab"></table></div>
 <p class="tag mbh hide" id="tabhint" style="margin:8px 0 0">Toca num jogador para ver forma, MVP, capitão, atrasos e todas as estatísticas.</p>
 <h2>Prémios</h2><div class="grid" id="prizes"></div>
@@ -443,9 +445,13 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="row" style="justify-content:space-between;margin-bottom:12px"><div style="flex:1 1 12em;max-width:16em"><label for="msel" style="margin:0 0 4px">Mês</label><select id="msel"></select></div><button class="btn pri apo hide" id="newGame" type="button"></button></div>
 <div class="card hide" id="ppanel" style="margin-bottom:14px"></div>
 <div id="mvpB"></div>
+<div class="seg hide" id="gview" role="tablist" aria-label="Que jogos ver" style="margin-bottom:12px"><label><input type="radio" name="gview" value="todos" checked><span>Todos</span></label><label><input type="radio" name="gview" value="meus"><span>Os meus jogos</span></label></div>
+<div class="card hide" id="mygames"></div>
+<div data-gv="todos">
 <div class="card scroll" id="mtab"></div>
 <div class="row" style="justify-content:space-between;align-items:end;margin:18px 0 10px"><h2 id="mtitle" style="margin:0">Jogos</h2><div style="flex:0 1 16em"><label for="gsel" style="margin:0 0 4px">Jogo</label><select id="gsel"></select></div></div>
 <div id="glist"></div>
+</div>
 </section>
 
 <section id="v-novo" class="hide">
@@ -555,22 +561,27 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <section id="v-jogadores" class="hide">
 <div class="card hide" id="mycard" style="margin-bottom:16px"></div>
 <div class="card" id="conta" style="margin-bottom:16px"></div>
-<div class="two">
+<div class="seg jtabs adm" id="jtabs" role="tablist" aria-label="Secções dos jogadores" style="margin-bottom:14px"><label><input type="radio" name="jtab" value="p" checked><span>Plantel</span></label><label><input type="radio" name="jtab" value="a"><span>Contas</span></label><label><input type="radio" name="jtab" value="b"><span>Cópias</span></label></div>
+<div data-jt="p">
 <div class="card"><h2>Jogadores</h2><div class="scroll"><table id="rtab"></table></div>
 <div class="adm"><h3 style="margin:18px 0 0">Acrescentar jogador</h3>
 <div class="row" style="align-items:end"><div style="flex:2 1 12em"><label for="rnew">Nome</label><input type="text" id="rnew" autocomplete="off"></div><div style="flex:1 1 6em"><label for="rsk">Skill (0–5)</label><select id="rsk"></select></div><button class="btn pri" id="radd" type="button">Adicionar</button></div><p class="err" id="rerr"></p></div></div>
-<div class="adm">
+</div>
+<div data-jt="a" class="hide">
 <div class="card"><h2>Acessos</h2><p class="tag" style="margin:0 0 8px">Cada pessoa entra com a sua conta (criada pelo link de convite). Aqui aprovas os pedidos e defines os perfis: Administrador, Tesoureiro, Apontador ou Jogador.</p>
 <div class="row" id="astat" style="gap:8px;margin:6px 0 4px"></div><p class="tag" id="asem" style="margin:4px 0 0"></p>
 <h3 style="margin:8px 0 4px">Pedidos <span class="tag" id="apedn"></span></h3><ul class="plist" id="aped"></ul>
 <h3 style="margin:14px 0 4px">Contas com acesso <span class="tag" id="alistn"></span></h3><ul class="plist" id="alist"></ul>
 <h3 style="margin:18px 0 4px">Links de convite</h3><p class="tag" style="margin:0 0 8px">Envia o link a quem queres trazer (por exemplo no WhatsApp). Quem se inscrever fica nos Pedidos à espera da tua aprovação. O link funciona até o desativares.</p>
 <ul class="plist" id="ilist"></ul><div class="row" style="margin-top:8px"><button class="btn pri" id="inew" type="button">Criar link de convite</button></div></div>
-<div class="card" style="margin-top:16px"><h2>Cópia de segurança</h2>
-<p class="tag" style="margin:0 0 8px">Guarda todos os dados (plantel, jogos, convocatórias, votos, MVP, quotas, caixa e fotos). Para restaurar, carrega o ficheiro ou cola o texto e toca em Restaurar.</p>
-<textarea id="bk" spellcheck="false" style="width:100%;min-height:110px;font:13px ui-monospace,monospace;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);padding:8px"></textarea>
-<div class="row" style="margin-top:8px"><button class="btn pri" id="bdown" type="button">Descarregar cópia</button><button class="btn" id="bcopy" type="button">Copiar texto</button><label class="btn" style="margin:0;cursor:pointer">Carregar ficheiro<input type="file" id="bfile" accept=".json,.txt,application/json,text/plain" class="hide"></label><button class="btn no" id="brest" type="button">Restaurar</button></div><p class="err" id="berr"></p></div>
 </div>
+<div data-jt="b" class="hide">
+<div class="card"><h2>Cópia de segurança</h2>
+<p class="tag" style="margin:0 0 8px">Guarda todos os dados (plantel, jogos, convocatórias, votos, MVP, quotas, caixa e fotos). Descarrega uma cópia de vez em quando e guarda-a fora da app.</p>
+
+<div class="row" style="margin-top:8px"><button class="btn pri" id="bdown" type="button">Descarregar cópia</button><button class="btn" id="bcopy" type="button">Copiar texto</button></div>
+<details style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)"><summary style="cursor:pointer;font-weight:700;min-height:40px;color:var(--red)">⚠️ Restaurar uma cópia (substitui todos os dados)</summary>
+<p class="tag" style="margin:6px 0 8px">Só em caso de problema. Tudo o que está na app é substituído pelo conteúdo da cópia. Carrega o ficheiro ou cola o texto e toca em Restaurar (pede confirmação).</p><textarea id="bk" spellcheck="false" style="width:100%;min-height:110px;font:13px ui-monospace,monospace;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);padding:8px"></textarea><div class="row" style="margin-top:8px"><label class="btn" style="margin:0;cursor:pointer">Carregar ficheiro<input type="file" id="bfile" accept=".json,.txt,application/json,text/plain" class="hide"></label><button class="btn no" id="brest" type="button">Restaurar</button></div></details><p class="err" id="berr"></p></div>
 </div>
 </section>
 <footer class="foot" id="foot"></footer>
@@ -801,6 +812,7 @@ $('foot').innerHTML=`<span><b>Futeboladas APP™</b> versão ${APPVER}</span> | 
 function buildNav(){
   $('nav').innerHTML=TABS.filter(t=>t[2]==='all'||(t[2]==='apo'&&isApo())).map(([k,l])=>`<a href="#${k}" data-k="${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[k]}"/></svg>${l}</a>`).join('');
   for(const e of document.querySelectorAll('.adm'))e.classList.toggle('hide',!isAdm());
+  if(!isAdm())jtab='p';for(const d of document.querySelectorAll('[data-jt]'))d.classList.toggle('hide',d.dataset.jt!==jtab);for(const r of document.querySelectorAll('#jtabs input'))r.checked=r.value===jtab;
   for(const e of document.querySelectorAll('.apo'))e.classList.toggle('hide',!isApo());
   renderWho();
   view();
@@ -828,8 +840,14 @@ function renderTable(){
   const mv=s=>{if(s.ant==null)return'';const d=s.ant-s.pos;return d>0?`<span class="mv up">▲${d}</span>`:d<0?`<span class="mv dn">▼${-d}</span>`:'<span class="mv eq">=</span>'};
   $('tab').className='stand';
   $('tab').innerHTML='<thead><tr><th>#</th><th class="l">Jogador</th><th>Pts</th><th>J</th><th class="dk">V</th><th class="dk">E</th><th class="dk">D</th><th class="mb" title="Vitórias-Empates-Derrotas">V-E-D</th><th>% V</th><th class="dk">Média</th><th class="l dk">Forma</th><th class="dk">Comp.</th><th class="dk">Cap.</th><th class="dk">+Cap</th><th class="dk">MVP</th><th class="dk">Atr.</th></tr></thead><tbody>'+
-   S.list.map(s=>{const fm=s.forma.map(r=>`<i class="f${r}">${r}</i>`).join('');return `<tr class="${s.pos<=3?'top3':''}"><td class="pos">${s.pos}</td><td class="l nm"><button type="button" class="pname pn2" data-card="${esc(s.nome)}">${avatar(s.nome)}<span class="pnt"><span class="pnl"><span class="pnn">${esc(s.nome)}</span>${mv(s)}${s.ativo?'':'<span class="tag">saiu</span>'}</span>${fm?`<span class="form mini-f mb">${fm}</span>`:''}</span></button></td><td class="pts">${s.pts}</td><td>${s.J}</td><td class="dk">${s.V}</td><td class="dk">${s.E}</td><td class="dk">${s.D}</td><td class="mb ved">${s.V}-${s.E}-${s.D}</td><td>${s.J?pct(s.pv):'—'}</td><td class="dk">${s.media.toFixed(2).replace('.',',')}</td><td class="l dk"><span class="form">${fm||'<span class="tag">sem jogos</span>'}</span></td><td class="dk">${pct(s.comp)}</td><td class="dk">${s.cap}</td><td class="dk">${s.capW}</td><td class="dk">${s.mvp||'0'}</td><td class="dk">${s.atr?'−'+s.atr:'0'}</td></tr>`}).join('')+'</tbody>';
+   S.list.map(s=>{const fm=s.forma.map(r=>`<i class="f${r}">${r}</i>`).join('');return `<tr class="${s.pos<=3?'top3':''}${s.nome===myPlayer()?' me':''}"><td class="pos">${s.pos}</td><td class="l nm"><button type="button" class="pname pn2" data-card="${esc(s.nome)}">${avatar(s.nome)}<span class="pnt"><span class="pnl"><span class="pnn">${esc(s.nome)}</span>${mv(s)}${s.ativo?'':'<span class="tag">saiu</span>'}</span>${fm?`<span class="form mini-f mb">${fm}</span>`:''}</span></button></td><td class="pts">${s.pts}</td><td>${s.J}</td><td class="dk">${s.V}</td><td class="dk">${s.E}</td><td class="dk">${s.D}</td><td class="mb ved">${s.V}-${s.E}-${s.D}</td><td>${s.J?pct(s.pv):'—'}</td><td class="dk">${s.media.toFixed(2).replace('.',',')}</td><td class="l dk"><span class="form">${fm||'<span class="tag">sem jogos</span>'}</span></td><td class="dk">${pct(s.comp)}</td><td class="dk">${s.cap}</td><td class="dk">${s.capW}</td><td class="dk">${s.mvp||'0'}</td><td class="dk">${s.atr?'−'+s.atr:'0'}</td></tr>`}).join('')+'</tbody>';
   $('tabhint').classList.remove('hide');
+  /* a minha posição */
+  {const mp=myPlayer(),L=S.list,i=L.findIndex(x=>x.nome===mp),box=$('mypos');box.classList.toggle('hide',i<0);
+   if(i>=0){const m=L[i],up=L.slice(0,i).reverse().find(x=>x.pts>m.pts),dn=L.slice(i+1).find(x=>x.pts<m.pts),tie=L.filter(x=>x!==m&&x.pts===m.pts).length;
+     const frase=m.pos===1&&!tie?(dn?`Estás à frente de todos, com ${m.pts-dn.pts} pts de vantagem sobre ${esc(shortName(dn.nome))}.`:'Estás à frente de todos.'):
+       up?`Estás a ${up.pts-m.pts} pt${up.pts-m.pts>1?'s':''} de ${esc(shortName(up.nome))} (${up.pos}.º)${tie?` e empatado com ${tie} jogador${tie>1?'es':''}`:''}.`:`Estás empatado no 1.º lugar com ${tie} jogador${tie>1?'es':''}.`;
+     box.innerHTML=`<div style="flex:none;width:58px;height:58px;border-radius:16px;background:linear-gradient(160deg,var(--red),var(--red2));color:#fff;display:flex;align-items:flex-start;justify-content:center;padding-top:13px;box-sizing:border-box;font:400 30px/1 Anton,Impact,sans-serif">${m.pos}<span style="font:700 13px var(--f);margin:1px 0 0 1px">º</span></div><div><b style="font-size:16px">${esc(mp)} · ${m.pts} pts</b><br><span class="tag" style="margin:0">${frase} ${m.J} jogo${m.J===1?'':'s'}, ${m.V} vitória${m.V===1?'':'s'}.</span></div>`}}
   const P=S.prizes,st=S.stats;
   const PZ=[['1.º prémio','Campeão',P.p1,v=>v+' pts','Mais pontos na tabela. Em empate, ganha quem tem menos jogos.'],
     ['2.º prémio','Vitorioso',P.p2,pct,'Maior % de vitórias, entre quem fez pelo menos metade dos jogos (mín. '+Math.ceil(P.minJ)+').'],
@@ -844,7 +862,7 @@ function renderTable(){
 
 /* ---------- jogos ---------- */
 function renderGames(){
-  renderNewGame();
+  renderNewGame();renderMyGames();
   const keys=[...new Set(games.map(g=>mkey(g.data)))].sort();
   if(!keys.length){$('msel').innerHTML='';$('gsel').innerHTML='';$('mtab').innerHTML='<p>Ainda não há jogos.</p>';$('glist').innerHTML='';return}
   if(!keys.includes(month))month=keys[keys.length-1];
@@ -866,6 +884,25 @@ function renderGames(){
     `<div class="card game"><h3>${fdt(g.data)}${acts(g)}</h3>${g.r?'':`<p class="tag" style="margin:0;grid-column:1/-1">⏳ ${g.modo==='capitaes'?'Capitães sorteados.':'Equipas publicadas (automáticas).'} ${Date.now()<gameStart(g.data)?'Ainda não se jogou.':g.modo==='capitaes'?'Falta escolher os restantes jogadores, quem ganhou e quem chegou atrasado.':'Falta registar quem ganhou e quem chegou atrasado.'}</p>`}${gameMeta(g)}${team(g.a,g.r,'Equipa 1'+(g.coletes==='a'?' · coletes':''),g.atr||[])}${team(g.b,INV[g.r],'Equipa 2'+(g.coletes==='b'?' · coletes':''),g.atr||[])}</div>`).join('');
 }
 var gsel=null;
+/* Jogos → "Os meus jogos": só os jogos de quem está ligado, com o resultado do seu lado */
+let gview='todos';
+function renderMyGames(){const mp=myPlayer();$('gview').classList.toggle('hide',!mp);if(!mp)gview='todos';
+  for(const r of document.querySelectorAll('#gview input'))r.checked=r.value===gview;
+  $('mygames').classList.toggle('hide',gview!=='meus');document.querySelector('[data-gv="todos"]').classList.toggle('hide',gview==='meus');
+  if(gview!=='meus')return;
+  const INVR={V:'D',E:'E',D:'V'},mine=games.filter(g=>played(g)&&(g.a.includes(mp)||g.b.includes(mp))).sort((a,b)=>a.data<b.data?1:-1);
+  const rs=mine.map(g=>{const k=g.a.includes(mp)?'a':'b',r=k==='a'?g.r:INVR[g.r],t=k==='a'?g.a:g.b;
+    const eq=g.coletes?(g.coletes===k?'Coletes':'S/ Coletes'):(k==='a'?'Equipa 1':'Equipa 2');
+    return {g,r,eq,cap:t[0]===mp,mvp:(MVP.win[g.id]||[]).includes(mp),atr:(g.atr||[]).includes(mp)}});
+  const c=x=>rs.filter(o=>o.r===x).length,V=c('V'),E=c('E'),D=c('D'),J=rs.length;
+  const RS={V:['V','var(--win)','Vitória'],E:['E','var(--draw)','Empate'],D:['D','var(--loss)','Derrota']};
+  $('mygames').innerHTML=!J?'<p style="margin:0">Ainda não tens jogos registados.</p>':
+    `<h2 style="margin:0 0 4px">Os meus jogos</h2><p class="tag" style="margin:0 0 10px"><b>${J}</b> jogos · <b style="color:var(--win)">${V}</b> V · <b style="color:var(--draw)">${E}</b> E · <b style="color:var(--loss)">${D}</b> D · ${Math.round(V/J*100)}% de vitórias</p><ul class="plist">`+
+    rs.map(o=>`<li data-gogame="${o.g.id}" style="cursor:pointer"><span style="display:flex;align-items:center;gap:10px"><b style="flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:#fff;background:${RS[o.r][1]}" title="${RS[o.r][2]}">${RS[o.r][0]}</b><span>${fdt(o.g.data)}<br><span class="tag" style="margin:0">${o.eq}${o.cap?' · capitão':''}${o.mvp?' · 🏆 MVP':''}${o.atr?' · ⏰ atraso':''}</span></span></span><span class="tag" style="margin:0">›</span></li>`).join('')+'</ul>'}
+document.addEventListener('change',e=>{if(e.target.name!=='gview')return;gview=e.target.value;renderGames()});
+document.addEventListener('click',e=>{const li=e.target.closest('[data-gogame]');if(!li)return;const g=games.find(x=>x.id===li.dataset.gogame);if(!g)return;
+  gview='todos';month=mkey(g.data);gsel=g.id;renderGames();$('glist').scrollIntoView({behavior:'smooth',block:'start'})});
+
 $('prizes').addEventListener('click',e=>{const b=e.target.closest('.pflip');if(b)b.classList.toggle('on')});
 $('msel').addEventListener('change',e=>{month=e.target.value;gsel=null;renderGames()});
 $('gsel').addEventListener('change',e=>{gsel=e.target.value;renderGames()});
@@ -1948,6 +1985,9 @@ document.addEventListener('click',async e=>{
   catch(x){pwRes[id]={erro:'Não foi possível repor a password.'}}
   const keep=id;setTimeout(()=>{if(pwRes[keep]&&pwRes[keep].pass){delete pwRes[keep];renderAccess()}},10*60e3);
   await renderAccess();const d=document.querySelector(`#alist details[data-acc="${id}"]`);if(d)d.open=true});
+/* separadores da página Jogadores (Contas e Cópias só para o administrador) */
+let jtab='p';
+document.addEventListener('change',e=>{if(e.target.name!=='jtab')return;jtab=e.target.value;for(const d of document.querySelectorAll('[data-jt]'))d.classList.toggle('hide',d.dataset.jt!==jtab)});
 $('rtab').addEventListener('change',async e=>{const s=e.target;if(!s.dataset.sk)return;await saveJogSk(s.dataset.sk,+s.value)});
 $('rtab').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!b.dataset.n)return;const mk=mkey(today());
   const n=b.dataset.n,r0=roster.find(r=>r.nome===n),sai=r0&&r0.ativo!==false;
