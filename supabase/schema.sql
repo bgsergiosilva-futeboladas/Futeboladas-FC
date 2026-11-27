@@ -132,11 +132,22 @@ drop policy if exists "perfil próprio ou admin" on public.perfis;
 drop policy if exists "admin altera perfis" on public.perfis;
 drop policy if exists "admin apaga perfis" on public.perfis;
 
--- Ler: quem tem acesso aprovado ou está à espera de aprovação
--- (a skill dos jogadores, em config/skills, fica de fora: só o administrador a lê)
+-- Ler (membros): tudo menos o que é reservado:
+--   config/skills e config/convites → só o administrador
+--   pagamentos e config/caixa       → tesoureiro e administrador (o jogador vê as suas quotas por minhas_quotas())
+--   mvpvotos                        → cada um o seu (resultados por mvp_votos(), sem revelar votos em aberto)
+--   pedidos de acesso               → cada um o seu; o administrador todos
+--   propostas                       → as suas; apontador as de jogo/equipas/substitutos/desistências; tesoureiro as de pagamento
+-- Quem está à espera de aprovação só lê o plantel e o campo (e o próprio pedido).
 drop policy if exists "ler" on public.docs;
 create policy "ler" on public.docs for select to authenticated
-  using ((public.membro() or public.pendente()) and not (col = 'config' and id = 'skills'));
+  using ((public.membro()
+          and not (col = 'config' and id in ('skills', 'convites', 'caixa'))
+          and col not in ('pagamentos', 'mvpvotos', 'propostas', 'pedidos'))
+      or (public.pendente() and col = 'config' and id in ('plantel', 'campo')));
+drop policy if exists "apontador le propostas" on public.docs;
+create policy "apontador le propostas" on public.docs for select to authenticated
+  using (public.tem_papel('apontador') and col = 'propostas' and coalesce(data->>'tipo', '') <> 'pagamento');
 drop policy if exists "ler skills" on public.docs;
 create policy "ler skills" on public.docs for select to authenticated
   using (col = 'config' and id = 'skills' and public.tem_papel('admin'));
@@ -194,6 +205,56 @@ drop policy if exists "pedido" on public.docs;
 create policy "pedido" on public.docs for all to authenticated
   using (col = 'pedidos' and id = auth.uid()::text)
   with check (col = 'pedidos' and id = auth.uid()::text);
+
+-- As minhas quotas: o jogador vê só a sua linha de cada mês (e o MB WAY para pagar)
+create or replace function public.minhas_quotas() returns jsonb
+language sql stable security definer set search_path = public as $$
+  with eu as (select public.meu_acesso()->>'jogador' as j)
+  select case when not public.membro() then null else jsonb_build_object(
+    'pags', coalesce((select jsonb_object_agg(d.id, jsonb_strip_nulls(jsonb_build_object(
+        'valor', d.data->'valor',
+        'pagos', case when eu.j is not null and coalesce(d.data->'pagos', '{}'::jsonb) ? eu.j
+                      then jsonb_build_object(eu.j, d.data->'pagos'->eu.j) else '{}'::jsonb end,
+        'isentos', case when eu.j is not null and coalesce(d.data->'isentos', '[]'::jsonb) ? eu.j
+                        then jsonb_build_array(eu.j) else '[]'::jsonb end)))
+      from public.docs d where d.col = 'pagamentos'), '{}'::jsonb),
+    'caixa', coalesce((select jsonb_strip_nulls(jsonb_build_object('mbway', data->'mbway', 'mbwayNome', data->'mbwayNome'))
+      from public.docs where col = 'config' and id = 'caixa'), '{}'::jsonb)) end
+  from eu
+$$;
+revoke all on function public.minhas_quotas() from public, anon;
+grant execute on function public.minhas_quotas() to authenticated;
+
+-- Votos do MVP: enquanto a votação está aberta só se sabe quantos votaram;
+-- depois de fechar (3 dias após o jogo, 23:59 de Lisboa) devolve os votos para contar o vencedor
+create or replace function public.mvp_votos() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when not public.membro() then '[]'::jsonb else coalesce(jsonb_agg(x), '[]'::jsonb) end from (
+    select case when f.fechado
+             then jsonb_build_object('g', e.key, 'jogador', d.data->>'jogador', 'nome', e.value->>'nome', 't', e.value->'t')
+             else jsonb_build_object('g', e.key) end as x
+    from public.docs d, jsonb_each(coalesce(d.data->'v', '{}'::jsonb)) e,
+         lateral (select e.key ~ '^g[0-9]{8}$' and
+                  (to_date(substr(e.key, 2), 'YYYYMMDD') + 4)::timestamp at time zone 'Europe/Lisbon' <= now() as fechado) f
+    where d.col = 'mvpvotos') q
+$$;
+revoke all on function public.mvp_votos() from public, anon;
+grant execute on function public.mvp_votos() to authenticated;
+
+-- O saldo inicial da caixa só o administrador muda (o tesoureiro usa "Corrigir saldo", que fica registado)
+create or replace function public.saldo_so_admin() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.col = 'config' and new.id = 'caixa'
+     and (new.data->'saldoInicial') is distinct from (old.data->'saldoInicial')
+     and auth.uid() is not null and not public.tem_papel('admin') then
+    raise exception 'Só o administrador pode mudar o saldo inicial. Usa "Corrigir saldo".';
+  end if;
+  return new;
+end $$;
+drop trigger if exists saldo_so_admin on public.docs;
+create trigger saldo_so_admin before update on public.docs
+  for each row when (old.col = 'config' and old.id = 'caixa') execute function public.saldo_so_admin();
 
 -- Perfis: o próprio vê o seu; o administrador vê todos
 drop policy if exists "ver perfis" on public.perfis;

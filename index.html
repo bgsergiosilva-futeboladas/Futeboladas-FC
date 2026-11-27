@@ -697,7 +697,7 @@ const BUILD='20261126121931';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkVersion()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){checkVersion();if(typeof privT!=='undefined')privT=0}});
 setInterval(checkVersion,5*60*1000);setTimeout(checkVersion,3000);
 const SUB='Substituto',OUT='__outro__',MAXJ=14;
 /* o jogo já começou (ou já tem resultado / foi cancelado): acabam as ações de antes do jogo */
@@ -2020,11 +2020,21 @@ function computeRole(){const a=acessos[me.id];const gone=a&&a.jogador&&roster.so
   role=roles.join(',')||(me.id?'pendente':'anon')}
 function setSim(on){simJog=on;try{sessionStorage.setItem('simJog',on?'1':'0')}catch(x){}whoOpen=false;refresh();note(on?'Estás a ver a app como um jogador.':'De volta à vista de administrador.')}
 let lastRole=null;
+/* dados reservados: o jogador recebe só as suas quotas (minhas_quotas) e os votos do MVP
+   só depois de a votação fechar (mvp_votos); enquanto está aberta sabe-se só quantos votaram */
+let mvpPub={},mvpAbertos={},privT=0,privBusy=false,pagsSnap={},caixaSnap={};
+async function syncPrivados(force){if(!window.SB||privBusy||(!force&&Date.now()-privT<60e3))return;privBusy=true;privT=Date.now();
+  try{const [mv,mq]=await Promise.all([window.SB.rpc('mvp_votos'),isTes()?Promise.resolve(null):window.SB.rpc('minhas_quotas')]);
+    if(mv&&!mv.error){const pub={},ab={};(mv.data||[]).forEach((r,i)=>{if(r.nome){pub['r'+i]={jogador:r.jogador,v:{[r.g]:{nome:r.nome,t:r.t}}}}else ab[r.g]=(ab[r.g]||0)+1});mvpPub=pub;mvpAbertos=ab}
+    if(isTes()){pags=pagsSnap;caixa=caixaSnap}else if(mq&&!mq.error&&mq.data){pags=mq.data.pags||{};caixa=mq.data.caixa||{}}
+  }catch(x){}privBusy=false;refresh()}
 function refresh(){
   if(!loaded)return;
-  computeRole();if(role!==lastRole){lastRole=role;buildNav()}
+  computeRole();if(role!==lastRole){lastRole=role;privT=0;buildNav()}
   else renderWho();
-  MVP=mvpResults(games,roster,mvpvotos,Date.now(),g=>presence(g.data).go);
+  syncPrivados();
+  MVP=mvpResults(games,roster,mvpPub,Date.now(),g=>presence(g.data).go);
+  for(const [g,n] of Object.entries(mvpAbertos))if(MVP.by[g]&&MVP.by[g].open)MVP.by[g].total=n;
   renderAsk();renderMyCard();renderMVP();renderTable();renderGames();renderPending();renderConv();renderPay();renderRoster();refreshSelects();
 }
 (async()=>{
@@ -2042,11 +2052,11 @@ function refresh(){
   db.collection('jogos').onSnapshot(s=>{games=s.docs.map(d=>({id:d.id,...d.data()}));done('jogos')},fail);
   db.collection('conv').onSnapshot(s=>{conv=docs(s);refresh()},fail);
   db.collection('votos').onSnapshot(s=>{votos=docs(s);refresh()},fail);
-  db.collection('pagamentos').onSnapshot(s=>{pags=docs(s);refresh()},fail);
-  db.doc('config/caixa').onSnapshot(s=>{caixa=s.exists?s.data():{};refresh()},fail);
+  db.collection('pagamentos').onSnapshot(s=>{pagsSnap=docs(s);if(isTes())pags=pagsSnap;else privT=0;refresh()},fail);
+  db.doc('config/caixa').onSnapshot(s=>{caixaSnap=s.exists?s.data():{};if(isTes())caixa=caixaSnap;else privT=0;refresh()},fail);
   db.collection('pedidos').onSnapshot(s=>{pedidos=docs(s);refresh()},fail);
   db.collection('propostas').onSnapshot(s=>{propostas=docs(s);refresh()},fail);
-  db.collection('mvpvotos').onSnapshot(s=>{mvpvotos=docs(s);refresh()},fail);
+  db.collection('mvpvotos').onSnapshot(s=>{mvpvotos=docs(s);privT=0;refresh()},fail);
   db.collection('fotos').onSnapshot(s=>{fotos=docs(s);refresh()},fail);
   db.doc('config/skills').onSnapshot(s=>{skills=(s.exists&&s.data())||{jog:{},subs:{}};refresh()},fail);
   db.doc('config/convites').onSnapshot(s=>{convites=(s.exists&&s.data())||{lista:[]};refresh()},fail);
