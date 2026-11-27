@@ -1131,7 +1131,8 @@ function ftvTime(date,g){
 function renderFTV(d,g){
   const date=cdate,P=presence(date),T=ftvTime(date,g),eq=(conv[date]||{}).equipas,wx=getWx(date);
   const items=[];
-  if(g&&g.r)items.push('RESULTADO: '+(g.r==='E'?'empate':'ganhou a Equipa '+(g.r==='V'?1:2)),'EQUIPA 1: '+g.a.join(', '),'EQUIPA 2: '+g.b.join(', '));
+  const venc=g&&g.r&&g.r!=='E'?(k=>g.coletes?(k===g.coletes?'Equipa Coletes':'Equipa S/ Coletes'):'Equipa '+(k==='a'?1:2))(g.r==='V'?'a':'b'):null;
+  if(g&&g.r)items.push(venc?'RESULTADO FINAL: 🏆 Ganhou a '+venc:'RESULTADO FINAL: 🤝 Empate');
   else if(g&&g.cancelado)items.push('Não houve jogo'+(g.motivo?': '+g.motivo:''));
   else if(eq&&eq.modo==='auto')items.push('EQUIPA 1'+(eq.coletes==='a'?' (coletes)':'')+': '+eq.a.join(', '),'EQUIPA 2'+(eq.coletes==='b'?' (coletes)':'')+': '+eq.b.join(', '));
   else if(eq&&eq.modo==='capitaes')items.push('CAPITÃES: '+eq.capA+(eq.coletes==='a'?' (coletes)':'')+' vs '+eq.capB+(eq.coletes==='b'?' (coletes)':''));
@@ -1140,14 +1141,14 @@ function renderFTV(d,g){
     else{const c=[...P.go,...P.subs.map(x=>x.nome)];items.push('CONFIRMADOS ('+c.length+'/'+MAXJ+'): '+(c.join(', ')||'ainda ninguém'));
       if(c.length<MAXJ)items.push('Faltam '+(MAXJ-c.length));if(P.wait.length)items.push('Lista de espera: '+P.wait.join(', '));
       if(!convClosed(date))items.push('Respostas até quarta às 23:59')}}
-  if(wx)items.push('Previsão para as 21h: '+wx.t+'° · '+(WXC[wx.c]||['—'])[0].toLowerCase()+' · chuva '+wx.p+'% · vento '+wx.w+' km/h · humidade '+wx.u+'%');
+  if(wx&&!(g&&(g.r||g.cancelado)))items.push('Previsão para as 21h: '+wx.t+'° · '+(WXC[wx.c]||['—'])[0].toLowerCase()+' · chuva '+wx.p+'% · vento '+wx.w+' km/h · humidade '+wx.u+'%');
   const txt=items.map(x=>`<span>${esc(x)} ·</span>`).join(''),dur=Math.max(18,Math.round(items.join(' ').length/6));
   const nConf=P.go.length+P.subs.length;
   $('ticket').innerHTML=`<div class="ph"></div><div class="sh"></div>
    <div class="bug"><span class="ch">F<i>TV</i></span><span class="lv${T.off?' off':''}" id="ftvlv">${T.lv}</span></div>
    ${wx?`<div class="wxb">${wxIcon((WXC[wx.c]||[])[1])}<div>${wx.t}°<small>${esc((WXC[wx.c]||['—'])[0])} · chuva ${wx.p}%</small></div></div>`:''}
    <div class="lt"><span class="k">${g&&(g.r||g.cancelado)||Date.now()>=gameStart(date)?'Jogo':'Próximo jogo'} · ${esc((campo&&campo.nome)||'Campo FUT7')}</span>
-    <div class="t"><b>${DIA[d.getDay()].slice(0,3).toUpperCase()} ${d.getDate()} · <i>21:00H</i></b><small>${MES[d.getMonth()]}<br>Fut7 · Palmeira</small></div>
+    <div class="t"><b>${DIA[d.getDay()].slice(0,3).toUpperCase()} ${d.getDate()} · ${g&&(g.r||g.cancelado)?`<i style="font-size:.6em;white-space:nowrap">${g.cancelado?'SEM JOGO':'JOGO FINALIZADO'}</i>`:'<i>21:00H</i>'}</b>${g&&(g.r||g.cancelado)?'':`<small>${MES[d.getMonth()]}<br>Fut7 · Palmeira</small>`}</div>
     <div class="s"><span>✅ ${nConf}/${MAXJ} confirmados</span><span id="ftvcd">⏱ ${T.cd}</span></div></div>
    <div class="tk"><b>ÚLTIMA HORA</b><div class="run" style="--dur:${dur}s">${txt}${txt}</div></div>`;
 }
@@ -1217,7 +1218,7 @@ function renderConv(){
   const maps=coords?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(k.lat+','+k.lon)}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((k.nome||'')+' '+(k.morada||''))}`;
   const wx=coords?`https://www.windy.com/${k.lat}/${k.lon}?${k.lat},${k.lon},13`:'https://www.ipma.pt/pt/otempo/prev.localidade.hora/#Braga&Braga';
   const diff=Math.round((d-dobj(today()))/864e5);
-  $('cweek').textContent=diff===0?'Hoje':diff>0?'Daqui a '+diff+(diff===1?' dia':' dias'):'Há '+(-diff)+' dias';
+  $('cweek').textContent=diff===0?'Hoje':diff>0?'Daqui a '+diff+(diff===1?' dia':' dias'):'Há '+(-diff)+(diff===-1?' dia':' dias');
   renderFTV(d,g);
   const P=presence(cdate),mp=myPlayer(),mine=mp&&P.map[mp];
   const closed=convClosed(cdate),notOpen=convNotOpen(cdate),lock=notOpen||(closed&&!isAdm());
@@ -1255,7 +1256,7 @@ function renderConv(){
   $('cteams').classList.toggle('hide',!t);
   /* separadores: Jogo (todos) · Lista (todos até sair a convocatória) · Gestão (admin e apontadores).
      Jogadores com as equipas publicadas: sem separadores, só o Jogo com as equipas */
-  const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);
+  const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub||fimJ);/* depois do jogo já não se responde */
   if(pub||(!isApo()&&ctab==='gestao'))ctab='jogo';
   $('ctabs').classList.toggle('hide',pub);document.querySelector('#ctabs [data-ctl="gestao"]').classList.toggle('hide',!isApo());
   for(const r of document.querySelectorAll('#ctabs input'))r.checked=r.value===ctab;
