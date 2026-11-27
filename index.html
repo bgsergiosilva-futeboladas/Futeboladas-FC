@@ -704,7 +704,7 @@ const MES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto
 const DIA=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 let curView='classificacao',seasonMeta='';
 const APPVER='1.2';
-const BUILD='20261127100755';
+const BUILD='20261127102438';
 /* nova versão publicada? recarrega sozinho quando a app volta a ficar visível */
 async function checkVersion(){try{const r=await fetch('/version.json?'+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=await r.json();
   if(v.b&&BUILD!=='dev'&&v.b!==BUILD){if(document.visibilityState==='visible'&&!document.querySelector('.sheet:not(.hide)')&&!formOpen)location.reload();else window.__novaVersao=true}}catch(x){}}
@@ -787,6 +787,34 @@ function roast(){const mp=myPlayer();const n=mp?(typeof shortName==='function'?s
 document.addEventListener('click',e=>{const img=e.target.closest('.brand img');if(!img)return;const now=Date.now();
   egg=now-egg.t<700?{n:egg.n+1,t:now}:{n:1,t:now};
   if(egg.n>=3){egg={n:0,t:0};img.classList.remove('shake');void img.offsetWidth;img.classList.add('shake');roast()}});
+/* ---------- novidades da versão: aparece uma vez por versão, ao entrar ---------- */
+const NOVIDADES={'1.2':{
+  todos:[['📋','Convocatória arrumada em separadores: <b>Jogo</b> (a tua resposta e as equipas) e <b>Lista</b> (quem vai, quem não vai e quem falta responder).'],
+    ['🏆','No fim do jogo o campo mostra a <b>equipa vencedora</b> em destaque.'],
+    ['🗳️','MVP: <b>só vota quem jogou</b> e os votos ficam secretos até a votação fechar.'],
+    ['📊','Na Tabela vês logo <b>a tua posição</b> e quantos pontos te faltam para subir.'],
+    ['⚽','Em Jogos há <b>“Os meus jogos”</b>, com o teu histórico de vitórias, empates e derrotas.'],
+    ['🔓','A sessão <b>fica sempre iniciada</b>: já não tens de voltar a entrar.'],
+    ['💶','Quotas: aviso no dia 1 se ficou algum mês por pagar, e os lembretes passam a ser só nos dias 1, 5 e 10.'],
+    ['🤫','Há um segredo escondido no emblema do topo…']],
+  gestao:[['🗂️','Quotas em separadores (Quotas · Caixa · Movimentos), caixa por ano com exportação e “Corrigir saldo” com justificação.','tes'],
+    ['⚠️','Ao registar um pagamento, aviso se o jogador ainda deve meses anteriores.','tes'],
+    ['🛠️','Convocatória com o separador <b>Gestão</b> (vagas, desistências e avisos).','apo'],
+    ['🔁','Sorteio de capitães com rotação: saem os que foram capitães menos vezes.','apo'],
+    ['🔑','Repor a password de um jogador e ver quem recebeu os avisos das equipas.','adm']]}};
+function mostraNovidades(){const N=NOVIDADES[APPVER];if(!N||!me.id||!roles.length)return;let visto='';try{visto=localStorage.getItem('novVista')||''}catch(x){}if(visto===APPVER)return;
+  const ok=r=>r==='adm'?isAdm():r==='tes'?isTes():r==='apo'?isApo():true;
+  const g=N.gestao.filter(x=>ok(x[2])),li=([i,t])=>`<li style="display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line)"><span style="flex:none;font-size:20px;line-height:1.3">${i}</span><span style="font-size:15px;line-height:1.4">${t}</span></li>`;
+  const el=document.createElement('div');el.className='sheet';el.id='novid';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Novidades da versão '+APPVER);
+  el.innerHTML=`<div class="pcard" style="max-height:calc(100dvh - 32px);overflow-y:auto"><button class="pc-x" type="button" data-novx aria-label="Fechar">✕</button>
+    <p style="margin:0;font:700 12px var(--f);letter-spacing:.06em;color:var(--gold)">FUTEBOLADAS APP · VERSÃO ${APPVER}</p><h2 style="margin:2px 44px 8px 0;font-size:24px">O que há de novo</h2>
+    <ul style="list-style:none;margin:0;padding:0">${N.todos.map(li).join('')}</ul>
+    ${g.length?`<h3 style="margin:16px 0 0;font-size:15px;color:var(--mute)">Para ti, na gestão</h3><ul style="list-style:none;margin:0;padding:0">${g.map(li).join('')}</ul>`:''}
+    <button class="btn pri" type="button" data-novx style="width:100%;margin-top:16px">Fechar</button></div>`;
+  document.body.appendChild(el);
+  const fecha=()=>{try{localStorage.setItem('novVista',APPVER)}catch(x){}el.remove()};
+  el.addEventListener('click',e=>{if(e.target===el||e.target.closest('[data-novx]'))fecha()});
+  document.addEventListener('keydown',function k(e){if(e.key==='Escape'){fecha();document.removeEventListener('keydown',k)}})}
 const roleLabel=()=>roles.length?roles.map(r=>PAPEL[r]).join(' + '):'Sem acesso aprovado';
 const SKDEF=3;
 /* skills: documento à parte (config/skills) que só o administrador e o apontador conseguem ler */
@@ -2084,7 +2112,7 @@ function refresh(){
   clearTimeout(timer);
   const fb=await window.FBready;db=fb.db;U=fb.U;me=fb.me;checkPush();
   const got=new Set(),need=['plantel','jogos'];
-  const done=k=>{got.add(k);if(need.every(x=>got.has(x))){if(!loaded){loaded=true;clearTimeout(timer);note(games.length?'':'Ainda não há jogos guardados.');openForm(null)}refresh()}};
+  const done=k=>{got.add(k);if(need.every(x=>got.has(x))){if(!loaded){loaded=true;clearTimeout(timer);note(games.length?'':'Ainda não há jogos guardados.');openForm(null);setTimeout(mostraNovidades,1500)}refresh()}};
   const fail=e=>{clearTimeout(timer);note('Erro a ler dados: '+(e.message||e.code))};
   const docs=(s)=>Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));
   db.doc('config/plantel').onSnapshot(s=>{roster=(s.exists&&s.data().roster)||[];done('plantel')},fail);
