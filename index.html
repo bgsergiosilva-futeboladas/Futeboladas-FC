@@ -437,7 +437,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 </section>
 
 <section id="v-jogos" class="hide">
-<div class="row" style="justify-content:space-between;margin-bottom:12px"><div style="flex:1 1 12em;max-width:16em"><label for="msel" style="margin:0 0 4px">Mês</label><select id="msel"></select></div><button class="btn pri apo" id="newGame" type="button">+ Novo jogo</button></div>
+<div class="row" style="justify-content:space-between;margin-bottom:12px"><div style="flex:1 1 12em;max-width:16em"><label for="msel" style="margin:0 0 4px">Mês</label><select id="msel"></select></div><button class="btn pri apo hide" id="newGame" type="button"></button></div>
 <div class="card hide" id="ppanel" style="margin-bottom:14px"></div>
 <div id="mvpB"></div>
 <div class="card scroll" id="mtab"></div>
@@ -447,7 +447,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 
 <section id="v-novo" class="hide">
 <form id="f" class="card" novalidate>
-<h2 id="ftitle">Novo jogo</h2>
+<h2 id="ftitle">Registar jogo</h2>
 <div class="two">
 <div><label for="fdate">Data</label><input type="date" id="fdate" required></div>
 <div><label>Houve jogo?</label><div class="seg"><label><input type="radio" name="hj" value="1" checked><span>Sim</span></label><label><input type="radio" name="hj" value="0"><span>Não houve jogo</span></label></div></div>
@@ -793,6 +793,7 @@ function renderTable(){
 
 /* ---------- jogos ---------- */
 function renderGames(){
+  renderNewGame();
   const keys=[...new Set(games.map(g=>mkey(g.data)))].sort();
   if(!keys.length){$('msel').innerHTML='';$('gsel').innerHTML='';$('mtab').innerHTML='<p>Ainda não há jogos.</p>';$('glist').innerHTML='';return}
   if(!keys.includes(month))month=keys[keys.length-1];
@@ -817,7 +818,11 @@ var gsel=null;
 $('prizes').addEventListener('click',e=>{const b=e.target.closest('.pflip');if(b)b.classList.toggle('on')});
 $('msel').addEventListener('change',e=>{month=e.target.value;gsel=null;renderGames()});
 $('gsel').addEventListener('change',e=>{gsel=e.target.value;renderGames()});
-$('newGame').addEventListener('click',()=>startEdit(null));
+/* não se "criam" jogos: o botão só aparece quando falta o resultado do último dia de jogo (já começou e ainda sem resultado) */
+function jogoPendente(){const n=nextThu(today()),d=Date.now()>=gameStart(n)?n:addD(n,-7);
+  const g=games.find(x=>x.data===d);if(g&&(g.r||g.cancelado))return null;return{d,id:g?g.id:null}}
+function renderNewGame(){const b=$('newGame'),p=jogoPendente();b.classList.toggle('hide',!p||!isApo());if(p)b.textContent='📋 Registar resultado de '+fdt(p.d)}
+$('newGame').addEventListener('click',()=>{const p=jogoPendente();if(!p)return renderNewGame();p.id?startEdit(p.id):startEdit(null,{data:p.d})});
 $('glist').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.e){startEdit(b.dataset.e);return}
@@ -877,7 +882,7 @@ async function startEdit(id,preset){
 }
 function openForm(id,preset,noLock){
   editId=id;const g=id?games.find(x=>x.id===id):preset||null;fCol=g&&g.coletes||null;openSnap=id&&g?JSON.stringify(g):null;
-  $('ftitle').textContent=(id?(g.r||g.cancelado?'Editar jogo de ':'Registar resultado de ')+fdt(g.data):'Novo jogo')+'';
+  $('ftitle').textContent=(id?(g.r||g.cancelado?'Editar jogo de ':'Registar resultado de ')+fdt(g.data):g&&g.data?'Registar resultado de '+fdt(g.data):'Registar jogo')+'';
   let d=g&&g.data;
   if(!d){const last=[...games].sort((a,b)=>a.data<b.data?1:-1)[0];d=last?addD(last.data,7):nextThu(today())}
   $('fdate').value=d;
