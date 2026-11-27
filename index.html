@@ -1177,7 +1177,7 @@ function renderFTV(d,g){
    ${wx?`<div class="wxb">${wxIcon((WXC[wx.c]||[])[1])}<div>${wx.t}°<small>${esc((WXC[wx.c]||['—'])[0])} · chuva ${wx.p}%</small></div></div>`:''}
    <div class="lt"><span class="k">${g&&(g.r||g.cancelado)||Date.now()>=gameStart(date)?'Jogo':'Próximo jogo'} · ${esc((campo&&campo.nome)||'Campo FUT7')}</span>
     <div class="t"><b>${DIA[d.getDay()].slice(0,3).toUpperCase()} ${d.getDate()} · ${g&&(g.r||g.cancelado)?`<i style="font-size:.6em;white-space:nowrap">${g.cancelado?'SEM JOGO':'JOGO FINALIZADO'}</i>`:'<i>21:00H</i>'}</b>${g&&(g.r||g.cancelado)?'':`<small>${MES[d.getMonth()]}<br>Fut7 · Palmeira</small>`}</div>
-    <div class="s"><span>✅ ${nConf}/${MAXJ} confirmados</span><span id="ftvcd">⏱ ${T.cd}</span></div></div>
+    ${g&&(g.r||g.cancelado)?'':`<div class="s"><span>✅ ${nConf}/${MAXJ} confirmados</span><span id="ftvcd">⏱ ${T.cd}</span></div>`}</div>
    <div class="tk"><b>ÚLTIMA HORA</b><div class="run" style="--dur:${dur}s">${txt}${txt}</div></div>`;
 }
 setInterval(()=>{if(curView!=='convocatoria'||!cdate||!$('ftvcd'))return;const T=ftvTime(cdate,games.find(x=>x.data===cdate));$('ftvcd').textContent='⏱ '+T.cd;const l=$('ftvlv');l.textContent=T.lv;l.classList.toggle('off',!!T.off)},30000);
