@@ -103,10 +103,6 @@ h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 @keyframes roastOut{to{opacity:0;transform:translate(-50%,-10px)}}
 .brand img.shake{animation:logoShake .45s}
 @keyframes logoShake{20%,60%{transform:rotate(-12deg)}40%,80%{transform:rotate(12deg)}}
-#cfold>summary{display:none}
-#cfold.fold>summary{display:flex;align-items:center;justify-content:space-between;margin-top:14px;cursor:pointer;font-weight:700;list-style:none;min-height:30px}
-#cfold.fold>summary::-webkit-details-marker{display:none}
-#cfold.fold>summary:after{content:"▾";font-size:18px;transition:transform .2s}#cfold.fold[open]>summary:after{transform:rotate(180deg)}
 
 /* header */
 /* ---------- bonecos animados ao lado do título ---------- */
@@ -478,21 +474,28 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <section id="v-convocatoria" class="hide">
 <div class="row" style="margin-bottom:12px"><button class="btn" id="cprev" type="button" aria-label="Semana anterior">‹</button><button class="btn" id="cnext" type="button" aria-label="Semana seguinte">›</button><span class="tag" id="cweek"></span></div>
 <div class="ftv" id="ticket"></div>
-<div class="card hide" id="cteams" style="margin-top:14px"></div>
-<div class="row hide" id="cadmnote" style="margin:14px 2px 0;gap:10px;align-items:center;flex-wrap:nowrap"><p class="tag" style="margin:0;flex:1">As equipas já estão publicadas: os jogadores só veem as equipas. A convocatória abaixo só tu e os apontadores veem.</p><button class="btn pri" id="cavisar" type="button" style="flex:none">Avisar convocados</button></div>
-<details class="card hide" id="crec" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600;min-height:32px">📬 Quem recebeu o aviso das equipas</summary><div id="crecb" style="margin-top:8px"><p class="tag">A carregar…</p></div></details>
-<details id="cfold" open><summary class="card" id="cfoldh">📋 Ver convocatória e desistências</summary>
+<div class="seg ctabs hide" id="ctabs" role="tablist" aria-label="Secções da convocatória" style="margin-top:14px"><label data-ctl="jogo"><input type="radio" name="ctab" value="jogo" checked><span>Jogo</span></label><label data-ctl="lista"><input type="radio" name="ctab" value="lista"><span>Lista</span></label><label class="apo" data-ctl="gestao"><input type="radio" name="ctab" value="gestao"><span>Gestão</span></label></div>
+<div data-ct="jogo">
 <div class="card" id="mine" style="margin-top:14px"></div>
+<p class="tag hide" id="cjsum" style="margin:10px 4px 0"></p>
+<div class="card hide" id="cteams" style="margin-top:14px"></div>
+</div>
+<div data-ct="lista" class="hide">
 <div class="two" id="clists" style="margin-top:14px">
-<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Vão jogar</h2><span class="count" id="ccount"></span></div><ul class="plist" id="cyes"></ul><div id="cfill" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="cfillinfo" style="margin:0 0 8px"></p><div class="row"><select id="cfillsel" aria-label="Jogador para a vaga" style="flex:1 1 12em;width:auto"></select><input type="text" id="cfilln" class="hide" placeholder="Nome do substituto" autocomplete="off" aria-label="Nome do substituto" style="flex:1 1 12em;width:auto"><button class="btn pri" id="cfillb" type="button">Adicionar</button></div></div><div id="csub" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="csubinfo" style="margin:0 0 8px"></p><div class="row"><input type="text" id="csubn" placeholder="Nome do substituto" autocomplete="off" style="flex:1 1 12em;width:auto"><select id="csubsk" class="adm" aria-label="Skill do substituto" style="width:6em"></select><button class="btn pri" id="csubb" type="button">Adicionar substituto</button></div></div><h3 id="cwaitH" class="hide" style="margin:14px 0 4px">Suplentes</h3><ul class="plist" id="cwait"></ul></div>
-<div class="card hide" id="cdesist" style="margin-bottom:14px;border-color:#e0a030"></div><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Não vão</h2><span class="count" id="cnon"></span></div><ul class="plist" id="cno"></ul>
+<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Vão jogar</h2><span class="count" id="ccount"></span></div><ul class="plist" id="cyes"></ul><div id="csub" class="hide" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)"><p class="tag" id="csubinfo" style="margin:0 0 8px"></p><div class="row"><input type="text" id="csubn" placeholder="Nome do substituto" autocomplete="off" style="flex:1 1 12em;width:auto"><select id="csubsk" class="adm" aria-label="Skill do substituto" style="width:6em"></select><button class="btn pri" id="csubb" type="button">Adicionar substituto</button></div></div><h3 id="cwaitH" class="hide" style="margin:14px 0 4px">Suplentes</h3><ul class="plist" id="cwait"></ul></div>
+<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Não vão</h2><span class="count" id="cnon"></span></div><ul class="plist" id="cno"></ul>
 <div class="row" style="justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><h2 style="margin:0">Ainda não responderam</h2><span class="count" id="cnonen"></span></div><ul class="plist" id="cnone"></ul></div>
 </div>
-</details>
-<a class="card wa" style="margin-top:14px" href="https://chat.whatsapp.com/C3UwZLZBEwv7y59yhtY8II" target="_blank" rel="noopener"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></i><span><b>Grupo do WhatsApp</b>Conversa da malta, avisos e combinações</span><em>Abrir ›</em></a>
-<details class="card adm" style="margin-top:14px"><summary style="cursor:pointer;font-weight:600;min-height:32px">Dados do campo</summary>
+</div>
+<div data-ct="gestao" class="hide" style="margin-top:14px">
+<div class="row hide" id="cadmnote" style="margin:0 2px 14px;gap:10px;align-items:center;flex-wrap:nowrap"><p class="tag" style="margin:0;flex:1">As equipas já estão publicadas: os jogadores só veem o separador Jogo.</p><button class="btn pri" id="cavisar" type="button" style="flex:none">Avisar convocados</button></div>
+<div class="card hide" id="cfillc" style="margin-bottom:14px"><h2 style="margin:0 0 6px">Preencher vagas</h2><div id="cfill" class="hide" ><p class="tag" id="cfillinfo" style="margin:0 0 8px"></p><div class="row"><select id="cfillsel" aria-label="Jogador para a vaga" style="flex:1 1 12em;width:auto"></select><input type="text" id="cfilln" class="hide" placeholder="Nome do substituto" autocomplete="off" aria-label="Nome do substituto" style="flex:1 1 12em;width:auto"><button class="btn pri" id="cfillb" type="button">Adicionar</button></div></div></div>
+<div class="card hide" id="cdesist" style="margin-bottom:14px;border-color:#e0a030"></div>
+<details class="card hide" id="crec" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600;min-height:32px">📬 Quem recebeu o aviso das equipas</summary><div id="crecb" style="margin-top:8px"><p class="tag">A carregar…</p></div></details>
+<details class="card adm" ><summary style="cursor:pointer;font-weight:600;min-height:32px">Dados do campo</summary>
 <div class="two"><div><label for="kn">Nome</label><input type="text" id="kn"></div><div><label for="km">Morada</label><input type="text" id="km"></div><div><label for="kla">Latitude</label><input type="text" id="kla" inputmode="decimal" placeholder="41.xxxx"></div><div><label for="klo">Longitude</label><input type="text" id="klo" inputmode="decimal" placeholder="-8.xxxx"></div></div>
 <div class="row" style="margin-top:10px"><button class="btn pri" id="ksave" type="button">Guardar campo</button><span class="tag" id="kmsg"></span></div></details>
+</div>
 </section>
 
 <section id="v-equipas" class="hide">
@@ -1213,11 +1216,16 @@ function renderConv(){
   $('cdesist').innerHTML=ds.length?`<h2 style="margin:0 0 6px">↩️ Desistências (${ds.length})</h2><p class="tag" style="margin:0 0 6px">Disseram que iam e depois mudaram para “Não vou”. Só o administrador e os apontadores veem isto.</p><ul class="plist">${ds.map(p=>`<li><span><b>${esc(p.doc.nome)}</b></span><span class="tag" style="margin:0">${new Date(p.t).toLocaleString('pt-PT',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></li>`).join('')}</ul>`:'';
   const t=(conv[cdate]||{}).equipas;
   $('cteams').classList.toggle('hide',!t);
-  /* equipas publicadas: os jogadores deixam de ver quem disse que vai e veem só as equipas */
-  const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);$('clists').classList.toggle('hide',pub);
-  /* admin e apontadores: com equipas publicadas, a convocatória fica numa secção fechada (abre-se ao tocar) */
-  const fold=!!t&&isApo(),fk=fold?cdate:'';$('cfold').classList.toggle('fold',fold);$('cfold').classList.toggle('hide',pub);
-  if($('cfold').dataset.k!==fk){$('cfold').dataset.k=fk;$('cfold').open=!fold}$('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm()||jogoComecou(cdate));$('crec').classList.toggle('hide',!(t&&isAdm()));if($('crec').dataset.d!==cdate){$('crec').dataset.d=cdate;$('crec').open=false}
+  /* separadores: Jogo (todos) · Lista (todos até sair a convocatória) · Gestão (admin e apontadores).
+     Jogadores com as equipas publicadas: sem separadores, só o Jogo com as equipas */
+  const pub=!!t&&!isApo();$('mine').classList.toggle('hide',pub);
+  if(pub||(!isApo()&&ctab==='gestao'))ctab='jogo';
+  $('ctabs').classList.toggle('hide',pub);document.querySelector('#ctabs [data-ctl="gestao"]').classList.toggle('hide',!isApo());
+  for(const r of document.querySelectorAll('#ctabs input'))r.checked=r.value===ctab;
+  for(const d of document.querySelectorAll('[data-ct]'))d.classList.toggle('hide',d.dataset.ct!==ctab);
+  {const c=P.go.length+P.subs.length;$('cjsum').classList.toggle('hide',!!t||notOpen||fimJ);$('cjsum').innerHTML=`<b>${c}/${MAXJ}</b> confirmados${P.wait.length?' · '+P.wait.length+' em lista de espera':''}${P.none.length?' · '+P.none.length+' ainda não responderam':''} · <a href="#" data-gotab="lista">ver a lista</a>`}
+  $('cfillc').classList.toggle('hide',$('cfill').classList.contains('hide'));
+  $('cadmnote').classList.toggle('hide',!(t&&isApo()));$('cavisar').classList.toggle('hide',!isAdm()||jogoComecou(cdate));$('crec').classList.toggle('hide',!(t&&isAdm()));if($('crec').dataset.d!==cdate){$('crec').dataset.d=cdate;$('crec').open=false}
   if(!t||t.modo==='capitaes')delete $('cteams').dataset.k;
   if(t&&t.modo==='capitaes'){$('cteams').innerHTML=`<h2 style="margin-top:0">Capitães sorteados</h2><p class="tag" style="margin:0 0 8px">Os dois capitães escolhem as equipas. O capitão da equipa vencedora ganha 1 ponto extra.</p><div class="pitch">${[['Equipa 1',t.capA,'a'],['Equipa 2',t.capB,'b']].map(([l,c,k])=>`<div class="side" style="${t.coletes===k?'border-color:var(--gold)':''}"><h3>${l}<span class="bib ${t.coletes===k?'on':''}">${t.coletes===k?'De coletes':'Sem coletes'}</span></h3><p class="big" style="margin:0">${esc(c)}<span class="cap">C</span></p></div>`).join('')}</div>`}
   else if(t){const g0=games.find(x=>x.data===cdate)||{},k=cdate+'|'+JSON.stringify(t)+'|'+(g0.r||'')+(g0.cancelado?'c':'')+(g0.coletes||'');if($('cteams').dataset.k!==k){$('cteams').dataset.k=k;$('cteams').innerHTML=lineupHTML(t,cdate)}}
@@ -1260,6 +1268,9 @@ async function loadRec(){const box=$('crecb');if(!box||!isAdm()||!window.SB)retu
     box.innerHTML=h;
   }catch(x){box.innerHTML='<p class="tag">Não foi possível ler o registo dos avisos'+(x&&x.message?' ('+esc(x.message)+')':'')+'. Confirma que a base de dados já tem a atualização.</p>'}}
 $('crec').addEventListener('toggle',()=>{if($('crec').open)loadRec()});
+let ctab='jogo';
+document.addEventListener('change',e=>{if(e.target.name!=='ctab')return;ctab=e.target.value;renderConv()});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-gotab]');if(!a)return;e.preventDefault();ctab=a.dataset.gotab;renderConv();window.scrollTo({top:0,behavior:'smooth'})});
 $('cavisar').addEventListener('click',async()=>{if(!isAdm()||!window.SB||jogoComecou(cdate))return;const P=presence(cdate);
   if(!confirm('Enviar agora o aviso das equipas aos '+P.go.length+' convocados?'))return;const b=$('cavisar');b.disabled=true;
   try{const {data,error}=await window.SB.functions.invoke('notificar',{body:{equipas:cdate,forcar:true}});
