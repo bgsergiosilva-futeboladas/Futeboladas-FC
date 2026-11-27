@@ -968,7 +968,9 @@ function presence(date){
   const map={};
   const opn=convOpenAt(date);
   for(const v of Object.values(votos)){const x=v.v&&v.v[date];if(x&&v.jogador&&!(x.t>lim)&&!(x.t<opn)&&(!map[v.jogador]||x.t>map[v.jogador].t))map[v.jogador]=x}
-  for(const [n,x] of Object.entries(man))if(!map[n]||x.t>map[n].t)map[n]=x;
+  /* marcações do admin antes de abrirem as inscrições não contam (só para jogos que ainda não passaram) */
+  const futuro=date>=today();
+  for(const [n,x] of Object.entries(man))if(!(futuro&&x.t<opn)&&(!map[n]||x.t>map[n].t))map[n]=x;
   const act=roster.filter(r=>r.ativo!==false).map(r=>r.nome);
   const yes=Object.entries(map).filter(([n,x])=>x.vai&&act.includes(n)).sort((a,b)=>a[1].t-b[1].t).map(e=>e[0]);
   const no=act.filter(n=>map[n]&&!map[n].vai),none=act.filter(n=>!map[n]).sort((a,b)=>a.localeCompare(b,'pt'));
@@ -1132,21 +1134,21 @@ function renderConv(){
   const P=presence(cdate),mp=myPlayer(),mine=mp&&P.map[mp];
   const closed=convClosed(cdate),notOpen=convNotOpen(cdate),lock=notOpen||(closed&&!isAdm());
   const fimJ=games.some(x=>x.data===cdate&&(x.r||x.cancelado));
-  const closeTxt=notOpen?(isAdm()?'Inscrições abrem '+fdt(iso(new Date(convOpenAt(cdate))))+' (segunda) às 08:30. Como administrador já podes marcar os outros com ✓ / ✕.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):fimJ?'Jogo terminado. Quem jogou fica no registo do jogo, em Jogos.':closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
+  const closeTxt=notOpen?(isAdm()?'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30. Até lá ninguém pode responder nem ser marcado, nem pelo administrador.':'As inscrições abrem na segunda-feira, '+fdt(iso(new Date(convOpenAt(cdate))))+', às 08:30.'):fimJ?'Jogo terminado. Quem jogou fica no registo do jogo, em Jogos.':closed?(isAdm()?'Convocatória fechada para os jogadores. Como administrador ainda podes alterar a lista.':'Convocatória fechada: já não é possível responder nem mudar a resposta.'):'Respostas até '+DIA[new Date(convCloseAt(cdate)).getDay()]+', '+fdt(iso(new Date(convCloseAt(cdate))))+' às 23:59.';
   $('mine').innerHTML=!me.id?'<p style="margin:0">Inicia sessão para responder à convocatória.</p>':!mp?'<p style="margin:0">A tua conta ainda não está associada a um jogador. Pede acesso no topo da Tabela.</p>':
    `<div class="row" style="justify-content:space-between"><div><b>${esc(mp)}</b>, vais jogar?<br><span class="tag" style="margin:0">${mine?mine.vai?(P.go.includes(mp)?'Estás confirmado.':'Estás em lista de espera ('+(P.wait.indexOf(mp)+1)+'.º). Só vais se alguém desistir; recebes um aviso se fores convocado.'):'Disseste que não vais.':'Ainda não respondeste.'}<br>${closeTxt}</span></div>
    <div class="row"><button class="btn ${mine&&mine.vai?'ok':''}" data-v="1" ${lock?'disabled':''}>Vou</button><button class="btn ${mine&&!mine.vai?'pri':''}" data-v="0" ${lock?'disabled':''}>Não vou</button></div></div>`;
   $('ccount').textContent=(P.go.length+P.subs.length)+'/'+MAXJ;
-  const ctl=n=>isAdm()&&!fimJ?`<span class="mini"><button class="btn" data-m="${esc(n)}" data-x="1" aria-label="${esc(n)} vai">✓</button><button class="btn" data-m="${esc(n)}" data-x="0" aria-label="${esc(n)} não vai">✕</button></span>`:'';
+  const ctl=n=>isAdm()&&!fimJ&&!notOpen?`<span class="mini"><button class="btn" data-m="${esc(n)}" data-x="1" aria-label="${esc(n)} vai">✓</button><button class="btn" data-m="${esc(n)}" data-x="0" aria-label="${esc(n)} não vai">✕</button></span>`:'';
   const pendS=Object.entries(propostas).filter(([,p])=>p.tipo==='substituto'&&p.alvo===cdate&&p.estado==='pendente');
   const g0=games.some(x=>x.data===cdate&&(x.r||x.cancelado)),free=MAXJ-P.go.length-P.subs.length-pendS.length;
-  const canSub=!g0&&!!myPlayer()&&free>0&&!(notOpen&&!isAdm())&&(P.none.length===0||P.go.length+P.subs.length+P.none.length<MAXJ);
+  const canSub=!g0&&!!myPlayer()&&free>0&&!notOpen&&(P.none.length===0||P.go.length+P.subs.length+P.none.length<MAXJ);
   keepSel($('cyes'),()=>$('cyes').innerHTML=(P.go.map((n,i)=>`<li><span><span class="dot y"></span>${i+1}. ${esc(n)}</span>${ctl(n)}</li>`).join('')
     +P.subs.map((s,i)=>`<li><span><span class="dot w"></span>${P.go.length+i+1}. ${s.nome===SUB?'<b>Substituto</b>':'Substituto · <b>'+esc(s.nome)+'</b>'+(s.curto?' <span class="tag">nas equipas: '+esc(s.curto)+'</span>':'')} <span class="tag">${s.nome===SUB?'vaga preenchida por':'trazido por'} ${esc(s.por||'?')}</span></span>${isApo()?`<span class="mini">${isAdm()?`<select data-ss="${i}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(subSk(cdate,s))}</select>`:''}${s.nome!==SUB?`<button class="btn" data-rn="${i}" aria-label="Nome nas equipas" title="Nome nas equipas">✎</button>`:''}<button class="btn no" data-rs="${i}" aria-label="Retirar substituto">✕</button></span>`:''}</li>`).join('')
     +pendS.map(([id,p])=>`<li><span><span class="dot"></span>Substituto · ${esc(p.doc.nome)} <span class="tag">pendente · proposto por ${esc(p.autor||'?')}</span></span>${isAdm()?`<span class="mini"><select data-sk2="${id}" aria-label="Skill do substituto" style="width:5.5em;min-height:34px">${subSkOpts(null)}</select><button class="btn ok" data-sa="${id}">Aprovar</button><button class="btn no" data-sr="${id}">Rejeitar</button></span>`:''}</li>`).join(''))||'<li class="tag">Ainda ninguém confirmou.</li>');
   $('csub').classList.toggle('hide',!canSub||isApo());
   /* admin e apontadores: preencher as vagas que faltam com um jogador (sem repetir) ou com "Substituto" (pode repetir) */
-  const canFill=isApo()&&!g0&&free>0;$('cfill').classList.toggle('hide',!canFill);
+  const canFill=isApo()&&!g0&&!notOpen&&free>0;$('cfill').classList.toggle('hide',!canFill);
   if(canFill){$('cfillinfo').textContent='Faltam '+free+' jogador'+(free>1?'es':'')+' para os '+MAXJ+'. Escolhe quem vai jogar ou põe “Substituto” nas vagas.';
     const livre=roster.filter(r=>r.ativo!==false&&!P.go.includes(r.nome)).map(r=>r.nome).sort((a,b)=>a.localeCompare(b,'pt'));
     const cur=$('cfillsel').value;$('cfilln').classList.toggle('hide',cur!==SUB);$('cfillsel').innerHTML='<option value="">— escolher —</option>'+livre.map(n=>`<option>${esc(n)}</option>`).join('')+`<option value="${SUB}">Substituto</option>`;
@@ -1268,6 +1270,7 @@ $('mine').addEventListener('click',async e=>{
 });
 $('v-convocatoria').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-m]');if(!b||!isAdm())return;
+  if(convNotOpen(cdate)){renderConv();return note('As inscrições para este jogo ainda não abriram.')}
   if(games.some(x=>x.data===cdate&&(x.r||x.cancelado))){renderConv();return note('O jogo já terminou: quem jogou está no registo do jogo, em Jogos.')}
   const c=conv[cdate]||{},man={...(c.manual||{})};man[b.dataset.m]={vai:b.dataset.x==='1',t:Date.now(),adm:true};
   if(await save('conv/'+cdate,{...c,manual:man}))pingEspera(cdate);
@@ -1340,7 +1343,10 @@ function renderTeams(keep){
   if(!loaded)return;
   if(!cdate||cAuto)cdate=convDefault();
   /* depois do resultado já não se fazem equipas para esse jogo: corrige-se no registo do jogo, em Jogos */
-  const gF=games.find(x=>x.data===cdate&&(x.r||x.cancelado));$('elock').classList.toggle('hide',!gF);$('ework').classList.toggle('hide',!!gF);
+  const gF=games.find(x=>x.data===cdate&&(x.r||x.cancelado)),nO=!gF&&convNotOpen(cdate);$('elock').classList.toggle('hide',!gF&&!nO);$('ework').classList.toggle('hide',!!gF||nO);
+  if(nO){$('elock').querySelector('h2').textContent='Inscrições ainda fechadas';$('elock').querySelector('div').textContent='🔒';$('elock').querySelector('a').textContent='Ir para a Convocatória';$('elock').querySelector('a').href='#convocatoria';
+    $('elockt').textContent='As equipas para '+fdt(cdate)+' só se fazem depois de abrirem as inscrições, na segunda-feira às 08:30, e de os jogadores responderem.';return}
+  $('elock').querySelector('h2').textContent='Jogo terminado';$('elock').querySelector('div').textContent='🏁';$('elock').querySelector('a').textContent='Ir para Jogos';$('elock').querySelector('a').href='#jogos';
   if(gF){$('elockt').textContent='O jogo de '+fdt(cdate)+(gF.cancelado?' foi cancelado.':' já tem resultado.')+' Se for preciso corrigir quem jogou em cada equipa, edita o jogo em Jogos. Para fazer as equipas do próximo jogo, avança a semana na Convocatória.';return}
   for(const b of $('emode').children)b.classList.toggle('on',b.dataset.em===emode);
   if(emode==='capitaes')return renderCaps(keep);
@@ -1395,7 +1401,7 @@ async function preRegistar(data,eq){
 }
 function avisaEquipas(d){try{window.SB&&window.SB.functions.invoke('notificar',{body:{equipas:d}}).catch(()=>{})}catch(x){}}
 function avisaResultado(gid){try{window.SB&&window.SB.functions.invoke('notificar',{body:{resultado:gid}}).catch(()=>{})}catch(x){}}
-$('esave').addEventListener('click',async()=>{if(games.some(x=>x.data===cdate&&(x.r||x.cancelado)))return renderTeams(true);const c=conv[cdate]||{};const col=Math.random()<.5?'a':'b';
+$('esave').addEventListener('click',async()=>{if(convNotOpen(cdate)||games.some(x=>x.data===cdate&&(x.r||x.cancelado)))return renderTeams(true);const c=conv[cdate]||{};const col=Math.random()<.5?'a':'b';
   const eq=emode==='capitaes'?{modo:'capitaes',capA:caps.a,capB:caps.b,coletes:col}:{modo:'auto',a:teams.a.map(p=>p.label||p.nome),b:teams.b.map(p=>p.label||p.nome),an:teams.a.map(p=>p.nome),bn:teams.b.map(p=>p.nome),coletes:col};
   if(!isAdm()){if(await propor({tipo:'equipas',alvo:cdate,doc:eq}))$('eerr').textContent='Enviado para aprovação do administrador.';return}
   if(await save('conv/'+cdate,{...c,equipas:eq})){await preRegistar(cdate,eq);avisaEquipas(cdate);$('eerr').textContent='Publicado na convocatória. Sorteio: a '+(col==='a'?'Equipa 1':'Equipa 2')+' joga de coletes.'+(eq.modo==='auto'?' O jogo ficou pré-registado em Jogos: depois só falta indicar quem ganhou e quem chegou atrasado.':' O jogo ficou pré-registado em Jogos com os dois capitães: no fim escolhem-se os restantes jogadores e o resultado.')}});

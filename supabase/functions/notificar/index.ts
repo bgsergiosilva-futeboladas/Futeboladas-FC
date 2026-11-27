@@ -58,7 +58,8 @@ export function presenca(D: Any, data: string) {
   const man = ((D.conv[data] || {}).manual) || {};
   const map: Record<string, Any> = {};
   for (const v of Object.values(D.votos) as Any[]) { const x = v.v && v.v[data]; if (x && v.jogador && !(x.t > lim) && !(x.t < opn) && (!map[v.jogador] || x.t > map[v.jogador].t)) map[v.jogador] = x; }
-  for (const [n, x] of Object.entries(man) as Any) if (!map[n] || x.t > map[n].t) map[n] = x;
+  const futuro = data >= lisboa(new Date()).data; // marcações do admin antes de abrir não contam
+  for (const [n, x] of Object.entries(man) as Any) if (!(futuro && x.t < opn) && (!map[n] || x.t > map[n].t)) map[n] = x;
   const act = D.roster.filter((r: Any) => r.ativo !== false).map((r: Any) => r.nome);
   const yes = Object.entries(map).filter(([n, x]: Any) => x.vai && act.includes(n)).sort((a: Any, b: Any) => a[1].t - b[1].t).map((e) => e[0]);
   return { go: yes.slice(0, MAXJ), wait: yes.slice(MAXJ), none: act.filter((n: string) => !map[n]) };
