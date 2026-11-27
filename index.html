@@ -96,6 +96,13 @@ h1,h2,h3{letter-spacing:-.02em;line-height:1.1}
 .lu-ft.res div{flex:1;text-align:center!important;padding:0}.lu-ft.res small{display:block;font:700 11px var(--f);letter-spacing:.08em;opacity:.8;margin-bottom:2px}
 .lu-ft.res.co{background:#f2c200;color:#2a2000}.lu-ft.res.sc{background:#c81d24;color:#fff}.lu-ft.res.dr{background:#1d1214;color:#fff}
 .lu-tv .l.fim{background:#1d1214}
+.roast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 92px);z-index:90;transform:translateX(-50%);width:min(92vw,420px);padding:14px 16px 14px 52px;border-radius:16px;background:#1d1214;color:#fff;font:600 15px/1.35 var(--f);box-shadow:0 14px 40px rgba(0,0,0,.45);border:2px solid var(--gold);animation:roastIn .35s cubic-bezier(.3,1.5,.5,1) both;cursor:pointer}
+.roast::before{content:"🔥";position:absolute;left:14px;top:12px;font-size:24px}
+.roast.out{animation:roastOut .3s ease forwards}
+@keyframes roastIn{from{opacity:0;transform:translate(-50%,-14px) scale(.9)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes roastOut{to{opacity:0;transform:translate(-50%,-10px)}}
+.brand img.shake{animation:logoShake .45s}
+@keyframes logoShake{20%,60%{transform:rotate(-12deg)}40%,80%{transform:rotate(12deg)}}
 #cfold>summary{display:none}
 #cfold.fold>summary{display:flex;align-items:center;justify-content:space-between;margin-top:14px;cursor:pointer;font-weight:700;list-style:none;min-height:30px}
 #cfold.fold>summary::-webkit-details-marker{display:none}
@@ -725,6 +732,47 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#whosair')){whoOpen=false;window.FB&&FB.sair();return}
   if(whoOpen&&!e.target.closest('.whom')||e.target.closest('.whom [data-card]')){whoOpen=false;renderWho()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&whoOpen){whoOpen=false;renderWho()}});
+/* ---------- easter egg: 3 toques no emblema do topo → um "roast" ---------- */
+const ROASTS=[
+  '{n}, tu não precisas de colete: os adversários já te identificam pelo cheiro a derrota.',
+  'Tocaste três vezes no emblema, {n}. É mais toques do que dás na bola num jogo inteiro.',
+  '{n}, o teu primeiro toque é tão longo que devia pagar portagem.',
+  'O GPS do campo ainda te procura, {n}. Desde o último jogo que não te encontra na posição.',
+  '{n}, tens a velocidade de um pagamento por MB WAY em dia de feriado.',
+  'Rematas com tanta força como pagas as quotas, {n}: devagar e sempre atrasado.',
+  '{n}, se a preguiça fosse modalidade olímpica, chegavas em segundo. Por preguiça.',
+  'A bola chora quando sabe que vem para os teus pés, {n}.',
+  '{n}, o teu passe mais certeiro este ano foi para o tasco depois do jogo.',
+  'Já marcaste um golo esta época, {n}? Na própria baliza não conta.',
+  '{n}, tu não defendes: acompanhas o avançado até à baliza para lhe dar os parabéns.',
+  'O capitão escolheu-te em último e ainda pediu desconto, {n}.',
+  '{n}, és o único jogador que fica cansado no aquecimento.',
+  'Os teus cruzamentos têm mais efeito nos carros do parque do que na área, {n}.',
+  '{n}, o MVP és tu… Mais Vergonhoso Possível.',
+  'Se a app tivesse estatística de bolas perdidas, {n}, tinha de pedir mais espaço ao servidor.',
+  '{n}, tu fintas tão bem que às vezes enganas-te a ti próprio.',
+  'Até o Substituto joga mais do que tu, {n}, e ele nem existe.',
+  '{n}, o teu pé esquerdo só serve para não caíres.',
+  'Disseste "vou" na convocatória, {n}. Os teus colegas de equipa disseram "porquê?".',
+  '{n}, corres tanto atrás da bola que o Strava te sugere caminhadas.',
+  'O árbitro não existe, {n}, e mesmo assim consegues reclamar com ele.',
+  '{n}, tens mais desculpas do que golos. E nem as desculpas convencem.',
+  'Quando tu jogas, {n}, a outra equipa já entra a ganhar.',
+  '{n}, és tão bom guarda-redes como és pontual. Ou seja: nada.',
+  'O prémio Loser tem o teu nome gravado, {n}. Só falta oficializar.',
+  '{n}, nem o campo da convocatória te consegue pôr numa boa posição.',
+  'Insistes em tocar no emblema, {n}. Pena não insistires assim nos treinos.',
+  '{n}, o teu remate é como a internet do balneário: ninguém sabe para onde vai.',
+  'Parabéns, {n}! Descobriste o segredo da app. É a única coisa que descobriste este ano.'];
+let egg={n:0,t:0},roastLast=-1,roastTimer=null;
+function roast(){const mp=myPlayer();const n=mp?(typeof shortName==='function'?shortName(mp):mp.split(' ')[0]):'Craque';
+  let i;do{i=Math.floor(Math.random()*ROASTS.length)}while(i===roastLast&&ROASTS.length>1);roastLast=i;
+  document.querySelector('.roast')?.remove();clearTimeout(roastTimer);
+  const el=document.createElement('div');el.className='roast';el.setAttribute('role','status');el.textContent=ROASTS[i].replaceAll('{n}',n);document.body.appendChild(el);
+  const fim=()=>{el.classList.add('out');setTimeout(()=>el.remove(),300)};el.onclick=fim;roastTimer=setTimeout(fim,6000)}
+document.addEventListener('click',e=>{const img=e.target.closest('.brand img');if(!img)return;const now=Date.now();
+  egg=now-egg.t<700?{n:egg.n+1,t:now}:{n:1,t:now};
+  if(egg.n>=3){egg={n:0,t:0};img.classList.remove('shake');void img.offsetWidth;img.classList.add('shake');roast()}});
 const roleLabel=()=>roles.length?roles.map(r=>PAPEL[r]).join(' + '):'Sem acesso aprovado';
 const SKDEF=3;
 /* skills: documento à parte (config/skills) que só o administrador e o apontador conseguem ler */
