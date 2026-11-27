@@ -1546,11 +1546,14 @@ function renderXt(){const sel=$('xt');if(document.activeElement===sel)return;con
   sel.value=[...sel.options].some(o=>o.value===v)&&v!=='__nova'?v:'campo'}
 function cellState(r,k){const d=pags[k]||{};if(!charged(r,k))return'fora';if((d.isentos||[]).includes(r.nome))return'isento';return d.pagos&&d.pagos[r.nome]?'pago':'falta'}
 function ledger(){
-  const ms=monthsList(),deb={},cash=[];let owe=0,saldo=+(caixa.saldoInicial||0);
+  /* meses até hoje + meses futuros que já têm pagamentos adiantados ou movimentos (entram na caixa, mas ainda não contam como dívida) */
+  const cur=mkey(today()),fut=Object.keys(pags).filter(k=>k>cur&&/^\d{4}-\d{2}$/.test(k)&&(Object.keys(pags[k].pagos||{}).length||(pags[k].mov||[]).length)).sort();
+  const ms=[...monthsList()];if(fut.length)for(let k=mkAdd(cur,1);k<=fut[fut.length-1];k=mkAdd(k,1))ms.push(k);
+  const deb={},cash=[];let owe=0,saldo=+(caixa.saldoInicial||0);
   for(const k of ms){const d=pags[k]||{};let rec=0;
     for(const r of roster){const s=cellState(r,k);
       if(s==='pago')rec+=d.pagos[r.nome].valor??feeOf(k);
-      else if(s==='falta'){owe+=feeOf(k);(deb[r.nome]=deb[r.nome]||[]).push(k)}}
+      else if(s==='falta'&&k<=cur){owe+=feeOf(k);(deb[r.nome]=deb[r.nome]||[]).push(k)}}
     const xs=d.mov||[],sum=f=>xs.filter(f).reduce((s,x)=>s+x.valor,0);
     const ent=sum(x=>isEnt(x.tipo)),campoV=sum(x=>x.tipo==='campo'),outV=sum(x=>x.tipo!=='campo'&&!isEnt(x.tipo));
     const dif=rec+ent-campoV-outV;saldo+=dif;cash.push({k,rec,ent,campo:campoV,out:outV,dif});}
@@ -1558,7 +1561,7 @@ function ledger(){
 }
 const mshort=k=>MES[+k.slice(5)-1].slice(0,3).toLowerCase()+' '+k.slice(2,4);
 function renderPay(){
-  const L=ledger(),mp=myPlayer(),cur=L.ms[L.ms.length-1];
+  const L=ledger(),mp=myPlayer(),cur=mkey(today());
   $('pmine').classList.toggle('hide',!mp);
   if(mp){const d=L.deb[mp]||[],tot=d.reduce((s,k)=>s+feeOf(k),0);
     const av=Object.entries(propostas).find(([,p])=>p.tipo==='pagamento'&&p.por===me.id);
@@ -1582,12 +1585,13 @@ function renderPay(){
   const avs=Object.entries(propostas).filter(([,p])=>p.tipo==='pagamento'&&p.estado==='pendente').sort((a,b)=>a[1].t-b[1].t);
   $('pavisos').classList.toggle('hide',!avs.length);
   if(avs.length)keepSel($('pavisos'),()=>$('pavisos').innerHTML=`<h2 style="margin:0 0 6px">Pagamentos MB WAY avisados (${avs.length})</h2><p class="tag" style="margin:0 0 6px">Confirma na tua app MB WAY que o dinheiro chegou antes de aprovar.</p><ul class="plist">`+avs.map(([id,p])=>`<li style="flex-wrap:wrap"><span style="flex:1 1 14em"><b>${esc(p.autor)}</b> · ${euro(p.doc.valor)}<br><span class="tag" style="margin:0">${p.doc.meses.map(mname).join(', ')} · ${new Date(p.t).toLocaleString('pt-PT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></span><span class="mini" style="flex-wrap:wrap"><input type="text" data-mbnota="${id}" placeholder="Nota (se recusar)" style="width:10em;min-height:36px"><button class="btn ok" data-mba="${id}">Confirmar</button><button class="btn no" data-mbr="${id}">Não recebi</button></span></li>`).join('')+'</ul>');
-  const cc=L.cash[L.cash.length-1]||{rec:0};
+  /* quotas recebidas este mês pela data do pagamento (inclui meses pagos adiantados) */
+  const cc={rec:Object.entries(pags).reduce((t,[k,d])=>t+Object.values(d.pagos||{}).filter(p=>(p.data||'').slice(0,7)===cur).reduce((u,p)=>u+(p.valor??feeOf(k)),0),0)};
   const due=roster.filter(r=>['pago','falta'].includes(cellState(r,cur)));const paidN=due.filter(r=>cellState(r,cur)==='pago').length;
-  $('psum').innerHTML=[['Saldo em caixa',euro(L.saldo),L.saldo<0?'owe':''],['Quotas em dívida',euro(L.owe),'owe'],[mname(cur),paidN+'/'+due.length+' pagaram',''],['Recebido em '+MES[+cur.slice(5)-1].toLowerCase(),euro(cc.rec),'']]
+  $('psum').innerHTML=[['Saldo em caixa',euro(L.saldo),L.saldo<0?'owe':''],['Quotas em dívida',euro(L.owe),'owe'],[mname(cur),paidN+'/'+due.length+' pagaram',''],['Quotas recebidas em '+MES[+cur.slice(5)-1].toLowerCase(),euro(cc.rec),'']]
     .map(([t,v,c])=>`<div class="card stat"><span>${t}</span><b class="${c}">${v}</b></div>`).join('');
   /* registo de quotas do mês */
-  const nxt=mkAdd(cur,1),pmonths=[...L.ms,nxt];if(!pgFrom||pgAuto||!pmonths.includes(pgFrom))pgFrom=cur;/* no dia 1 passa sozinho para o mês novo */const K=pgFrom,fee=feeOf(K);
+  const nxt=mkAdd(cur,1),pmonths=[...new Set([...L.ms,nxt])];if(!pgFrom||pgAuto||!pmonths.includes(pgFrom))pgFrom=cur;/* no dia 1 passa sozinho para o mês novo */const K=pgFrom,fee=feeOf(K);
   renderPgWarn();
   $('pgm').innerHTML=[...pmonths].reverse().map(k=>`<option value="${k}"${k===K?' selected':''}>${mname(k)}</option>`).join('');
   const ord={falta:0,pago:1,isento:2};
