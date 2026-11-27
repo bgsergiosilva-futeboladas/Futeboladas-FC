@@ -503,13 +503,18 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="grid" id="psum" style="margin-bottom:14px"></div>
 <div id="pmine" class="card hide" style="margin-bottom:14px"></div>
 <div class="pay">
+<div class="seg ptabs" role="tablist" aria-label="Secções das quotas" style="margin-bottom:14px"><label><input type="radio" name="ptab" value="q" checked><span>Quotas</span></label><label><input type="radio" name="ptab" value="c"><span>Caixa</span></label><label><input type="radio" name="ptab" value="m"><span>Movimentos</span></label></div>
+<div data-pt="q">
+<div class="card pay hide" id="pavisos"></div>
 <div class="card"><div class="row" style="justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:10px"><h2 style="margin:0">Quotas</h2><select id="pgm" aria-label="Mês" style="width:auto;flex:0 1 13em"></select></div>
 <p class="tag" id="pgsum" style="margin:6px 0 4px"></p>
 <div id="pgwarn" class="hide" role="alert" style="margin:8px 0;padding:12px;border-radius:14px;border:1px solid #e0a030;background:color-mix(in srgb,#e0a030 14%,transparent)"></div>
 <ul class="qlist" id="pgrid"></ul>
 <p class="tag" style="margin:10px 0 0">Liga o interruptor de quem pagou. Toca no nome para dispensar alguém nesse mês.</p></div>
-<div class="two" style="margin-top:14px">
-<div class="card"><div class="row" style="justify-content:space-between;align-items:baseline"><h2 style="margin:0;display:flex;align-items:center;gap:6px">Caixa <button type="button" class="btn" id="pcashp" aria-label="Ano anterior" style="min-height:34px;padding:0 10px">‹</button><span id="pcashy"></span><button type="button" class="btn" id="pcashn" aria-label="Ano seguinte" style="min-height:34px;padding:0 10px">›</button></h2><span id="pcashs" style="font-weight:800"></span></div><div style="margin-top:8px"><table id="pcash" style="width:100%"></table></div><button class="btn hide" id="pcashall" type="button" style="margin-top:8px">Ver todos os meses</button><div class="row" style="margin-top:10px"><button class="btn" id="psfix" type="button">Corrigir saldo</button><span class="tag" style="margin:0">Só para acertar com o valor real da conta.</span></div>
+<div style="margin-top:14px"><div class="card"><h2>Quem deve</h2><ul class="plist" id="pdebt"></ul></div></div>
+</div>
+<div data-pt="c" class="hide">
+<div class="card"><div class="row" style="justify-content:space-between;align-items:baseline"><h2 style="margin:0;display:flex;align-items:center;gap:6px">Caixa <button type="button" class="btn" id="pcashp" aria-label="Ano anterior" style="min-height:34px;padding:0 10px">‹</button><span id="pcashy"></span><button type="button" class="btn" id="pcashn" aria-label="Ano seguinte" style="min-height:34px;padding:0 10px">›</button></h2><span id="pcashs" style="font-weight:800"></span></div><p class="tag" id="pcashres" style="margin:6px 0 0"></p><div style="margin-top:8px"><table id="pcash" style="width:100%"></table></div><div class="row" style="margin-top:8px;gap:8px"><button class="btn hide" id="pcashall" type="button">Ver todos os meses</button><button class="btn" id="pcashx" type="button">⬇️ Exportar o ano (Excel)</button></div><div class="row" style="margin-top:10px"><button class="btn" id="psfix" type="button">Corrigir saldo</button><span class="tag" style="margin:0">Só para acertar com o valor real da conta.</span></div>
 <div id="psform" class="hide" style="margin-top:10px;padding:12px;border-radius:14px;border:1px solid #e0a030;background:color-mix(in srgb,#e0a030 10%,transparent)">
 <p style="margin:0 0 6px"><b>Acerto de saldo</b><br><span class="tag" style="margin:0" id="psnow"></span></p>
 <label for="psreal">Saldo real da conta (€)</label><input type="number" id="psreal" step="0.01" inputmode="decimal">
@@ -517,11 +522,10 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <p class="tag" id="psdif" style="margin:6px 0 0"></p><p class="err" id="psmsg" style="margin:4px 0 0"></p>
 <div class="row" style="margin-top:8px;gap:8px"><button class="btn pri" id="psok" type="button">Registar acerto</button><button class="btn" id="psno" type="button">Cancelar</button></div>
 <p class="tag" style="margin:8px 0 0">O acerto fica como um movimento na caixa deste mês, com a justificação, e no registo de alterações com o teu nome.</p></div>
-<h3 style="margin:16px 0 4px">MB WAY para receber quotas</h3><p class="tag" style="margin:0 0 6px">Aparece aos jogadores em "As minhas quotas" para pagarem diretamente.</p><div class="row" style="align-items:end"><div style="flex:1 1 9em"><label for="mbn">Telemóvel MB WAY</label><input type="tel" id="mbn" inputmode="tel" placeholder="9xx xxx xxx"></div><div style="flex:1 1 9em"><label for="mbt">Titular</label><input type="text" id="mbt" placeholder="Nome do tesoureiro"></div><button class="btn" id="mbsave" type="button">Guardar</button></div><p class="tag" id="mbmsg"></p></div>
-<div class="card pay hide" id="pavisos"></div>
-<div class="card"><h2>Quem deve</h2><ul class="plist" id="pdebt"></ul></div>
 </div>
-<div class="two" style="margin-top:14px">
+<details class="card" id="mbbox" style="margin-top:14px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0;font-size:17px">MB WAY para receber quotas</h2><span class="tag" style="margin:0" id="mbsum"></span></summary><p class="tag" style="margin:0 0 6px">Aparece aos jogadores em "As minhas quotas" para pagarem diretamente.</p><div class="row" style="align-items:end"><div style="flex:1 1 9em"><label for="mbn">Telemóvel MB WAY</label><input type="tel" id="mbn" inputmode="tel" placeholder="9xx xxx xxx"></div><div style="flex:1 1 9em"><label for="mbt">Titular</label><input type="text" id="mbt" placeholder="Nome do tesoureiro"></div><button class="btn" id="mbsave" type="button">Guardar</button></div><p class="tag" id="mbmsg"></p></details>
+</div>
+<div data-pt="m" class="hide">
 <div class="card"><h2>Registar movimento</h2>
 <div class="two" style="gap:0 12px"><div><label for="xt">Categoria</label><select id="xt"></select></div>
 <div><label for="xd">Data</label><input type="date" id="xd"></div><div><label for="xv">Valor (€)</label><input type="number" id="xv" min="0" step="0.01" inputmode="decimal"></div><div><label for="xn">Descrição (opcional)</label><input type="text" id="xn"></div></div>
@@ -529,11 +533,12 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div class="row" style="margin-top:8px;gap:14px"><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="radio" name="xcd" value="s" checked> Saída (despesa)</label><label style="margin:0;display:flex;gap:6px;align-items:center"><input type="radio" name="xcd" value="e"> Entrada de dinheiro</label></div>
 <div class="row" style="margin-top:8px"><button class="btn pri" id="xcok" type="button">Criar categoria</button><button class="btn" id="xcno" type="button">Cancelar</button></div></div>
 <div class="row" style="margin-top:10px"><button class="btn pri" id="xadd" type="button">Registar</button><span class="tag" id="xmsg"></span></div></div>
-<details class="card" id="xbox"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Movimentos registados</h2><span class="tag" style="margin:0" id="xsum"></span></summary><ul class="plist" id="xlist" style="margin-top:8px"></ul><button class="btn hide" id="xmore" type="button" style="margin-top:8px">Ver mais</button></details>
-</div>
+
+<details class="card" id="xbox" open style="margin-top:14px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0">Movimentos registados</h2><span class="tag" style="margin:0" id="xsum"></span></summary><ul class="plist" id="xlist" style="margin-top:8px"></ul><button class="btn hide" id="xmore" type="button" style="margin-top:8px">Ver mais</button></details>
 <div class="card adm" id="rlog" style="margin-top:14px"><div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">Registo de alterações</h2><button class="btn" id="rlogb" type="button">Ver registo</button></div>
 <p class="tag" style="margin:4px 0 0">Quem mexeu nas quotas, nos movimentos de caixa, no saldo e no MB WAY. Só o administrador vê; ninguém o consegue alterar.</p>
 <div class="row hide" id="rlogf" style="margin-top:10px;gap:8px"><select id="rlogq" aria-label="Filtrar por pessoa" style="flex:1 1 10em;width:auto"></select></div><ul class="plist" id="rlogl"></ul></div>
+</div>
 </div>
 </section>
 
@@ -1432,7 +1437,7 @@ function renderPay(){
       <p class="tag" style="margin:0 0 6px">O número é copiado ao abrir: na app MB WAY escolhe <b>Enviar dinheiro</b>, cola o número e escreve o valor.</p>
       <ol><li>Abre a app MB WAY (ou a do teu banco) e escolhe <b>Enviar dinheiro</b>.</li><li>Cola o número, o valor e a descrição.</li><li>Depois de enviares, volta aqui e carrega em <b>Já paguei</b>.</li></ol>
       <button class="btn pri" data-mbp="1">Já paguei ${euro(tot)}</button></div>`}
-    $('pmine').innerHTML=`<h2 style="margin:0 0 4px">As minhas quotas</h2>${d.length?`<p class="owe" style="margin:0">Deves ${euro(tot)}: ${d.map(mname).join(', ')}</p>`:'<p class="paid" style="margin:0">Tens tudo pago.</p>'}${pay}`}
+    $('pmine').innerHTML=`<h2 style="margin:0 0 4px">As minhas quotas</h2>${d.length?`<p class="owe" style="margin:0">Deves ${euro(tot)}: ${d.map(d.length>3?mshort:mname).join(', ')}</p>`:'<p class="paid" style="margin:0">Tens tudo pago.</p>'}${pay}`}
   const tes=isTes();
   for(const e of document.querySelectorAll('.pay'))e.classList.toggle('hide',!tes);
   $('psum').classList.toggle('hide',!tes);
@@ -1472,12 +1477,14 @@ function renderPay(){
     (vis.length<rows.length?`<tr><td class="l tag" colspan="4" style="text-align:left">… mais ${rows.length-vis.length} meses de ${cashYear}</td></tr>`:'')+
     `<tr><td class="l" colspan="3">${yi<=0?'Saldo inicial':'Transitado de '+(+cashYear-1)}</td><td>${euro(antes)}</td></tr></tbody>`+
     `<tfoot><tr><th class="l" colspan="3">${curY?'Saldo atual':'Saldo no fim de '+cashYear}</th><th class="${fimAno<0?'owe':'paid'}">${euro(fimAno)}</th></tr></tfoot>`;
+  {const e2=cy.reduce((a,c)=>a+c.rec+c.ent,0),s2=cy.reduce((a,c)=>a+c.campo+c.out,0);$('pcashres').innerHTML=`${cashYear}${curY?' (até agora)':''}: entraram <b class="paid">${euro(e2)}</b> · saíram <b class="owe">${euro(s2)}</b>`;cashYearData={ano:cashYear,cy,antes,fimAno}}
+  $('mbsum').textContent=caixa.mbway?(caixa.mbway+(caixa.mbwayNome?' · '+caixa.mbwayNome:'')):'Não configurado';
   $('pcashall').classList.toggle('hide',!curY||rows.length<=3);$('pcashall').textContent=cashAll?'Mostrar só os últimos 3 meses':'Ver todos os meses de '+cashYear+' ('+rows.length+')';
   $('pcashs').innerHTML='Saldo: <span class="'+(L.saldo<0?'owe':'paid')+'">'+euro(L.saldo)+'</span>';
   psSaldo=L.saldo;if(!$('psform').classList.contains('hide'))psDif();
   /* devedores */
   const dl=Object.entries(L.deb).sort((a,b)=>b[1].reduce((s,k)=>s+feeOf(k),0)-a[1].reduce((s,k)=>s+feeOf(k),0)||a[0].localeCompare(b[0],'pt'));
-  $('pdebt').innerHTML=dl.map(([n,ks])=>`<li><span>${esc(n)}<br><span class="tag" style="margin:0">${ks.map(mshort).join(', ')}</span></span><span class="owe">${euro(ks.reduce((s,k)=>s+feeOf(k),0))}</span></li>`).join('')||'<li class="paid">Ninguém deve nada.</li>';
+  keepOpen($('pdebt'),()=>$('pdebt').innerHTML=dl.map(([n,ks])=>`<li style="display:block;padding:0"><details data-acc="${esc(n)}"><summary style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;list-style:none"><span>${esc(n)} <span class="tag" style="margin:0">${ks.length} ${ks.length>1?'meses':'mês'}</span></span><span class="owe">${euro(ks.reduce((s,k)=>s+feeOf(k),0))}</span></summary><p class="tag" style="margin:0 0 8px">${ks.map(mshort).join(', ')}</p></details></li>`).join('')||'<li class="paid">Ninguém deve nada.</li>');
   /* saídas */
   const xs=L.ms.flatMap(k=>((pags[k]||{}).mov||[]).map((x,i)=>({...x,k,i}))).sort((a,b)=>a.data<b.data?1:-1);
   $('xsum').textContent=xs.length?xs.length+' movimento'+(xs.length>1?'s':'')+' · último a '+fdt(xs[0].data):'nenhum';
@@ -1486,6 +1493,17 @@ function renderPay(){
   renderXt();if(!$('xd').value)$('xd').value=today();
 }
 /* acerto de saldo: em vez de mexer no saldo inicial, regista um movimento "Acerto de saldo" com justificação obrigatória */
+/* separadores da página das quotas (tesoureiro/admin) */
+let ptab='q',cashYearData=null;
+$('pcashx').addEventListener('click',()=>{const D=cashYearData;if(!D||!isTes())return;
+  const n=v=>String(Math.round(v*100)/100).replace('.',','),q=t=>'"'+String(t).replace(/"/g,'""')+'"';
+  const L2=[['Caixa Futeboladas FC '+D.ano],[],['Mês','Quotas','Outras entradas','Campo','Despesas','Saldo do mês'],
+    ...D.cy.map(c=>[MES[+c.k.slice(5)-1],n(c.rec),n(c.ent),n(-c.campo),n(-c.out),n(c.dif)]),[],
+    [(D.ano===String(+PSTART.slice(0,4))?'Saldo inicial':'Transitado de '+(+D.ano-1)),'','','','',n(D.antes)],['Saldo no fim','','','','',n(D.fimAno)],[],['Movimentos'],['Data','Tipo','Descrição','Valor']];
+  for(const c of D.cy)for(const x of ((pags[c.k]||{}).mov||[]))L2.push([x.data,xLabel(x.tipo),x.desc||'',n(isEnt(x.tipo)?x.valor:-x.valor)]);
+  const csv='\ufeff'+L2.map(r=>r.map(q).join(';')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='caixa-futeboladas-'+D.ano+'.csv';document.body.appendChild(a);a.click();a.remove()});
+document.addEventListener('change',e=>{if(e.target.name!=='ptab')return;ptab=e.target.value;for(const d of document.querySelectorAll('[data-pt]'))d.classList.toggle('hide',d.dataset.pt!==ptab)});
 let psSaldo=0,xShow=10,cashAll=false;let cashYear=String(new Date().getFullYear()),cashOpen=null;
 $('pcashp').addEventListener('click',()=>{cashYear=String(+cashYear-1);cashOpen=null;renderPay()});
 $('pcashn').addEventListener('click',()=>{cashYear=String(+cashYear+1);cashOpen=null;renderPay()});
